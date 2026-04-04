@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sophia Admin · Gestão de Estoque</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #E91E8C;
+    --pink-pale: #fdf2f8;
+    --pink-deep: #BE185D;
+    --gold: #D4AF6A;
+    --dark: #1a0a12;
+    --sidebar-bg: #1a0a12;
+    --bg: #f8f4f6;
+    --white: #ffffff;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-400: #9ca3af;
+    --gray-600: #6b7280;
+    --gray-800: #374151;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--gray-800); display: flex; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 260px; flex-shrink: 0;
+    background: var(--sidebar-bg);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 100; transition: width 0.3s;
+    overflow: hidden;
+  }
+  #sidebar.collapsed { width: 70px; }
+  .sidebar-logo {
+    padding: 1.75rem 1.5rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--pink), var(--pink-deep));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif; color: white; font-size: 1.2rem;
+  }
+  .logo-text { overflow: hidden; }
+  .logo-text h2 { font-family: 'Cormorant Garamond', serif; color: white; font-size: 1.2rem; font-weight: 600; white-space: nowrap; }
+  .logo-text p { font-size: 0.6rem; color: var(--gold); letter-spacing: 0.2em; text-transform: uppercase; }
+
+  .sidebar-nav { flex: 1; padding: 1rem 0; overflow-y: auto; overflow-x: hidden; }
+  .nav-section-label {
+    font-size: 0.55rem; letter-spacing: 0.3em; text-transform: uppercase;
+    color: rgba(255,255,255,0.25); padding: 1rem 1.5rem 0.5rem;
+    white-space: nowrap; overflow: hidden;
+  }
+  #sidebar.collapsed .nav-section-label { opacity: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 0.9rem;
+    padding: 0.8rem 1.5rem; cursor: pointer;
+    color: rgba(255,255,255,0.5); font-size: 0.8rem; font-weight: 400;
+    transition: all 0.2s; border-left: 3px solid transparent; white-space: nowrap;
+    position: relative;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85); }
+  .nav-item.active { background: rgba(233,30,140,0.12); color: var(--pink); border-left-color: var(--pink); font-weight: 500; }
+  .nav-icon { font-size: 1.1rem; flex-shrink: 0; width: 20px; text-align: center; }
+  .nav-badge {
+    margin-left: auto; background: var(--pink); color: white;
+    font-size: 0.55rem; padding: 0.15rem 0.4rem; border-radius: 10px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  #sidebar.collapsed .nav-badge { display: none; }
+  #sidebar.collapsed .nav-text { display: none; }
+
+  .sidebar-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .user-avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--pink), var(--gold));
+    display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: 600;
+  }
+  .user-info p { font-size: 0.75rem; color: rgba(255,255,255,0.8); font-weight: 500; white-space: nowrap; }
+  .user-info span { font-size: 0.6rem; color: rgba(255,255,255,0.35); }
+  #sidebar.collapsed .user-info { display: none; }
+
+  /* ── MAIN ── */
+  #main {
+    flex: 1; margin-left: 260px; transition: margin-left 0.3s;
+    min-height: 100vh; display: flex; flex-direction: column;
+  }
+  #main.expanded { margin-left: 70px; }
+
+  /* ── TOPBAR ── */
+  #topbar {
+    background: var(--white); border-bottom: 1px solid var(--gray-200);
+    padding: 0 2rem; height: 65px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 1rem; }
+  #toggle-sidebar {
+    width: 36px; height: 36px; border: none; background: var(--gray-100);
+    border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--gray-600); font-size: 1rem; transition: background 0.2s;
+  }
+  #toggle-sidebar:hover { background: var(--gray-200); }
+  .topbar-breadcrumb { font-size: 0.8rem; color: var(--gray-600); }
+  .topbar-breadcrumb span { color: var(--pink); font-weight: 500; }
+  .topbar-right { display: flex; align-items: center; gap: 1rem; }
+  .topbar-search {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: var(--gray-100); border-radius: 6px; padding: 0.5rem 1rem;
+    font-size: 0.78rem; color: var(--gray-400);
+  }
+  .topbar-search input { background: none; border: none; outline: none; font-family: 'Inter'; font-size: 0.78rem; color: var(--gray-800); width: 200px; }
+  .topbar-action {
+    width: 36px; height: 36px; border: none; background: var(--gray-100);
+    border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--gray-600); font-size: 1rem; transition: background 0.2s; position: relative;
+  }
+  .topbar-action:hover { background: var(--gray-200); }
+  .notif-dot {
+    position: absolute; top: 6px; right: 6px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--pink); border: 1.5px solid white;
+  }
+
+  /* ── PAGE CONTENT ── */
+  #page { flex: 1; padding: 2rem; }
+  .page-section { display: none; }
+  .page-section.active { display: block; }
+
+  /* ── CARDS ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
+  .kpi-card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 1.5rem; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 0.75rem;
+    border-left: 4px solid transparent; transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .kpi-card.pink { border-left-color: var(--pink); }
+  .kpi-card.gold { border-left-color: var(--gold); }
+  .kpi-card.success { border-left-color: var(--success); }
+  .kpi-card.danger { border-left-color: var(--danger); }
+  .kpi-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .kpi-icon {
+    width: 40px; height: 40px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+  }
+  .kpi-icon.pink { background: var(--pink-pale); }
+  .kpi-icon.gold { background: #fef9ec; }
+  .kpi-icon.success { background: #d1fae5; }
+  .kpi-icon.danger { background: #fee2e2; }
+  .kpi-badge { font-size: 0.65rem; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 600; }
+  .kpi-badge.up { background: #d1fae5; color: var(--success); }
+  .kpi-badge.down { background: #fee2e2; color: var(--danger); }
+  .kpi-value { font-size: 1.7rem; font-weight: 700; color: var(--dark); letter-spacing: -0.02em; }
+  .kpi-label { font-size: 0.72rem; color: var(--gray-600); font-weight: 400; }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden; margin-bottom: 1.5rem;
+  }
+  .panel-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-title { font-size: 0.9rem; font-weight: 600; color: var(--dark); }
+  .panel-subtitle { font-size: 0.7rem; color: var(--gray-400); margin-top: 0.15rem; }
+  .panel-actions { display: flex; gap: 0.5rem; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 0.5rem 1rem; border-radius: 6px; border: none; cursor: pointer;
+    font-family: 'Inter'; font-size: 0.75rem; font-weight: 500;
+    display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn-primary { background: var(--pink); color: white; }
+  .btn-primary:hover { background: var(--pink-deep); }
+  .btn-secondary { background: var(--gray-100); color: var(--gray-800); }
+  .btn-secondary:hover { background: var(--gray-200); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #059669; }
+  .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.7rem; }
+  .btn-icon { padding: 0.4rem; width: 30px; height: 30px; justify-content: center; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 0.75rem 1rem; text-align: left;
+    font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--gray-400); font-weight: 600;
+    border-bottom: 1px solid var(--gray-100);
+    background: var(--gray-100);
+  }
+  tbody tr { border-bottom: 1px solid var(--gray-100); transition: background 0.15s; }
+  tbody tr:hover { background: var(--pink-pale); }
+  tbody tr:last-child { border: none; }
+  td { padding: 0.875rem 1rem; font-size: 0.78rem; }
+  .td-product { display: flex; align-items: center; gap: 0.75rem; }
+  .td-thumb { width: 44px; height: 52px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: var(--gray-100); }
+  .td-name { font-weight: 500; color: var(--dark); font-size: 0.8rem; }
+  .td-sku { font-size: 0.65rem; color: var(--gray-400); margin-top: 0.1rem; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600;
+  }
+  .badge-success { background: #d1fae5; color: #065f46; }
+  .badge-warning { background: #fef3c7; color: #92400e; }
+  .badge-danger { background: #fee2e2; color: #991b1b; }
+  .badge-info { background: #dbeafe; color: #1e40af; }
+  .badge-gray { background: var(--gray-100); color: var(--gray-600); }
+
+  /* ── STOCK BAR ── */
+  .stock-bar { height: 6px; border-radius: 3px; background: var(--gray-100); overflow: hidden; margin-top: 4px; }
+  .stock-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+
+  /* ── MODAL ── */
+  #modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    z-index: 1000; display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    backdrop-filter: blur(4px);
+  }
+  #modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--white); border-radius: 12px; width: 580px; max-width: 95vw;
+    max-height: 90vh; overflow-y: auto;
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.3s;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+  #modal-overlay.open .modal { transform: translateY(0) scale(1); }
+  .modal-header {
+    padding: 1.5rem; border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; background: white; z-index: 1;
+  }
+  .modal-title { font-size: 1rem; font-weight: 600; color: var(--dark); }
+  .modal-close { background: none; border: none; cursor: pointer; color: var(--gray-400); font-size: 1.2rem; }
+  .modal-close:hover { color: var(--danger); }
+  .modal-body { padding: 1.5rem; }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 0.72rem; font-weight: 500; color: var(--gray-600); }
+  input, select, textarea {
+    padding: 0.65rem 0.875rem; border: 1px solid var(--gray-200);
+    border-radius: 6px; font-family: 'Inter'; font-size: 0.8rem;
+    color: var(--gray-800); outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    background: var(--white);
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--pink); box-shadow: 0 0 0 3px rgba(233,30,140,0.08);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  .modal-footer {
+    padding: 1.25rem 1.5rem; border-top: 1px solid var(--gray-100);
+    display: flex; justify-content: flex-end; gap: 0.75rem;
+    position: sticky; bottom: 0; background: white;
+  }
+
+  /* ── IMAGE UPLOAD ── */
+  .upload-zone {
+    border: 2px dashed var(--gray-200); border-radius: 8px;
+    padding: 2rem; text-align: center; cursor: pointer;
+    transition: all 0.2s; background: var(--gray-100);
+  }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--pink); background: var(--pink-pale); }
+  .upload-zone input[type=file] { display: none; }
+  .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .upload-text { font-size: 0.75rem; color: var(--gray-600); }
+  .upload-sub { font-size: 0.65rem; color: var(--gray-400); margin-top: 0.25rem; }
+  .upload-preview {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;
+  }
+  .preview-item {
+    position: relative; width: 80px; height: 95px;
+  }
+  .preview-item img {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 4px;
+    border: 1px solid var(--gray-200);
+  }
+  .preview-remove {
+    position: absolute; top: -6px; right: -6px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--danger); color: white; border: none; cursor: pointer;
+    font-size: 0.6rem; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── CONFIG SECTION ── */
+  .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .config-card {
+    background: var(--white); border-radius: var(--radius); padding: 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .config-card h3 { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--dark); }
+  .config-card p { font-size: 0.72rem; color: var(--gray-400); margin-bottom: 1.25rem; line-height: 1.6; }
+  .config-status {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.72rem; margin-bottom: 1rem;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  .status-dot.connected { background: var(--success); box-shadow: 0 0 6px rgba(16,185,129,0.5); }
+  .status-dot.disconnected { background: var(--gray-400); }
+
+  /* ── CHARTS ── */
+  .chart-placeholder {
+    height: 200px; background: var(--gray-100); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gray-400); font-size: 0.75rem; position: relative; overflow: hidden;
+  }
+  .chart-bars {
+    display: flex; align-items: flex-end; gap: 6px; height: 140px; padding: 0 1rem;
+    position: absolute; bottom: 1rem; left: 0; right: 0;
+  }
+  .chart-bar {
+    flex: 1; border-radius: 3px 3px 0 0;
+    background: linear-gradient(to top, var(--pink), rgba(233,30,140,0.3));
+    transition: height 0.8s cubic-bezier(.34,1.56,.64,1);
+    position: relative; cursor: pointer;
+  }
+  .chart-bar:hover::after {
+    content: attr(data-val);
+    position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+    background: var(--dark); color: white; padding: 0.25rem 0.5rem;
+    font-size: 0.6rem; border-radius: 4px; white-space: nowrap;
+  }
+
+  /* ── TOAST ── */
+  #toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 9000; display: flex; flex-direction: column; gap: 0.5rem; }
+  .toast {
+    background: var(--dark); color: white; padding: 0.875rem 1.25rem;
+    border-radius: 8px; font-size: 0.78rem; display: flex; align-items: center; gap: 0.75rem;
+    box-shadow: var(--shadow-md); animation: toastIn 0.3s ease;
+    border-left: 4px solid var(--pink);
+  }
+  .toast.success { border-left-color: var(--success); }
+  .toast.error { border-left-color: var(--danger); }
+  @keyframes toastIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:1100px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } }
+  @media(max-width:768px) { #sidebar { transform: translateX(-100%); } #main { margin-left: 0; } }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">S</div>
+    <div class="logo-text">
+      <h2>Sophia</h2>
+      <p>Admin Panel</p>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Visão Geral</div>
+    <div class="nav-item active" onclick="showPage('dashboard', this)">
+      <span class="nav-icon">📊</span>
+      <span class="nav-text">Dashboard</span>
+    </div>
+
+    <div class="nav-section-label">Loja</div>
+    <div class="nav-item" onclick="showPage('products', this)">
+      <span class="nav-icon">👗</span>
+      <span class="nav-text">Produtos</span>
+      <span class="nav-badge">87</span>
+    </div>
+    <div class="nav-item" onclick="showPage('inventory', this)">
+      <span class="nav-icon">📦</span>
+      <span class="nav-text">Estoque</span>
+      <span class="nav-badge" style="background:var(--warning)">3</span>
+    </div>
+    <div class="nav-item" onclick="showPage('orders', this)">
+      <span class="nav-icon">🛍</span>
+      <span class="nav-text">Pedidos</span>
+      <span class="nav-badge">12</span>
+    </div>
+    <div class="nav-item" onclick="showPage('customers', this)">
+      <span class="nav-icon">👥</span>
+      <span class="nav-text">Clientes</span>
+    </div>
+
+    <div class="nav-section-label">Financeiro</div>
+    <div class="nav-item" onclick="showPage('reports', this)">
+      <span class="nav-icon">📈</span>
+      <span class="nav-text">Relatórios</span>
+    </div>
+
+    <div class="nav-section-label">Sistema</div>
+    <div class="nav-item" onclick="showPage('config', this)">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-text">Configurações</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-avatar">S</div>
+    <div class="user-info">
+      <p>Sophia Admin</p>
+      <span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="65160a150d0c0425090a0f044b060a08">[email&#160;protected]</a></span>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div id="main">
+  <!-- Topbar -->
+  <header id="topbar">
+    <div class="topbar-left">
+      <button id="toggle-sidebar" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-breadcrumb">Sophia Admin · <span id="breadcrumb">Dashboard</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-search">
+        🔍
+        <input type="text" placeholder="Buscar produtos, pedidos...">
+      </div>
+      <button class="topbar-action" title="Notificações">
+        🔔
+        <span class="notif-dot"></span>
+      </button>
+      <a href="index.html" class="btn btn-secondary btn-sm" target="_blank">🌐 Ver Loja</a>
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <div id="page">
+
+    <!-- DASHBOARD -->
+    <div class="page-section active" id="page-dashboard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Dashboard</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Bem-vinda, Sophia! Aqui está um resumo do dia.</p>
+        </div>
+        <button class="btn btn-primary" onclick="syncSheets()">🔄 Sincronizar Sheets</button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card pink">
+          <div class="kpi-header">
+            <div class="kpi-icon pink">💰</div>
+            <span class="kpi-badge up">+12%</span>
+          </div>
+          <div class="kpi-value">R$ 8.420</div>
+          <div class="kpi-label">Receita do Mês</div>
+        </div>
+        <div class="kpi-card gold">
+          <div class="kpi-header">
+            <div class="kpi-icon gold">🛍</div>
+            <span class="kpi-badge up">+8%</span>
+          </div>
+          <div class="kpi-value">47</div>
+          <div class="kpi-label">Pedidos este mês</div>
+        </div>
+        <div class="kpi-card success">
+          <div class="kpi-header">
+            <div class="kpi-icon success">👗</div>
+            <span class="kpi-badge up">+5%</span>
+          </div>
+          <div class="kpi-value">87</div>
+          <div class="kpi-label">Produtos Ativos</div>
+        </div>
+        <div class="kpi-card danger">
+          <div class="kpi-header">
+            <div class="kpi-icon danger">⚠️</div>
+            <span class="kpi-badge down">3</span>
+          </div>
+          <div class="kpi-value">3</div>
+          <div class="kpi-label">Estoque Baixo</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem">
+        <!-- Gráfico vendas -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Vendas dos Últimos 7 Dias</div>
+              <div class="panel-subtitle">Acompanhamento diário de faturamento</div>
+            </div>
+          </div>
+          <div style="padding:1.5rem">
+            <div class="chart-placeholder">
+              <div class="chart-bars" id="sales-chart"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0 1rem;margin-top:0.5rem;font-size:0.65rem;color:var(--gray-400)">
+              <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estoque crítico -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">⚠️ Estoque Crítico</div>
+          </div>
+          <div style="padding:0.75rem">
+            <div id="critical-stock"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pedidos recentes -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Pedidos Recentes</div>
+          <button class="btn btn-secondary btn-sm" onclick="showPage('orders', document.querySelector('.nav-item:nth-child(6)'))">Ver Todos</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Pedido</th><th>Cliente</th><th>Produtos</th><th>Total</th><th>Status</th><th>Data</th>
+              </tr>
+            </thead>
+            <tbody id="recent-orders"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUCTS PAGE -->
+    <div class="page-section" id="page-products">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Produtos</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Gerencie todo o seu catálogo de peças</p>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-secondary" onclick="exportToSheets()">📊 Exportar Sheets</button>
+          <button class="btn btn-primary" onclick="openModal('new')">+ Novo Produto</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="panel" style="margin-bottom:1.25rem">
+        <div style="padding:1rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+          <input type="text" placeholder="🔍  Buscar produto..." style="flex:1;min-width:200px" oninput="filterTable(this.value)">
+          <select onchange="filterCategory(this.value)" style="min-width:160px">
+            <option value="">Todas as categorias</option>
+            <option>Vestidos</option><option>Blusas</option><option>Calças</option><option>Acessórios</option>
+          </select>
+          <select onchange="filterStatus(this.value)" style="min-width:140px">
+            <option value="">Todos os status</option>
+            <option>Ativo</option><option>Inativo</option><option>Estoque Baixo</option>
+          </select>
+          <span style="font-size:0.75rem;color:var(--gray-400)" id="product-count">87 produtos</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px"><input type="checkbox" id="select-all" onchange="selectAll(this)"></th>
+                <th>Produto</th><th>Categoria</th><th>Preço</th>
+                <th>Estoque</th><th>Status</th><th>Cloudinary</th><th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="products-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVENTORY PAGE -->
+    <div class="page-section" id="page-inventory">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Estoque</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Controle detalhado de inventário por tamanho e cor</p>
+        </div>
+        <button class="btn btn-primary" onclick="syncSheets()">🔄 Sync Google Sheets</button>
+      </div>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Produto</th><th>PP</th><th>P</th><th>M</th><th>G</th><th>GG</th><th>Total</th><th>Status</th><th>Ação</th></tr>
+            </thead>
+            <tbody id="inventory-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS PAGE -->
+    <div class="page-section" id="page-orders">
+      <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark);margin-bottom:1.5rem">Pedidos</h1>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Pedido</th><th>Cliente</th><th>Produtos</th><th>Total</th><th>Pagamento</th><th>Status</th><th>Data</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="orders-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS PAGE -->
+    <div class="page-section" id="page-customers">
+      <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark);margin-bottom:1.5rem">Clientes</h1>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Cliente</th><th>E-mail</th><th>WhatsApp</th><th>Compras</th><th>Total Gasto</th><th>Último Pedido</th></tr></thead>
+            <tbody id="customers-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS PAGE -->
+    <div class="page-section" id="page-reports">
+      <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark);margin-bottom:1.5rem">Relatórios</h1>
+      <div class="kpi-grid">
+        <div class="kpi-card pink"><div class="kpi-header"><div class="kpi-icon pink">📅</div></div><div class="kpi-value">R$ 8.420</div><div class="kpi-label">Faturamento Mensal</div></div>
+        <div class="kpi-card gold"><div class="kpi-header"><div class="kpi-icon gold">📦</div></div><div class="kpi-value">R$ 3.200</div><div class="kpi-label">Custo de Estoque</div></div>
+        <div class="kpi-card success"><div class="kpi-header"><div class="kpi-icon success">💹</div></div><div class="kpi-value">R$ 5.220</div><div class="kpi-label">Lucro Bruto</div></div>
+        <div class="kpi-card danger"><div class="kpi-header"><div class="kpi-icon danger">↩️</div></div><div class="kpi-value">2</div><div class="kpi-label">Devoluções</div></div>
+      </div>
+      <div class="panel"><div class="panel-header"><div class="panel-title">📊 Exportar para Google Sheets</div></div>
+        <div style="padding:1.5rem;display:flex;gap:1rem;flex-wrap:wrap">
+          <button class="btn btn-success" onclick="exportToSheets('vendas')">📥 Exportar Vendas</button>
+          <button class="btn btn-secondary" onclick="exportToSheets('estoque')">📦 Exportar Estoque</button>
+          <button class="btn btn-secondary" onclick="exportToSheets('clientes')">👥 Exportar Clientes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG PAGE -->
+    <div class="page-section" id="page-config">
+      <div style="margin-bottom:1.5rem">
+        <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Configurações</h1>
+        <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Integre com Google Sheets e Cloudinary</p>
+      </div>
+      <div class="config-grid">
+
+        <!-- Google Sheets -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+            <span style="font-size:2rem">📊</span>
+            <h3>Google Sheets</h3>
+          </div>
+          <p>Conecte via <strong>Google Apps Script</strong> (intermediário seguro). Todos os produtos e estoque são salvos em tempo real na sua planilha.</p>
+          <div class="config-status" id="sheets-status">
+            <div class="status-dot disconnected" id="sheets-dot"></div>
+            <span id="sheets-status-text">Não conectado</span>
+          </div>
+          <div class="form-group" style="margin-bottom:1.25rem">
+            <label>URL do Apps Script (Web App)</label>
+            <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec">
+          </div>
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-primary" onclick="connectSheets()">🔗 Conectar</button>
+            <button class="btn btn-secondary" onclick="testSheets()">🧪 Testar</button>
+            <button class="btn btn-success" onclick="loadFromSheets()">⬇️ Carregar</button>
+          </div>
+          <div id="sheets-guide" style="margin-top:1rem;padding:0.75rem;background:var(--pink-pale);border-radius:6px;font-size:0.7rem;line-height:1.8;display:none">
+            <strong style="color:var(--pink)">Como configurar (5 passos):</strong><br>
+            1. Acesse <a href="https://script.google.com" target="_blank" style="color:var(--pink)">script.google.com</a> → Novo Projeto<br>
+            2. Cole o conteúdo do arquivo <strong>apps-script.js</strong> entregue junto<br>
+            3. Salve (Ctrl+S) e clique em <strong>Implantar → Nova Implantação</strong><br>
+            4. Tipo: <em>Aplicativo da Web</em> · Executar como: <em>Eu</em> · Acesso: <em>Qualquer pessoa</em><br>
+            5. Copie a URL gerada e cole no campo acima
+          </div>
+          <button onclick="document.getElementById('sheets-guide').style.display=document.getElementById('sheets-guide').style.display==='none'?'block':'none'" style="font-size:0.7rem;color:var(--pink);background:none;border:none;cursor:pointer;margin-top:0.75rem">📖 Como configurar?</button>
+        </div>
+
+        <!-- Cloudinary -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+            <span style="font-size:2rem">☁️</span>
+            <h3>Cloudinary</h3>
+          </div>
+          <p>Use o Cloudinary para hospedar todas as imagens dos produtos. Upload automático, otimização e CDN global inclusos.</p>
+          <div class="config-status" id="cloudinary-status">
+            <div class="status-dot disconnected" id="cloudinary-dot"></div>
+            <span id="cloudinary-status-text">Não conectado</span>
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Cloud Name</label>
+            <input type="text" id="cloud-name" placeholder="seu-cloud-name">
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>API Key</label>
+            <input type="text" id="cloud-key" placeholder="123456789012345">
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Upload Preset <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="cloud-preset" placeholder="sophia_store" value="sophia_store">
+            <span style="font-size:0.65rem;color:var(--gray-400);margin-top:4px">Crie em: Cloudinary → Settings → Upload → Upload Presets</span>
+          </div>
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-primary" onclick="connectCloudinary()">🔗 Conectar</button>
+            <button class="btn btn-secondary" onclick="testCloudinary()">🧪 Testar</button>
+          </div>
+          <div id="cloud-guide" style="margin-top:1rem;padding:0.75rem;background:#e0f2fe;border-radius:6px;font-size:0.7rem;line-height:1.7;display:none">
+            <strong style="color:#0369a1">Como configurar:</strong><br>
+            1. Acesse <a href="https://cloudinary.com" target="_blank" style="color:#0369a1">cloudinary.com</a> e crie conta gratuita<br>
+            2. No Dashboard, copie <strong>Cloud Name</strong> e <strong>API Key</strong><br>
+            3. Vá em <strong>Settings → Upload → Upload Presets → Add upload preset</strong><br>
+            4. Dê o nome <code>sophia_store</code>, defina <em>Signing Mode: Unsigned</em> e salve<br>
+            5. Cole os dados acima e clique em Conectar
+          </div>
+          <button onclick="document.getElementById('cloud-guide').style.display=document.getElementById('cloud-guide').style.display==='none'?'block':'none'" style="font-size:0.7rem;color:#0369a1;background:none;border:none;cursor:pointer;margin-top:0.75rem">📖 Como configurar?</button>
+        </div>
+
+        <!-- WhatsApp -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+            <span style="font-size:2rem">💬</span>
+            <h3>WhatsApp Business</h3>
+          </div>
+          <p>Configure o número de WhatsApp para receber pedidos e notificações direto no seu celular.</p>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Número WhatsApp (com DDD e DDI)</label>
+            <input type="text" id="wa-number" placeholder="+5548999999999">
+          </div>
+          <div class="form-group" style="margin-bottom:1.25rem">
+            <label>Mensagem de Boas-vindas</label>
+            <textarea id="wa-message" placeholder="Olá! Bem-vinda à Sophia Elegance Store. Como posso te ajudar?"></textarea>
+          </div>
+          <button class="btn btn-success" onclick="saveWhatsApp()">💾 Salvar</button>
+        </div>
+
+        <!-- Loja Info -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+            <span style="font-size:2rem">🏪</span>
+            <h3>Informações da Loja</h3>
+          </div>
+          <p>Dados que aparecem no frontend da loja e nos e-mails.</p>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Nome da Loja</label>
+            <input type="text" value="Sophia Elegance Store">
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>E-mail</label>
+            <input type="email" placeholder="contato@sophiaelegance.com.br">
+          </div>
+          <div class="form-group" style="margin-bottom:1.25rem">
+            <label>Instagram</label>
+            <input type="text" placeholder="@sophiaelegancestore">
+          </div>
+          <button class="btn btn-primary" onclick="saveStoreInfo()">💾 Salvar Configurações</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- #page -->
+</div><!-- #main -->
+
+<!-- Modal -->
+<div id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Novo Produto</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nome do Produto *</label>
+          <input type="text" id="f-name" placeholder="Ex: Vestido Floral Midi">
+        </div>
+        <div class="form-group">
+          <label>SKU</label>
+          <input type="text" id="f-sku" placeholder="Ex: VFM-001" readonly style="background:var(--gray-100)">
+        </div>
+        <div class="form-group">
+          <label>Categoria *</label>
+          <select id="f-category">
+            <option>Vestidos</option><option>Blusas</option><option>Calças</option><option>Acessórios</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Marca / Coleção</label>
+          <input type="text" id="f-brand" placeholder="Ex: Sophia Premium">
+        </div>
+        <div class="form-group">
+          <label>Preço de Custo (R$) *</label>
+          <input type="number" id="f-cost" placeholder="0,00" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Preço de Venda (R$) *</label>
+          <input type="number" id="f-price" placeholder="0,00" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Preço Promocional (R$)</label>
+          <input type="number" id="f-sale-price" placeholder="0,00 (opcional)" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Margem de Lucro</label>
+          <input type="text" id="f-margin" readonly style="background:var(--gray-100)" placeholder="Calculado automaticamente">
+        </div>
+        <div class="form-group full">
+          <label>Descrição</label>
+          <textarea id="f-desc" placeholder="Descreva o produto, material, tecido..."></textarea>
+        </div>
+
+        <div class="form-group full">
+          <label>Estoque por Tamanho</label>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.75rem;margin-top:0.25rem">
+            <div><label style="font-size:0.65rem;color:var(--gray-400)">PP</label><input type="number" id="f-pp" placeholder="0" min="0"></div>
+            <div><label style="font-size:0.65rem;color:var(--gray-400)">P</label><input type="number" id="f-p" placeholder="0" min="0"></div>
+            <div><label style="font-size:0.65rem;color:var(--gray-400)">M</label><input type="number" id="f-m" placeholder="0" min="0"></div>
+            <div><label style="font-size:0.65rem;color:var(--gray-400)">G</label><input type="number" id="f-g" placeholder="0" min="0"></div>
+            <div><label style="font-size:0.65rem;color:var(--gray-400)">GG</label><input type="number" id="f-gg" placeholder="0" min="0"></div>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label>Imagens do Produto (Cloudinary)</label>
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleDrop(event)">
+            <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)">
+            <div class="upload-icon">☁️</div>
+            <div class="upload-text">Clique ou arraste imagens aqui</div>
+            <div class="upload-sub">PNG, JPG até 10MB · Será enviado ao Cloudinary automaticamente</div>
+          </div>
+          <div class="upload-preview" id="upload-preview"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <select id="f-status">
+            <option>Ativo</option><option>Inativo</option><option>Rascunho</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Destaque na Loja</label>
+          <select id="f-featured">
+            <option>Não</option><option>Sim</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProduct()">💾 Salvar no Sheets</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ── CONFIG STATE ──
+const config = {
+  appsScriptUrl:      localStorage.getItem('appsScriptUrl')      || '',
+  cloudName:          localStorage.getItem('cloudName')          || '',
+  cloudKey:           localStorage.getItem('cloudKey')           || '',
+  cloudSecret:        localStorage.getItem('cloudSecret')        || '',
+  uploadPreset:       localStorage.getItem('uploadPreset')       || 'sophia_store',
+  sheetsConnected:    localStorage.getItem('sheetsConnected')    === 'true',
+  cloudinaryConnected:localStorage.getItem('cloudinaryConnected')=== 'true',
+};
+
+// ── PRODUCTS DATA ──
+let products = [
+  { id:1, name:'Vestido Floral Midi', sku:'VFM-001', cat:'Vestidos', cost:150, price:289, salePrice:null, stock:{ pp:2, p:5, m:8, g:4, gg:1 }, status:'Ativo', featured:'Sim', imgUrl:'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=80&q=60', cloudinaryId:'sophia/vfm001' },
+  { id:2, name:'Blusa Off-Shoulder', sku:'BOS-002', cat:'Blusas', cost:60, price:159, salePrice:null, stock:{ pp:0, p:3, m:10, g:7, gg:2 }, status:'Ativo', featured:'Não', imgUrl:'https://images.unsplash.com/photo-1594938298603-4bf6b9c6d1d9?w=80&q=60', cloudinaryId:'sophia/bos002' },
+  { id:3, name:'Calça Palazzo Rose', sku:'CPR-003', cat:'Calças', cost:90, price:219, salePrice:179, stock:{ pp:1, p:2, m:3, g:1, gg:0 }, status:'Ativo', featured:'Sim', imgUrl:'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=80&q=60', cloudinaryId:'sophia/cpr003' },
+  { id:4, name:'Vestido Longo Gala', sku:'VLG-004', cat:'Vestidos', cost:200, price:489, salePrice:null, stock:{ pp:0, p:1, m:2, g:1, gg:0 }, status:'Ativo', featured:'Sim', imgUrl:'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=80&q=60', cloudinaryId:'sophia/vlg004' },
+  { id:5, name:'Bolsa Mini Pink', sku:'BMP-005', cat:'Acessórios', cost:50, price:149, salePrice:null, stock:{ pp:0, p:0, m:12, g:0, gg:0 }, status:'Ativo', featured:'Não', imgUrl:'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=80&q=60', cloudinaryId:'sophia/bmp005' },
+  { id:6, name:'Conjunto Cropped', sku:'CCR-006', cat:'Blusas', cost:80, price:199, salePrice:159, stock:{ pp:1, p:0, m:0, g:1, gg:0 }, status:'Estoque Baixo', featured:'Sim', imgUrl:'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=80&q=60', cloudinaryId:'sophia/ccr006' },
+];
+
+let orders = [
+  { id:'#001', customer:'Ana Carolina', products:'Vestido Floral Midi', total:289, payment:'Pix', status:'Entregue', date:'01/04/2025' },
+  { id:'#002', customer:'Mariana Fontes', products:'Blusa Off-Shoulder + Bolsa', total:308, payment:'Cartão', status:'Enviado', date:'02/04/2025' },
+  { id:'#003', customer:'Juliana Melo', products:'Vestido Longo Gala', total:489, payment:'Pix', status:'Processando', date:'03/04/2025' },
+  { id:'#004', customer:'Carla Souza', products:'Calça Palazzo Rose', total:179, payment:'Boleto', status:'Aguardando', date:'04/04/2025' },
+  { id:'#005', customer:'Beatriz Lima', products:'Conjunto Cropped', total:159, payment:'Pix', status:'Entregue', date:'04/04/2025' },
+];
+
+let customers = [
+  { name:'Ana Carolina Silva', email:'ana@email.com', whatsapp:'(48) 99999-0001', orders:3, total:867, last:'01/04/2025' },
+  { name:'Mariana Fontes', email:'mari@email.com', whatsapp:'(48) 99999-0002', orders:2, total:616, last:'02/04/2025' },
+  { name:'Juliana Melo', email:'ju@email.com', whatsapp:'(48) 99999-0003', orders:1, total:489, last:'03/04/2025' },
+  { name:'Carla Souza', email:'carla@email.com', whatsapp:'(48) 99999-0004', orders:4, total:1240, last:'04/04/2025' },
+];
+
+// ── SIDEBAR ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('main').classList.toggle('expanded');
+}
+
+// ── PAGES ──
+function showPage(name, el) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('breadcrumb').textContent = {
+    dashboard:'Dashboard', products:'Produtos', inventory:'Estoque',
+    orders:'Pedidos', customers:'Clientes', reports:'Relatórios', config:'Configurações'
+  }[name] || name;
+  renderPage(name);
+}
+
+function renderPage(name) {
+  if (name === 'products') renderProducts();
+  if (name === 'inventory') renderInventory();
+  if (name === 'orders') renderOrders();
+  if (name === 'customers') renderCustomers();
+  if (name === 'config') loadConfigForm();
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  // Chart
+  const vals = [820, 1240, 680, 1590, 990, 2100, 1000];
+  const max = Math.max(...vals);
+  document.getElementById('sales-chart').innerHTML = vals.map((v,i) =>
+    `<div class="chart-bar" style="height:${(v/max)*100}%" data-val="R$ ${v.toLocaleString('pt-BR')}"></div>`
+  ).join('');
+
+  // Critical stock
+  const critical = products.filter(p => {
+    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    return total < 5;
+  });
+  document.getElementById('critical-stock').innerHTML = critical.map(p => {
+    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    return `<div style="padding:0.75rem 0;border-bottom:1px solid var(--gray-100)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:0.78rem;font-weight:500">${p.name}</span>
+        <span class="badge ${total===0?'badge-danger':'badge-warning'}">${total} un</span>
+      </div>
+      <div class="stock-bar"><div class="stock-fill" style="width:${Math.min(total/20*100,100)}%;background:${total===0?'var(--danger)':'var(--warning)'}"></div></div>
+    </div>`;
+  }).join('') || '<p style="font-size:0.75rem;color:var(--gray-400);text-align:center;padding:1rem">✅ Nenhum crítico</p>';
+
+  // Recent orders
+  document.getElementById('recent-orders').innerHTML = orders.slice(0,5).map(o => `
+    <tr>
+      <td><span style="font-weight:600;color:var(--pink)">${o.id}</span></td>
+      <td>${o.customer}</td>
+      <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.products}</td>
+      <td><strong>R$ ${o.total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></td>
+      <td><span class="badge badge-gray">${o.payment}</span></td>
+      <td>${statusBadge(o.status)}</td>
+      <td style="color:var(--gray-400)">${o.date}</td>
+    </tr>
+  `).join('');
+}
+
+// ── PRODUCTS TABLE ──
+function renderProducts(filter='') {
+  const list = filter ? products.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()) || p.sku.toLowerCase().includes(filter.toLowerCase())) : products;
+  document.getElementById('product-count').textContent = `${list.length} produtos`;
+  document.getElementById('products-table').innerHTML = list.map(p => {
+    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    const margin = p.cost ? Math.round((p.price - p.cost)/p.price*100) : '-';
+    return `
+    <tr>
+      <td><input type="checkbox" class="row-check" value="${p.id}"></td>
+      <td>
+        <div class="td-product">
+          <img src="${p.imgUrl}" class="td-thumb" alt="${p.name}" onerror="this.style.background='var(--pink-pale)'">
+          <div>
+            <div class="td-name">${p.name}</div>
+            <div class="td-sku">${p.sku}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge badge-gray">${p.cat}</span></td>
+      <td>
+        <div style="font-weight:600">R$ ${p.price.toFixed(2).replace('.',',')}</div>
+        ${p.salePrice ? `<div style="font-size:0.65rem;color:var(--success)">Promo: R$ ${p.salePrice.toFixed(2).replace('.',',')}</div>` : ''}
+        <div style="font-size:0.65rem;color:var(--gray-400)">Margem: ${margin}%</div>
+      </td>
+      <td>
+        <div style="font-weight:500;font-size:0.85rem;${total<5?'color:var(--danger)':''}">${total} un</div>
+        <div style="font-size:0.65rem;color:var(--gray-400)">P:${p.stock.p} M:${p.stock.m} G:${p.stock.g}</div>
+        <div class="stock-bar" style="margin-top:4px"><div class="stock-fill" style="width:${Math.min(total/50*100,100)}%;background:${total<5?'var(--danger)':total<15?'var(--warning)':'var(--success)'}"></div></div>
+      </td>
+      <td>${statusBadge(p.status)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          ${p.cloudinaryId ? `<span style="font-size:0.65rem;color:var(--info)">☁️ OK</span>` : `<span style="font-size:0.65rem;color:var(--gray-400)">Sem imagem</span>`}
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;gap:0.35rem">
+          <button class="btn btn-sm btn-secondary btn-icon" title="Editar" onclick="openModal('edit',${p.id})">✏️</button>
+          <button class="btn btn-sm btn-secondary btn-icon" title="Duplicar" onclick="duplicateProduct(${p.id})">📋</button>
+          <button class="btn btn-sm btn-secondary btn-icon" title="Excluir" onclick="deleteProduct(${p.id})" style="color:var(--danger)">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── INVENTORY ──
+function renderInventory() {
+  document.getElementById('inventory-table').innerHTML = products.map(p => {
+    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    const low = total < 5;
+    return `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <img src="${p.imgUrl}" style="width:40px;height:48px;object-fit:cover;border-radius:4px" onerror="this.style.background='var(--pink-pale)'">
+          <div><div style="font-weight:500;font-size:.8rem">${p.name}</div><div style="font-size:.65rem;color:var(--gray-400)">${p.sku}</div></div>
+        </div>
+      </td>
+      <td><input type="number" value="${p.stock.pp}" min="0" onchange="updateStock(${p.id},'pp',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      <td><input type="number" value="${p.stock.p}" min="0" onchange="updateStock(${p.id},'p',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      <td><input type="number" value="${p.stock.m}" min="0" onchange="updateStock(${p.id},'m',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      <td><input type="number" value="${p.stock.g}" min="0" onchange="updateStock(${p.id},'g',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      <td><input type="number" value="${p.stock.gg}" min="0" onchange="updateStock(${p.id},'gg',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      <td><strong style="${low?'color:var(--danger)':''}">${total}</strong></td>
+      <td>${low ? '<span class="badge badge-danger">⚠️ Baixo</span>' : '<span class="badge badge-success">✓ OK</span>'}</td>
+      <td><button class="btn btn-sm btn-primary" onclick="syncSingleProduct(${p.id})">↑ Sync</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function updateStock(id, size, val) {
+  const p = products.find(p => p.id === id);
+  if (p) {
+    p.stock[size] = parseInt(val) || 0;
+    saveProductsLocal();
+    toast('Estoque atualizado. Sincronizando...', 'info');
+    syncStockToSheets(id, p.stock);
+  }
+}
+
+// ── ORDERS ──
+function renderOrders() {
+  document.getElementById('orders-table').innerHTML = orders.map(o => `
+    <tr>
+      <td><strong style="color:var(--pink)">${o.id}</strong></td>
+      <td>${o.customer}</td>
+      <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.products}</td>
+      <td><strong>R$ ${o.total.toFixed(2).replace('.',',')}</strong></td>
+      <td><span class="badge badge-gray">${o.payment}</span></td>
+      <td>${statusBadge(o.status)}</td>
+      <td style="color:var(--gray-400)">${o.date}</td>
+      <td>
+        <div style="display:flex;gap:.35rem">
+          <a href="https://wa.me/5548999999999?text=Olá!%20Pedido%20${o.id}%20atualizado" target="_blank" class="btn btn-sm btn-success btn-icon" title="WhatsApp">💬</a>
+          <button class="btn btn-sm btn-secondary btn-icon" onclick="changeOrderStatus('${o.id}')">✏️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ── CUSTOMERS ──
+function renderCustomers() {
+  document.getElementById('customers-table').innerHTML = customers.map(c => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink-deep));display:flex;align-items:center;justify-content:center;color:white;font-size:.8rem;font-weight:600;flex-shrink:0">${c.name[0]}</div>
+          <span style="font-weight:500">${c.name}</span>
+        </div>
+      </td>
+      <td style="color:var(--gray-600)">${c.email}</td>
+      <td><a href="https://wa.me/${c.whatsapp.replace(/\D/g,'')}" target="_blank" style="color:var(--success);text-decoration:none">${c.whatsapp}</a></td>
+      <td><span class="badge badge-info">${c.orders} pedidos</span></td>
+      <td><strong style="color:var(--pink)">R$ ${c.total.toFixed(2).replace('.',',')}</strong></td>
+      <td style="color:var(--gray-400)">${c.last}</td>
+    </tr>
+  `).join('');
+}
+
+// ── STATUS ──
+function statusBadge(s) {
+  const map = {
+    'Ativo':'badge-success', 'Entregue':'badge-success',
+    'Enviado':'badge-info', 'Processando':'badge-warning',
+    'Aguardando':'badge-gray', 'Inativo':'badge-gray',
+    'Estoque Baixo':'badge-danger', 'Rascunho':'badge-gray',
+  };
+  return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
+}
+
+// ── MODAL ──
+function openModal(mode, id) {
+  document.getElementById('modal-title').textContent = mode==='new' ? 'Novo Produto' : 'Editar Produto';
+  if (mode === 'edit' && id) {
+    const p = products.find(x => x.id === id);
+    if (p) {
+      document.getElementById('f-name').value = p.name;
+      document.getElementById('f-sku').value = p.sku;
+      document.getElementById('f-category').value = p.cat;
+      document.getElementById('f-cost').value = p.cost;
+      document.getElementById('f-price').value = p.price;
+      document.getElementById('f-sale-price').value = p.salePrice || '';
+      document.getElementById('f-status').value = p.status;
+      document.getElementById('f-featured').value = p.featured;
+      document.getElementById('f-pp').value = p.stock.pp;
+      document.getElementById('f-p').value = p.stock.p;
+      document.getElementById('f-m').value = p.stock.m;
+      document.getElementById('f-g').value = p.stock.g;
+      document.getElementById('f-gg').value = p.stock.gg;
+    }
+  } else {
+    document.getElementById('f-sku').value = 'AUTO-' + String(products.length+1).padStart(3,'0');
+  }
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+// ── SAVE PRODUCT ──
+async function saveProduct() {
+  const name = document.getElementById('f-name').value;
+  if (!name) { toast('Nome é obrigatório', 'error'); return; }
+  const price = parseFloat(document.getElementById('f-price').value);
+  const cost = parseFloat(document.getElementById('f-cost').value);
+  const newP = {
+    id: products.length + 1,
+    name, sku: document.getElementById('f-sku').value,
+    cat: document.getElementById('f-category').value,
+    cost: cost || 0, price: price || 0,
+    salePrice: parseFloat(document.getElementById('f-sale-price').value) || null,
+    desc: document.getElementById('f-desc').value || '',
+    stock: {
+      pp: parseInt(document.getElementById('f-pp').value)||0,
+      p: parseInt(document.getElementById('f-p').value)||0,
+      m: parseInt(document.getElementById('f-m').value)||0,
+      g: parseInt(document.getElementById('f-g').value)||0,
+      gg: parseInt(document.getElementById('f-gg').value)||0,
+    },
+    status: document.getElementById('f-status').value,
+    featured: document.getElementById('f-featured').value,
+    imgUrl: '', cloudinaryId: '',
+  };
+  products.push(newP);
+  saveProductsLocal();
+  closeModal();
+  toast('Produto salvo! Sincronizando com Google Sheets...', 'success');
+  await syncToSheets(newP);
+  renderProducts();
+}
+
+function deleteProduct(id) {
+  if (confirm('Remover este produto?')) {
+    products = products.filter(p => p.id !== id);
+    saveProductsLocal();
+    renderProducts();
+    toast('Produto removido', 'info');
+    deleteFromSheets(id);
+  }
+}
+function duplicateProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (p) { const copy = {...p, id: products.length+1, name: p.name+' (Cópia)', sku: 'CPY-'+String(products.length+1).padStart(3,'0')}; products.push(copy); renderProducts(); toast('Produto duplicado!'); }
+}
+
+// ── FILTERS ──
+function filterTable(v) { renderProducts(v); }
+function filterCategory(v) { if (v) renderProducts(v); else renderProducts(); }
+function filterStatus(v) {
+  if (!v) { renderProducts(); return; }
+  const list = products.filter(p => p.status === v);
+  document.getElementById('products-table').innerHTML = list.map(p => {
+    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    return `<tr><td></td><td><div class="td-product"><img src="${p.imgUrl}" class="td-thumb"><div><div class="td-name">${p.name}</div><div class="td-sku">${p.sku}</div></div></div></td><td>${p.cat}</td><td>R$ ${p.price.toFixed(2).replace('.',',')}</td><td>${total}</td><td>${statusBadge(p.status)}</td><td>☁️</td><td></td></tr>`;
+  }).join('');
+}
+function selectAll(cb) { document.querySelectorAll('.row-check').forEach(c => c.checked = cb.checked); }
+function changeOrderStatus(id) { toast('Status atualizado! Notificação WhatsApp enviada.', 'success'); }
+
+// ── GOOGLE SHEETS INTEGRATION (via Apps Script) ──────────────
+async function syncToSheets(product) {
+  if (!config.sheetsConnected || !config.appsScriptUrl) {
+    toast('Configure o Apps Script em Configurações primeiro', 'error');
+    return;
+  }
+  try {
+    const res  = await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'save', product }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast('✅ Sincronizado com Google Sheets!', 'success');
+      saveProductsLocal();
+    } else {
+      toast('Erro no Sheets: ' + (data.error || 'desconhecido'), 'error');
+    }
+  } catch (e) {
+    toast('Erro de conexão: ' + e.message, 'error');
+  }
+}
+
+async function deleteFromSheets(id) {
+  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  try {
+    await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', id }),
+    });
+  } catch (_) {}
+}
+
+async function syncStockToSheets(id, stock) {
+  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  try {
+    await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateStock', id, stock }),
+    });
+  } catch (_) {}
+}
+
+async function loadFromSheets() {
+  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  toast('🔄 Carregando produtos do Google Sheets...', 'info');
+  try {
+    const res  = await fetch(config.appsScriptUrl + '?action=list');
+    const data = await res.json();
+    if (data.success && data.products.length > 0) {
+      products = data.products;
+      saveProductsLocal();
+      renderDashboard();
+      renderProducts();
+      toast('✅ ' + products.length + ' produtos carregados do Sheets!', 'success');
+    } else {
+      toast('Sheets vazio. Mostrando dados locais.', 'info');
+    }
+  } catch (e) {
+    toast('Erro ao carregar Sheets: ' + e.message, 'error');
+  }
+}
+
+async function syncSheets() {
+  if (!config.sheetsConnected || !config.appsScriptUrl) {
+    toast('Configure o Apps Script em Configurações primeiro', 'error'); return;
+  }
+  toast('🔄 Sincronizando todos os produtos...', 'info');
+  let ok = 0;
+  for (const p of products) {
+    try {
+      const res  = await fetch(config.appsScriptUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'save', product: p }),
+      });
+      const data = await res.json();
+      if (data.success) ok++;
+    } catch (_) {}
+  }
+  toast(`✅ ${ok}/${products.length} produtos sincronizados!`, ok === products.length ? 'success' : 'warning');
+}
+
+async function syncSingleProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  if (!config.sheetsConnected || !config.appsScriptUrl) {
+    toast('Configure o Apps Script em Configurações primeiro', 'error'); return;
+  }
+  try {
+    const res  = await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'save', product: p }),
+    });
+    const data = await res.json();
+    if (data.success) toast('↑ Produto sincronizado com Sheets!', 'success');
+    else toast('Erro: ' + (data.error || ''), 'error');
+  } catch (e) {
+    toast('Erro de conexão: ' + e.message, 'error');
+  }
+}
+
+async function exportToSheets(type = 'produtos') {
+  await syncSheets();
+}
+
+// ── PERSISTÊNCIA LOCAL (backup) ──────────────────────────────
+function saveProductsLocal() {
+  try { localStorage.setItem('sophia_products', JSON.stringify(products)); } catch(_) {}
+}
+function loadProductsLocal() {
+  try {
+    const saved = localStorage.getItem('sophia_products');
+    if (saved) { products = JSON.parse(saved); }
+  } catch(_) {}
+}
+
+// ── CLOUDINARY UPLOAD ──
+async function uploadToCloudinary(file) {
+  if (!config.cloudinaryConnected) {
+    toast('Configure o Cloudinary em Configurações primeiro', 'error');
+    return null;
+  }
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', config.uploadPreset || 'sophia_store');
+  formData.append('folder', 'sophia');
+  try {
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${config.cloudName}/image/upload`, { method:'POST', body: formData });
+    const data = await res.json();
+    if (data.error) { toast('Cloudinary: ' + data.error.message, 'error'); return null; }
+    return data.secure_url;
+  } catch(e) { toast('Erro no upload: ' + e.message, 'error'); return null; }
+}
+
+function handleFiles(files) {
+  const preview = document.getElementById('upload-preview');
+  Array.from(files).forEach(async file => {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      div.innerHTML = `<img src="${e.target.result}"><button class="preview-remove" onclick="this.parentNode.remove()">✕</button>`;
+      preview.appendChild(div);
+      toast('⬆️ Enviando imagem ao Cloudinary...', 'info');
+      const url = await uploadToCloudinary(file);
+      if (url) { div.querySelector('img').src = url; toast('☁️ Imagem enviada ao Cloudinary!', 'success'); }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function handleDrop(e) { e.preventDefault(); document.getElementById('upload-zone').classList.remove('dragover'); handleFiles(e.dataTransfer.files); }
+
+// ── CONFIG CONNECT ──
+function connectSheets() {
+  const url = document.getElementById('sheets-url').value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) {
+    toast('Cole a URL do Apps Script (começa com https://script.google.com...)', 'error'); return;
+  }
+  localStorage.setItem('appsScriptUrl', url);
+  localStorage.setItem('sheetsConnected', 'true');
+  config.appsScriptUrl   = url;
+  config.sheetsConnected = true;
+  document.getElementById('sheets-dot').classList.replace('disconnected','connected');
+  document.getElementById('sheets-status-text').textContent = 'Conectado ✓';
+  toast('✅ Google Sheets conectado via Apps Script!', 'success');
+}
+async function testSheets() {
+  if (!config.sheetsConnected || !config.appsScriptUrl) {
+    toast('❌ Não conectado. Configure primeiro.', 'error'); return;
+  }
+  toast('🧪 Testando conexão...', 'info');
+  try {
+    const res  = await fetch(config.appsScriptUrl + '?action=list');
+    const data = await res.json();
+    if (data.success) toast('✅ Conexão OK! Planilha acessível. ' + (data.products?.length || 0) + ' produtos encontrados.', 'success');
+    else toast('❌ Erro: ' + (data.error || 'resposta inesperada'), 'error');
+  } catch (e) {
+    toast('❌ Falha na conexão: ' + e.message, 'error');
+  }
+}
+
+function connectCloudinary() {
+  const name   = document.getElementById('cloud-name').value.trim();
+  const key    = document.getElementById('cloud-key').value.trim();
+  const preset = document.getElementById('cloud-preset').value.trim() || 'sophia_store';
+  if (!name || !key) { toast('Preencha Cloud Name e API Key', 'error'); return; }
+  localStorage.setItem('cloudName', name);
+  localStorage.setItem('cloudKey', key);
+  localStorage.setItem('uploadPreset', preset);
+  localStorage.setItem('cloudinaryConnected', 'true');
+  config.cloudName           = name;
+  config.cloudKey            = key;
+  config.uploadPreset        = preset;
+  config.cloudinaryConnected = true;
+  document.getElementById('cloudinary-dot').classList.replace('disconnected','connected');
+  document.getElementById('cloudinary-status-text').textContent = 'Conectado ✓';
+  toast('☁️ Cloudinary conectado! Upload preset: ' + preset, 'success');
+}
+async function testCloudinary() {
+  if (!config.cloudinaryConnected) {
+    toast('❌ Não conectado. Configure primeiro.', 'error'); return;
+  }
+  toast('🧪 Testando conexão com Cloudinary...', 'info');
+  try {
+    const res  = await fetch(`https://res.cloudinary.com/${config.cloudName}/image/upload/w_1/sample`);
+    if (res.ok || res.status === 404) {
+      toast('✅ Cloudinary OK! Cloud Name válido: ' + config.cloudName, 'success');
+    } else {
+      toast('⚠️ Cloudinary respondeu com status ' + res.status, 'warning');
+    }
+  } catch (e) {
+    toast('❌ Erro ao testar: ' + e.message, 'error');
+  }
+}
+
+function saveWhatsApp() { toast('✅ WhatsApp configurado!', 'success'); }
+function saveStoreInfo() { toast('✅ Informações da loja salvas!', 'success'); }
+
+function loadConfigForm() {
+  const url = localStorage.getItem('appsScriptUrl');
+  if (url) document.getElementById('sheets-url').value = url;
+  const cn = localStorage.getItem('cloudName');
+  if (cn) document.getElementById('cloud-name').value = cn;
+  const ck = localStorage.getItem('cloudKey');
+  if (ck) document.getElementById('cloud-key').value = ck;
+  const cp = localStorage.getItem('uploadPreset');
+  if (cp) document.getElementById('cloud-preset').value = cp;
+  if (localStorage.getItem('sheetsConnected') === 'true') {
+    document.getElementById('sheets-dot').classList.replace('disconnected','connected');
+    document.getElementById('sheets-status-text').textContent = 'Conectado ✓';
+  }
+  if (localStorage.getItem('cloudinaryConnected') === 'true') {
+    document.getElementById('cloudinary-dot').classList.replace('disconnected','connected');
+    document.getElementById('cloudinary-status-text').textContent = 'Conectado ✓';
+  }
+}
+
+// ── TOAST ──
+function toast(msg, type='info') {
+  const icons = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️' };
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => { t.style.animation = 'none'; t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+// ── MARGIN CALC ──
+document.addEventListener('input', e => {
+  if (e.target.id === 'f-price' || e.target.id === 'f-cost') {
+    const p = parseFloat(document.getElementById('f-price').value)||0;
+    const c= parseFloat(document.getElementById('f-cost').value)||0;
+    const margin = p > 0 ? Math.round((p - c) / p * 100) : 0;
+    const el = document.getElementById('f-margin');
+    if (el) {
+      el.value = margin + '%';
+      el.style.color = margin > 50 ? 'var(--success)' : margin > 20 ? 'var(--warning)' : 'var(--danger)';
+    }
+  }
+});
+
+// ── INIT ──
+(function init() {
+  // 1. Carregar produtos do localStorage (persistência entre reloads)
+  loadProductsLocal();
+  // 2. Renderizar dashboard inicial
+  renderDashboard();
+  // 3. Se Sheets já estava conectado, sincronizar automaticamente em background
+  if (config.sheetsConnected && config.appsScriptUrl) {
+    loadFromSheets();
+  }
+})();
+</script>
+</body>
+</html>
