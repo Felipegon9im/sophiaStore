@@ -787,39 +787,8 @@
 <section id="categories">
   <div class="section-label">Explore</div>
   <h2 class="section-title">Nossas <em>Categorias</em></h2>
-  <div class="categories-grid">
-    <div class="cat-card" onclick="filterProducts('Vestidos')">
-      <img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&q=80" alt="Vestidos">
-      <div class="cat-info">
-        <div class="cat-name">Vestidos</div>
-        <div class="cat-count">24 peças</div>
-      </div>
-      <div class="cat-arrow">→</div>
-    </div>
-    <div class="cat-card" onclick="filterProducts('Blusas')">
-      <img src="https://images.unsplash.com/photo-1594938298603-4bf6b9c6d1d9?w=600&q=80" alt="Blusas">
-      <div class="cat-info">
-        <div class="cat-name">Blusas</div>
-        <div class="cat-count">18 peças</div>
-      </div>
-      <div class="cat-arrow">→</div>
-    </div>
-    <div class="cat-card" onclick="filterProducts('Calças')">
-      <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80" alt="Calças">
-      <div class="cat-info">
-        <div class="cat-name">Calças</div>
-        <div class="cat-count">15 peças</div>
-      </div>
-      <div class="cat-arrow">→</div>
-    </div>
-    <div class="cat-card" onclick="filterProducts('Acessórios')">
-      <img src="https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=600&q=80" alt="Acessórios">
-      <div class="cat-info">
-        <div class="cat-name">Acessórios</div>
-        <div class="cat-count">30 peças</div>
-      </div>
-      <div class="cat-arrow">→</div>
-    </div>
+  <div class="categories-grid" id="categories-grid">
+    <!-- preenchido dinamicamente -->
   </div>
 </section>
 
@@ -1228,8 +1197,50 @@ function subscribeNewsletter(e) {
   setTimeout(() => { btn.textContent = 'Quero Desconto'; btn.style.background = ''; }, 3000);
 }
 
+// ── CATEGORIES ──
+function renderCategories() {
+  const grid = document.getElementById('categories-grid');
+  if (!grid) return;
+  // Carregar do localStorage (salvo pelo admin)
+  let cats = [];
+  try {
+    cats = JSON.parse(localStorage.getItem('sophia_categories') || '[]');
+  } catch(_) {}
+  // Fallback padrão
+  if (!cats.length) {
+    cats = [
+      { name:'Vestidos',   imgUrl:'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&q=80', order:1 },
+      { name:'Blusas',     imgUrl:'https://images.unsplash.com/photo-1594938298603-4bf6b9c6d1d9?w=600&q=80', order:2 },
+      { name:'Calças',     imgUrl:'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80', order:3 },
+      { name:'Acessórios', imgUrl:'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=600&q=80', order:4 },
+    ];
+  }
+  cats.sort((a,b) => (a.order||99) - (b.order||99));
+  grid.innerHTML = cats.map(c => {
+    const count = productsData.filter(p => p.cat === c.name).length;
+    return `
+    <div class="cat-card" onclick="filterProducts('${c.name}')">
+      <img src="${c.imgUrl || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=600&q=80'}"
+           alt="${c.name}"
+           onerror="this.src='https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=600&q=80'">
+      <div class="cat-info">
+        <div class="cat-name">${c.name}</div>
+        <div class="cat-count">${count > 0 ? count + ' peças' : 'Ver coleção'}</div>
+      </div>
+      <div class="cat-arrow">→</div>
+    </div>`;
+  }).join('');
+
+  // Atualizar filtros de produtos
+  const tabs = document.querySelector('.filter-tabs');
+  if (tabs) {
+    tabs.innerHTML = `<button class="filter-tab active" onclick="setFilter(this,'Todos')">Todos</button>` +
+      cats.map(c => `<button class="filter-tab" onclick="setFilter(this,'${c.name}')">${c.name}</button>`).join('');
+  }
+}
+
 // Init — carrega produtos do Sheets ou cache
-loadProductsFromSheets();
+loadProductsFromSheets().then(() => renderCategories());
 </script>
 </body>
 </html>
