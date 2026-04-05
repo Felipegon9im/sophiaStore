@@ -662,20 +662,63 @@
   .cart-checkout:hover { opacity: 0.9; }
 
   /* ── WHATSAPP FLOAT ── */
-  #whatsapp-btn {
+  #whatsapp-wrap {
     position: fixed; bottom: 2rem; right: 2rem;
-    width: 56px; height: 56px; border-radius: 50%;
-    background: #25D366; color: white;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.5rem; text-decoration: none;
-    box-shadow: 0 4px 20px rgba(37,211,102,0.4);
-    z-index: 4000; transition: transform 0.3s, box-shadow 0.3s;
-    animation: pulse 2s ease infinite;
+    z-index: 4000;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;
   }
-  #whatsapp-btn:hover { transform: scale(1.1); box-shadow: 0 8px 30px rgba(37,211,102,0.5); }
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 4px 20px rgba(37,211,102,0.4); }
-    50% { box-shadow: 0 4px 30px rgba(37,211,102,0.7), 0 0 0 8px rgba(37,211,102,0.1); }
+  #whatsapp-bubble {
+    background: white;
+    border-radius: 16px 16px 0 16px;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    font-size: 0.78rem; color: #111;
+    max-width: 200px; line-height: 1.5;
+    animation: bubbleIn 0.4s cubic-bezier(.34,1.56,.64,1) both;
+    position: relative;
+  }
+  #whatsapp-bubble::after {
+    content: '';
+    position: absolute; bottom: -8px; right: 16px;
+    border: 8px solid transparent;
+    border-top-color: white;
+    border-bottom: 0;
+  }
+  #whatsapp-bubble .bubble-name {
+    font-size: 0.65rem; font-weight: 600;
+    color: #25D366; margin-bottom: 0.2rem;
+  }
+  #whatsapp-bubble .bubble-time {
+    font-size: 0.6rem; color: #aaa;
+    text-align: right; margin-top: 0.3rem;
+  }
+  #whatsapp-bubble-close {
+    position: absolute; top: -8px; right: -8px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #ccc; border: none; cursor: pointer;
+    font-size: 0.6rem; color: white;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  #whatsapp-btn {
+    width: 58px; height: 58px; border-radius: 50%;
+    background: #25D366;
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none;
+    box-shadow: 0 4px 20px rgba(37,211,102,0.45);
+    transition: transform 0.3s, box-shadow 0.3s;
+    animation: waPulse 2.5s ease infinite;
+    flex-shrink: 0;
+  }
+  #whatsapp-btn:hover { transform: scale(1.1); box-shadow: 0 8px 30px rgba(37,211,102,0.6); }
+  #whatsapp-btn svg { width: 30px; height: 30px; }
+  @keyframes waPulse {
+    0%,100% { box-shadow: 0 4px 20px rgba(37,211,102,0.45); }
+    50%      { box-shadow: 0 4px 30px rgba(37,211,102,0.7), 0 0 0 10px rgba(37,211,102,0.08); }
+  }
+  @keyframes bubbleIn {
+    from { opacity:0; transform: scale(0.7) translateY(10px); }
+    to   { opacity:1; transform: scale(1) translateY(0); }
   }
 
   /* ── RESPONSIVE ── */
@@ -970,10 +1013,21 @@
 </div>
 
 <!-- WhatsApp Float -->
-<a href="https://wa.me/5548999999999?text=Olá!%20Vim%20pelo%20site%20da%20Sophia%20Elegance%20Store%20e%20gostaria%20de%20saber%20mais!" 
-   id="whatsapp-btn" target="_blank" title="Fale conosco no WhatsApp">
-  💬
-</a>
+<div id="whatsapp-wrap">
+  <div id="whatsapp-bubble">
+    <button id="whatsapp-bubble-close" onclick="document.getElementById('whatsapp-bubble').style.display='none'">✕</button>
+    <div class="bubble-name">Sophia Elegance 🌸</div>
+    Olá! Posso te ajudar a encontrar a peça perfeita? 💕
+    <div class="bubble-time">agora</div>
+  </div>
+  <a href="https://wa.me/5548999999999?text=Olá!%20Vim%20pelo%20site%20da%20Sophia%20Elegance%20Store%20e%20gostaria%20de%20saber%20mais!"
+     id="whatsapp-btn" target="_blank" title="Fale conosco no WhatsApp">
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 3C9.373 3 4 8.373 4 15c0 2.385.668 4.61 1.832 6.5L4 29l7.75-1.812A11.94 11.94 0 0 0 16 28c6.627 0 12-5.373 12-12S22.627 3 16 3z" fill="white"/>
+      <path d="M22.003 19.3c-.3-.15-1.767-.87-2.04-.97-.274-.1-.473-.15-.672.15-.2.3-.772.97-.946 1.17-.174.2-.347.22-.647.07-.3-.15-1.263-.465-2.403-1.485-.888-.795-1.484-1.77-1.66-2.07-.174-.3-.018-.462.13-.61.136-.13.3-.34.45-.51.15-.17.2-.29.3-.49.1-.2.05-.38-.025-.53-.075-.15-.672-1.62-.922-2.21-.24-.578-.487-.5-.672-.51-.174-.008-.373-.01-.572-.01-.2 0-.523.075-.797.375-.274.3-1.045 1.02-1.045 2.487s1.07 2.886 1.22 3.086c.15.2 2.107 3.215 5.103 4.508.713.308 1.27.491 1.703.628.715.228 1.366.196 1.88.119.574-.086 1.767-.723 2.016-1.42.25-.698.25-1.296.175-1.42-.074-.125-.274-.2-.573-.35z" fill="#25D366"/>
+    </svg>
+  </a>
+</div>
 
 <script>
 // ── CURSOR ──
