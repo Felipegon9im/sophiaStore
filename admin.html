@@ -392,6 +392,10 @@
       <span class="nav-text">Produtos</span>
       <span class="nav-badge">87</span>
     </div>
+    <div class="nav-item" onclick="showPage('categories', this)">
+      <span class="nav-icon">🏷️</span>
+      <span class="nav-text">Categorias</span>
+    </div>
     <div class="nav-item" onclick="showPage('inventory', this)">
       <span class="nav-icon">📦</span>
       <span class="nav-text">Estoque</span>
@@ -659,6 +663,18 @@
       </div>
     </div>
 
+    <!-- CATEGORIES PAGE -->
+    <div class="page-section" id="page-categories">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Categorias</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Gerencie as categorias e suas imagens de capa</p>
+        </div>
+        <button class="btn btn-primary" onclick="openCatModal()">+ Nova Categoria</button>
+      </div>
+      <div id="categories-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem"></div>
+    </div>
+
     <!-- CONFIG PAGE -->
     <div class="page-section" id="page-config">
       <div style="margin-bottom:1.5rem">
@@ -781,6 +797,44 @@
 
   </div><!-- #page -->
 </div><!-- #main -->
+
+<!-- Category Modal -->
+<div id="cat-modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;backdrop-filter:blur(4px)">
+  <div style="background:var(--white);border-radius:12px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;transform:translateY(20px) scale(0.97);transition:transform 0.3s;box-shadow:0 20px 60px rgba(0,0,0,0.15)" id="cat-modal-box">
+    <div style="padding:1.5rem;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;z-index:1">
+      <span style="font-size:1rem;font-weight:600;color:var(--dark)" id="cat-modal-title">Nova Categoria</span>
+      <button onclick="closeCatModal()" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1.2rem">✕</button>
+    </div>
+    <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem">
+      <div class="form-group">
+        <label>Nome da Categoria *</label>
+        <input type="text" id="cat-name" placeholder="Ex: Vestidos">
+      </div>
+      <div class="form-group">
+        <label>Descrição curta</label>
+        <input type="text" id="cat-desc" placeholder="Ex: As mais belas peças para festas e eventos">
+      </div>
+      <div class="form-group">
+        <label>Imagem de Capa (Cloudinary)</label>
+        <div class="upload-zone" id="cat-upload-zone" onclick="document.getElementById('cat-file-input').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleCatDrop(event)">
+          <input type="file" id="cat-file-input" accept="image/*" onchange="handleCatFile(this.files)">
+          <div class="upload-icon">🖼️</div>
+          <div class="upload-text">Clique ou arraste a imagem de capa</div>
+          <div class="upload-sub">PNG, JPG até 10MB · Enviado ao Cloudinary</div>
+        </div>
+        <div id="cat-preview" style="margin-top:0.75rem"></div>
+      </div>
+      <div class="form-group">
+        <label>Ordem de exibição</label>
+        <input type="number" id="cat-order" placeholder="1" min="1" value="1">
+      </div>
+    </div>
+    <div style="padding:1.25rem 1.5rem;border-top:1px solid var(--gray-100);display:flex;justify-content:flex-end;gap:0.75rem;position:sticky;bottom:0;background:white">
+      <button class="btn btn-secondary" onclick="closeCatModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCategory()">💾 Salvar Categoria</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal -->
 <div id="modal-overlay">
@@ -933,11 +987,12 @@ function showPage(name, el) {
 }
 
 function renderPage(name) {
-  if (name === 'products') renderProducts();
-  if (name === 'inventory') renderInventory();
-  if (name === 'orders') renderOrders();
-  if (name === 'customers') renderCustomers();
-  if (name === 'config') loadConfigForm();
+  if (name === 'products')   renderProducts();
+  if (name === 'inventory')  renderInventory();
+  if (name === 'orders')     renderOrders();
+  if (name === 'customers')  renderCustomers();
+  if (name === 'categories') renderCategories();
+  if (name === 'config')     loadConfigForm();
 }
 
 // ── DASHBOARD ──
@@ -1113,62 +1168,58 @@ function statusBadge(s) {
 }
 
 // ── MODAL ──
-function openModal(mode, id) {
-  document.getElementById('modal-title').textContent = mode==='new' ? 'Novo Produto' : 'Editar Produto';
-  if (mode === 'edit' && id) {
-    const p = products.find(x => x.id === id);
-    if (p) {
-      document.getElementById('f-name').value = p.name;
-      document.getElementById('f-sku').value = p.sku;
-      document.getElementById('f-category').value = p.cat;
-      document.getElementById('f-cost').value = p.cost;
-      document.getElementById('f-price').value = p.price;
-      document.getElementById('f-sale-price').value = p.salePrice || '';
-      document.getElementById('f-status').value = p.status;
-      document.getElementById('f-featured').value = p.featured;
-      document.getElementById('f-pp').value = p.stock.pp;
-      document.getElementById('f-p').value = p.stock.p;
-      document.getElementById('f-m').value = p.stock.m;
-      document.getElementById('f-g').value = p.stock.g;
-      document.getElementById('f-gg').value = p.stock.gg;
-    }
-  } else {
-    document.getElementById('f-sku').value = 'AUTO-' + String(products.length+1).padStart(3,'0');
-  }
-  document.getElementById('modal-overlay').classList.add('open');
-}
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
 
 // ── SAVE PRODUCT ──
 async function saveProduct() {
-  const name = document.getElementById('f-name').value;
+  const name = document.getElementById('f-name').value.trim();
   if (!name) { toast('Nome é obrigatório', 'error'); return; }
-  const price = parseFloat(document.getElementById('f-price').value);
-  const cost = parseFloat(document.getElementById('f-cost').value);
-  const newP = {
-    id: products.length + 1,
-    name, sku: document.getElementById('f-sku').value,
-    cat: document.getElementById('f-category').value,
-    cost: cost || 0, price: price || 0,
+
+  const price    = parseFloat(document.getElementById('f-price').value) || 0;
+  const cost     = parseFloat(document.getElementById('f-cost').value)  || 0;
+  const editId   = document.getElementById('modal-overlay').dataset.editId;
+  const isEdit   = !!editId;
+  const existing = isEdit ? products.find(p => String(p.id) === String(editId)) : null;
+
+  // Usar primeira URL do Cloudinary se houver upload novo; senão manter a existente
+  const imgUrl       = pendingImgUrls.length > 0 ? pendingImgUrls[0] : (existing?.imgUrl || '');
+  const cloudinaryId = imgUrl ? imgUrl.split('/').slice(-2).join('/').replace(/\.[^.]+$/, '') : (existing?.cloudinaryId || '');
+
+  const prodData = {
+    id:        isEdit ? existing.id : (products.length + 1),
+    name,
+    sku:       document.getElementById('f-sku').value,
+    cat:       document.getElementById('f-category').value,
+    cost,
+    price,
     salePrice: parseFloat(document.getElementById('f-sale-price').value) || null,
-    desc: document.getElementById('f-desc').value || '',
+    desc:      document.getElementById('f-desc').value || '',
     stock: {
-      pp: parseInt(document.getElementById('f-pp').value)||0,
-      p: parseInt(document.getElementById('f-p').value)||0,
-      m: parseInt(document.getElementById('f-m').value)||0,
-      g: parseInt(document.getElementById('f-g').value)||0,
-      gg: parseInt(document.getElementById('f-gg').value)||0,
+      pp: parseInt(document.getElementById('f-pp').value) || 0,
+      p:  parseInt(document.getElementById('f-p').value)  || 0,
+      m:  parseInt(document.getElementById('f-m').value)  || 0,
+      g:  parseInt(document.getElementById('f-g').value)  || 0,
+      gg: parseInt(document.getElementById('f-gg').value) || 0,
     },
-    status: document.getElementById('f-status').value,
-    featured: document.getElementById('f-featured').value,
-    imgUrl: '', cloudinaryId: '',
+    status:      document.getElementById('f-status').value,
+    featured:    document.getElementById('f-featured').value,
+    imgUrl,
+    cloudinaryId,
   };
-  products.push(newP);
+
+  if (isEdit) {
+    const idx = products.findIndex(p => String(p.id) === String(editId));
+    if (idx > -1) products[idx] = prodData;
+  } else {
+    products.push(prodData);
+  }
+
   saveProductsLocal();
   closeModal();
-  toast('Produto salvo! Sincronizando com Google Sheets...', 'success');
-  await syncToSheets(newP);
+  toast((isEdit ? '✏️ Produto atualizado!' : '✅ Produto criado!') + ' Sincronizando...', 'success');
+  await syncToSheets(prodData);
   renderProducts();
+  renderDashboard();
 }
 
 function deleteProduct(id) {
@@ -1333,6 +1384,59 @@ async function uploadToCloudinary(file) {
   } catch(e) { toast('Erro no upload: ' + e.message, 'error'); return null; }
 }
 
+// Armazena URLs enviadas ao Cloudinary para o produto atual
+let pendingImgUrls = [];
+
+function openModal(mode, id) {
+  pendingImgUrls = []; // limpar ao abrir modal
+  document.getElementById('upload-preview').innerHTML = '';
+  document.getElementById('modal-title').textContent = mode==='new' ? 'Novo Produto' : 'Editar Produto';
+  if (mode === 'edit' && id) {
+    const p = products.find(x => x.id === id);
+    if (p) {
+      document.getElementById('f-name').value = p.name;
+      document.getElementById('f-sku').value = p.sku;
+      document.getElementById('f-category').value = p.cat;
+      document.getElementById('f-cost').value = p.cost;
+      document.getElementById('f-price').value = p.price;
+      document.getElementById('f-sale-price').value = p.salePrice || '';
+      document.getElementById('f-desc').value = p.desc || '';
+      document.getElementById('f-status').value = p.status;
+      document.getElementById('f-featured').value = p.featured;
+      document.getElementById('f-pp').value = p.stock.pp;
+      document.getElementById('f-p').value = p.stock.p;
+      document.getElementById('f-m').value = p.stock.m;
+      document.getElementById('f-g').value = p.stock.g;
+      document.getElementById('f-gg').value = p.stock.gg;
+      // Se já tem imagem, mostrar no preview
+      if (p.imgUrl) {
+        pendingImgUrls = [p.imgUrl];
+        const preview = document.getElementById('upload-preview');
+        preview.innerHTML = `<div class="preview-item"><img src="${p.imgUrl}"><button class="preview-remove" onclick="this.parentNode.remove(); pendingImgUrls=[];">✕</button></div>`;
+      }
+      // Guardar id sendo editado
+      document.getElementById('modal-overlay').dataset.editId = id;
+    }
+  } else {
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-sku').value = 'AUTO-' + String(products.length+1).padStart(3,'0');
+    document.getElementById('f-category').value = 'Vestidos';
+    document.getElementById('f-cost').value = '';
+    document.getElementById('f-price').value = '';
+    document.getElementById('f-sale-price').value = '';
+    document.getElementById('f-desc').value = '';
+    document.getElementById('f-status').value = 'Ativo';
+    document.getElementById('f-featured').value = 'Não';
+    document.getElementById('f-pp').value = 0;
+    document.getElementById('f-p').value = 0;
+    document.getElementById('f-m').value = 0;
+    document.getElementById('f-g').value = 0;
+    document.getElementById('f-gg').value = 0;
+    document.getElementById('modal-overlay').dataset.editId = '';
+  }
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
 function handleFiles(files) {
   const preview = document.getElementById('upload-preview');
   Array.from(files).forEach(async file => {
@@ -1340,11 +1444,19 @@ function handleFiles(files) {
     reader.onload = async e => {
       const div = document.createElement('div');
       div.className = 'preview-item';
-      div.innerHTML = `<img src="${e.target.result}"><button class="preview-remove" onclick="this.parentNode.remove()">✕</button>`;
+      // Mostrar preview local imediatamente
+      div.innerHTML = `<img src="${e.target.result}"><div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:white">Enviando...</div>`;
       preview.appendChild(div);
       toast('⬆️ Enviando imagem ao Cloudinary...', 'info');
       const url = await uploadToCloudinary(file);
-      if (url) { div.querySelector('img').src = url; toast('☁️ Imagem enviada ao Cloudinary!', 'success'); }
+      if (url) {
+        // ✅ Salva URL na variável global para uso no saveProduct
+        pendingImgUrls.push(url);
+        div.innerHTML = `<img src="${url}"><button class="preview-remove" onclick="this.parentNode.remove(); pendingImgUrls=pendingImgUrls.filter(u=>u!=='${url}')">✕</button>`;
+        toast('☁️ Imagem salva no Cloudinary!', 'success');
+      } else {
+        div.remove();
+      }
     };
     reader.readAsDataURL(file);
   });
@@ -1460,13 +1572,197 @@ document.addEventListener('input', e => {
   }
 });
 
+// ── CATEGORIES ──────────────────────────────────────────────
+let categories = JSON.parse(localStorage.getItem('sophia_categories') || '[]');
+// Categorias padrão se ainda não tiver nenhuma
+if (categories.length === 0) {
+  categories = [
+    { id:1, name:'Vestidos',   desc:'Peças elegantes para todos os momentos', imgUrl:'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&q=80', order:1 },
+    { id:2, name:'Blusas',     desc:'Modernidade e conforto em cada detalhe',  imgUrl:'https://images.unsplash.com/photo-1594938298603-4bf6b9c6d1d9?w=600&q=80', order:2 },
+    { id:3, name:'Calças',     desc:'Estilo e versatilidade para o dia a dia', imgUrl:'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80', order:3 },
+    { id:4, name:'Acessórios', desc:'O toque final que completa o look',       imgUrl:'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=600&q=80', order:4 },
+  ];
+  saveCategories();
+}
+
+function saveCategories() {
+  localStorage.setItem('sophia_categories', JSON.stringify(categories));
+  // Atualizar selects de categoria em todo o admin
+  updateCategorySelects();
+}
+
+function updateCategorySelects() {
+  const names = categories.map(c => c.name);
+  // Select do filtro na página de produtos
+  const filterSel = document.querySelector('select[onchange="filterCategory(this.value)"]');
+  if (filterSel) {
+    filterSel.innerHTML = '<option value="">Todas as categorias</option>' +
+      names.map(n => `<option>${n}</option>`).join('');
+  }
+  // Select do modal de produto
+  const modalSel = document.getElementById('f-category');
+  if (modalSel) {
+    const current = modalSel.value;
+    modalSel.innerHTML = names.map(n => `<option${n===current?' selected':''}>${n}</option>`).join('');
+  }
+}
+
+function renderCategories() {
+  const grid = document.getElementById('categories-grid');
+  if (!grid) return;
+  const sorted = [...categories].sort((a,b) => (a.order||99) - (b.order||99));
+  grid.innerHTML = sorted.map(c => {
+    const prodCount = products.filter(p => p.cat === c.name).length;
+    return `
+    <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden">
+      <div style="position:relative;height:180px;background:var(--gray-100)">
+        <img src="${c.imgUrl||''}" alt="${c.name}"
+          style="width:100%;height:100%;object-fit:cover"
+          onerror="this.style.display='none'"
+        >
+        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(26,10,18,0.7),transparent);display:flex;align-items:flex-end;padding:1rem">
+          <span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:white;font-weight:400">${c.name}</span>
+        </div>
+        <div style="position:absolute;top:0.75rem;right:0.75rem;display:flex;gap:0.4rem">
+          <button onclick="openCatModal(${c.id})" class="btn btn-sm btn-secondary btn-icon" title="Editar">✏️</button>
+          <button onclick="deleteCategory(${c.id})" class="btn btn-sm btn-secondary btn-icon" style="color:var(--danger)" title="Excluir">🗑</button>
+        </div>
+      </div>
+      <div style="padding:1rem 1.25rem">
+        <p style="font-size:0.75rem;color:var(--gray-600);margin-bottom:0.5rem">${c.desc||'Sem descrição'}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="badge badge-info">${prodCount} produto${prodCount!==1?'s':''}</span>
+          <span style="font-size:0.65rem;color:var(--gray-400)">Ordem: ${c.order||1}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Modal de categoria
+let catPendingUrl = '';
+let catEditId = null;
+
+function openCatModal(id) {
+  catPendingUrl = '';
+  catEditId = id || null;
+  document.getElementById('cat-preview').innerHTML = '';
+  document.getElementById('cat-file-input').value = '';
+
+  if (id) {
+    const c = categories.find(x => x.id === id);
+    if (c) {
+      document.getElementById('cat-modal-title').textContent = 'Editar Categoria';
+      document.getElementById('cat-name').value  = c.name;
+      document.getElementById('cat-desc').value  = c.desc || '';
+      document.getElementById('cat-order').value = c.order || 1;
+      if (c.imgUrl) {
+        catPendingUrl = c.imgUrl;
+        document.getElementById('cat-preview').innerHTML =
+          `<img src="${c.imgUrl}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200)">`;
+      }
+    }
+  } else {
+    document.getElementById('cat-modal-title').textContent = 'Nova Categoria';
+    document.getElementById('cat-name').value  = '';
+    document.getElementById('cat-desc').value  = '';
+    document.getElementById('cat-order').value = categories.length + 1;
+  }
+
+  const overlay = document.getElementById('cat-modal-overlay');
+  overlay.style.opacity = '1';
+  overlay.style.pointerEvents = 'all';
+  document.getElementById('cat-modal-box').style.transform = 'translateY(0) scale(1)';
+}
+
+function closeCatModal() {
+  const overlay = document.getElementById('cat-modal-overlay');
+  overlay.style.opacity = '0';
+  overlay.style.pointerEvents = 'none';
+  document.getElementById('cat-modal-box').style.transform = 'translateY(20px) scale(0.97)';
+}
+
+async function handleCatFile(files) {
+  if (!files || !files[0]) return;
+  if (!config.cloudinaryConnected) {
+    toast('Configure o Cloudinary em Configurações primeiro', 'error'); return;
+  }
+  const file = files[0];
+  document.getElementById('cat-preview').innerHTML =
+    `<div style="height:140px;background:var(--gray-100);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--gray-400)">⬆️ Enviando...</div>`;
+  toast('⬆️ Enviando imagem da categoria...', 'info');
+  const url = await uploadToCloudinary(file);
+  if (url) {
+    catPendingUrl = url;
+    document.getElementById('cat-preview').innerHTML =
+      `<img src="${url}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200)">`;
+    toast('☁️ Imagem da categoria salva!', 'success');
+  } else {
+    document.getElementById('cat-preview').innerHTML = '';
+  }
+}
+
+function handleCatDrop(e) {
+  e.preventDefault();
+  document.getElementById('cat-upload-zone').classList.remove('dragover');
+  handleCatFile(e.dataTransfer.files);
+}
+
+async function saveCategory() {
+  const name = document.getElementById('cat-name').value.trim();
+  if (!name) { toast('Nome é obrigatório', 'error'); return; }
+
+  if (catEditId) {
+    const idx = categories.findIndex(c => c.id === catEditId);
+    if (idx > -1) {
+      categories[idx] = {
+        ...categories[idx],
+        name,
+        desc:   document.getElementById('cat-desc').value.trim(),
+        order:  parseInt(document.getElementById('cat-order').value) || 1,
+        imgUrl: catPendingUrl || categories[idx].imgUrl,
+      };
+    }
+  } else {
+    categories.push({
+      id:     Date.now(),
+      name,
+      desc:   document.getElementById('cat-desc').value.trim(),
+      order:  parseInt(document.getElementById('cat-order').value) || 1,
+      imgUrl: catPendingUrl || '',
+    });
+  }
+
+  saveCategories();
+  renderCategories();
+  closeCatModal();
+  toast(catEditId ? '✅ Categoria atualizada!' : '✅ Categoria criada!', 'success');
+}
+
+function deleteCategory(id) {
+  const c = categories.find(x => x.id === id);
+  if (!c) return;
+  const inUse = products.filter(p => p.cat === c.name).length;
+  if (inUse > 0) {
+    toast(`❌ Não é possível excluir — ${inUse} produto(s) usam essa categoria.`, 'error'); return;
+  }
+  if (confirm(`Excluir categoria "${c.name}"?`)) {
+    categories = categories.filter(x => x.id !== id);
+    saveCategories();
+    renderCategories();
+    toast('Categoria removida', 'info');
+  }
+}
+
 // ── INIT ──
 (function init() {
   // 1. Carregar produtos do localStorage (persistência entre reloads)
   loadProductsLocal();
-  // 2. Renderizar dashboard inicial
+  // 2. Atualizar selects de categoria com as categorias salvas
+  updateCategorySelects();
+  // 3. Renderizar dashboard inicial
   renderDashboard();
-  // 3. Se Sheets já estava conectado, sincronizar automaticamente em background
+  // 4. Se Sheets já estava conectado, sincronizar automaticamente em background
   if (config.sheetsConnected && config.appsScriptUrl) {
     loadFromSheets();
   }
