@@ -676,8 +676,14 @@
     box-shadow: 0 4px 20px rgba(0,0,0,0.12);
     font-size: 0.78rem; color: #111;
     max-width: 200px; line-height: 1.5;
-    animation: bubbleIn 0.4s cubic-bezier(.34,1.56,.64,1) both;
     position: relative;
+    opacity: 0; visibility: hidden;
+    transform: translateY(20px) scale(0.9);
+    transition: all 0.4s cubic-bezier(.34,1.56,.64,1);
+  }
+  #whatsapp-bubble.show {
+    opacity: 1; visibility: visible;
+    transform: translateY(0) scale(1);
   }
   #whatsapp-bubble::after {
     content: '';
@@ -1201,7 +1207,7 @@
 <!-- WhatsApp Float -->
 <div id="whatsapp-wrap">
   <div id="whatsapp-bubble">
-    <button id="whatsapp-bubble-close" onclick="document.getElementById('whatsapp-bubble').style.display='none'">✕</button>
+    <button id="whatsapp-bubble-close" onclick="document.getElementById('whatsapp-bubble').dataset.dismissed = 'true'; document.getElementById('whatsapp-bubble').classList.remove('show');">✕</button>
     <div class="bubble-name">Sophia Elegance 🌸</div>
     Olá! Posso te ajudar a encontrar a peça perfeita? 💕
     <div class="bubble-time">agora</div>
@@ -1224,10 +1230,21 @@ window.addEventListener('load', () => {
   }, 2200);
 });
 
-// ── HEADER SCROLL ──
+// ── SCROLL EVENTS ──
 const header = document.getElementById('header');
+const waBubble = document.getElementById('whatsapp-bubble');
 window.addEventListener('scroll', () => {
   header.classList.toggle('scrolled', window.scrollY > 60);
+  
+  if (waBubble && waBubble.dataset.dismissed !== 'true') {
+    const scrollBottom = window.innerHeight + window.scrollY;
+    // Mostra quando estiver a 800px do final da página
+    if (scrollBottom >= document.body.offsetHeight - 800) {
+      waBubble.classList.add('show');
+    } else {
+      waBubble.classList.remove('show');
+    }
+  }
 });
 
 // ── PRODUCTS DATA (carregado do Google Sheets via Apps Script) ──
