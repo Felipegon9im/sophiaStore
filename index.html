@@ -1175,7 +1175,10 @@
     </div>
     <div class="detail-info-side">
       <div class="detail-cat" id="detail-modal-cat">CATEGORIA</div>
-      <h2 class="detail-title" id="detail-modal-title">Nome do Produto</h2>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <h2 class="detail-title" id="detail-modal-title">Nome do Produto</h2>
+        <button onclick="shareProduct(currentDetailProduct.id)" style="background:none;border:none;cursor:pointer;font-size:1.5rem;color:var(--pink)" title="Compartilhar Produto">📤</button>
+      </div>
       <div class="detail-price">
         <span class="price-now" id="detail-modal-price">R$ 0,00</span>
         <span class="price-was" id="detail-modal-old-price">R$ 0,00</span>
@@ -1333,6 +1336,15 @@ async function loadProductsFromSheets() {
         }
         renderProducts();
         renderCategories();
+        
+        // Verifica se há pedido para abrir produto específico via link
+        const urlParams = new URLSearchParams(window.location.search);
+        const pId = urlParams.get('p');
+        if (pId) {
+          const parsedId = Number(pId) || pId;
+          setTimeout(() => openProductDetail(parsedId), 500);
+        }
+        
         return;
       }
     } catch(_) {}
@@ -1362,6 +1374,7 @@ function renderProducts(filter = 'Todos') {
         ${p.badge ? `<div class="product-badge ${p.badge==='new'?'badge-new':'badge-sale'}">${p.badge==='new'?'Novo':'Sale'}</div>` : ''}
         <div class="product-actions">
           <button class="action-btn main" onclick="openProductDetail(${p.id}, event)">🛍 Adicionar à Sacola</button>
+          <button class="action-btn wishlist-btn" onclick="shareProduct(${p.id}, event)" title="Compartilhar" style="margin-right: 0.2rem;">📤</button>
           <button class="action-btn wishlist-btn" onclick="openProductDetail(${p.id}, event)" title="Espiar">👁</button>
         </div>
       </div>
@@ -1413,6 +1426,26 @@ function filterProducts(cat) {
   });
   document.getElementById('products').scrollIntoView({behavior:'smooth'});
   renderProducts(cat);
+}
+
+// ── COMPARTILHAR PRODUTO ──
+window.shareProduct = function(id, e) {
+  if (e) e.stopPropagation();
+  const p = productsData.find(x => x.id === id);
+  if (!p) return;
+  const link = window.location.origin + window.location.pathname + '?p=' + id;
+  const text = `Olha que lindo esse produto: ${p.name} por R$ ${p.price.toFixed(2).replace('.',',')}!\n\nConfira na loja:\n${link}`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: p.name,
+      text: text,
+      url: link
+    }).catch(console.error);
+  } else {
+    navigator.clipboard.writeText(text);
+    alert('Link do produto copiado para a área de transferência! Você pode colar no WhatsApp.');
+  }
 }
 
 // ── CART ──
