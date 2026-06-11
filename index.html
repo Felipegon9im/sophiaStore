@@ -1277,6 +1277,7 @@ const FALLBACK_PRODUCTS = [
 ];
 
 let productsData = [];
+let categoriesData = [];
 let cartItems = [];
 let activeFilter = 'Todos';
 let currentProduct = null;
@@ -1310,23 +1311,29 @@ async function loadProductsFromSheets() {
       if (ativos.length > 0) {
         productsData = ativos.map(adminToStoreProduct);
         renderProducts();
-        return;
+        // Não usar 'return' aqui para forçar a atualização via internet
       }
     }
   } catch(_) {}
 
   // Tentar carregar do Apps Script diretamente
-  const appsScriptUrl = localStorage.getItem('appsScriptUrl');
+  const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwnQHZRDOynJddpoadm2s86J8TEWfTqaEOAK6RmdUcksYjBCRtO0N1Tr3KyN-hQqFLy/exec';
   if (appsScriptUrl) {
     try {
-      const res  = await fetch(appsScriptUrl + '?action=list');
+      const res  = await fetch(appsScriptUrl + '?action=list&t=' + Date.now());
       const data = await res.json();
-      if (data.success && data.products.length > 0) {
-        const ativos = data.products.filter(p => p.status === 'Ativo');
-        productsData = ativos.map(adminToStoreProduct);
-        // salvar cache
-        localStorage.setItem('sophia_products', JSON.stringify(data.products));
+      if (data.success) {
+        if (data.products && data.products.length > 0) {
+          const ativos = data.products.filter(p => p.status === 'Ativo');
+          productsData = ativos.map(adminToStoreProduct);
+          localStorage.setItem('sophia_products', JSON.stringify(data.products));
+        }
+        if (data.categories && data.categories.length > 0) {
+          categoriesData = data.categories;
+          localStorage.setItem('sophia_categories', JSON.stringify(data.categories));
+        }
         renderProducts();
+        renderCategories();
         return;
       }
     } catch(_) {}
@@ -1475,7 +1482,7 @@ function checkoutBling() {
   btn.style.opacity = '0.7';
   btn.style.pointerEvents = 'none';
 
-  const appsScriptUrl = localStorage.getItem('appsScriptUrl');
+  const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwnQHZRDOynJddpoadm2s86J8TEWfTqaEOAK6RmdUcksYjBCRtO0N1Tr3KyN-hQqFLy/exec';
   if (!appsScriptUrl) {
     alert("Ops! O sistema não encontrou a conexão segura com o Google Scripts. Redirecionando para o WhatsApp...");
     checkoutWhatsApp();
@@ -1532,13 +1539,16 @@ function subscribeNewsletter(e) {
 function renderCategories() {
   const grid = document.getElementById('categories-grid');
   if (!grid) return;
-  // Carregar do localStorage (salvo pelo admin)
-  let cats = [];
-  try {
-    cats = JSON.parse(localStorage.getItem('sophia_categories') || '[]');
-  } catch(_) {}
+
+  let cats = categoriesData;
+  if (!cats || cats.length === 0) {
+    try {
+      cats = JSON.parse(localStorage.getItem('sophia_categories') || '[]');
+    } catch(_) {}
+  }
+
   // Fallback padrão
-  if (!cats.length) {
+  if (!cats || !cats.length) {
     cats = [
       { name:'Vestidos',   imgUrl:'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&q=80', order:1 },
       { name:'Blusas',     imgUrl:'https://images.unsplash.com/photo-1594938298603-4bf6b9c6d1d9?w=600&q=80', order:2 },

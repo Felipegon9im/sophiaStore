@@ -1112,11 +1112,11 @@
           <button onclick="document.getElementById('sheets-guide').style.display=document.getElementById('sheets-guide').style.display==='none'?'block':'none'" style="font-size:0.7rem;color:var(--pink);background:none;border:none;cursor:pointer;margin-top:0.75rem">📖 Como configurar?</button>
         </div>
 
-        <!-- GitHub Storage -->
+        <!-- Cloudinary Storage -->
         <div class="config-card">
           <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
-            <span style="font-size:2rem">🐙</span>
-            <h3>GitHub Storage</h3>
+            <span style="font-size:2rem">☁️</span>
+            <h3>Cloudinary Storage</h3>
           </div>
           <p>Hospede suas imagens de forma rápida e estável no Cloudinary.</p>
           <div class="config-status" id="cloudinary-status">
@@ -2063,6 +2063,26 @@ async function deleteFromSheets(id) {
   } catch (_) {}
 }
 
+async function syncCategoryToSheets(category) {
+  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  try {
+    await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveCategory', category }),
+    });
+  } catch (_) {}
+}
+
+async function deleteCategoryFromSheets(id) {
+  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  try {
+    await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteCategory', id }),
+    });
+  } catch (_) {}
+}
+
 async function syncStockToSheets(id, stock) {
   if (!config.sheetsConnected || !config.appsScriptUrl) return;
   try {
@@ -2082,6 +2102,11 @@ async function loadFromSheets() {
     if (data.success && data.products.length > 0) {
       products = data.products;
       saveProductsLocal();
+      if (data.categories && data.categories.length > 0) {
+        categories = data.categories;
+        saveCategories();
+        renderCategories();
+      }
       renderDashboard();
       renderProducts();
       toast('✅ ' + products.length + ' produtos carregados do Sheets!', 'success');
@@ -2097,8 +2122,10 @@ async function syncSheets() {
   if (!config.sheetsConnected || !config.appsScriptUrl) {
     toast('Configure o Apps Script em Configurações primeiro', 'error'); return;
   }
-  toast('🔄 Sincronizando todos os produtos...', 'info');
-  let ok = 0;
+  toast('🔄 Sincronizando tudo com a nuvem...', 'info');
+  let okP = 0, okC = 0;
+  
+  // Sincroniza Produtos
   for (const p of products) {
     try {
       const res  = await fetch(config.appsScriptUrl, {
@@ -2106,10 +2133,23 @@ async function syncSheets() {
         body: JSON.stringify({ action: 'save', product: p }),
       });
       const data = await res.json();
-      if (data.success) ok++;
+      if (data.success) okP++;
     } catch (_) {}
   }
-  toast(`✅ ${ok}/${products.length} produtos sincronizados!`, ok === products.length ? 'success' : 'warning');
+  
+  // Sincroniza Categorias
+  for (const c of categories) {
+    try {
+      const res  = await fetch(config.appsScriptUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'saveCategory', category: c }),
+      });
+      const data = await res.json();
+      if (data.success) okC++;
+    } catch (_) {}
+  }
+  
+  toast(`✅ ${okP}/${products.length} produtos e ${okC}/${categories.length} categorias sincronizadas!`, 'success');
 }
 
 async function syncSingleProduct(id) {
@@ -2249,13 +2289,13 @@ function handleFiles(files) {
       // Mostrar preview local imediatamente
       div.innerHTML = `<img src="${e.target.result}"><div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:white">Enviando...</div>`;
       preview.appendChild(div);
-      toast('⬆️ Enviando imagem ao GitHub...', 'info');
-      const url = await uploadToGithub(file);
+      toast('⬆️ Enviando imagem ao Cloudinary...', 'info');
+      const url = await uploadToCloudinary(file);
       if (url) {
         // ✅ Salva URL na variável global para uso no saveProduct
         pendingImgUrls.push(url);
         div.innerHTML = `<img src="${url}"><button class="preview-remove" onclick="this.parentNode.remove(); pendingImgUrls=pendingImgUrls.filter(u=>u!=='${url}')">✕</button>`;
-        toast('🐙 Imagem salva no GitHub!', 'success');
+        toast('☁️ Imagem salva no Cloudinary!', 'success');
       } else {
         div.remove();
       }
@@ -2356,39 +2396,29 @@ document.addEventListener('input', e => {
 
 // ── INTEGRATIONS PAGE LOGIC ──
 function loadIntegrationsPage() {
-  // Load connection states from localStorage
-  const shConnected = localStorage.getItem('shopeeConnected') === 'true';
-  const ttConnected = localStorage.getItem('tiktokConnected') === 'true';
+  const blConnected = localStorage.getItem('blingConnected') === 'true';
   
-  // Set toggles/dot colors
-  const shDot = document.getElementById('shopee-dot');
-  const shText = document.getElementById('shopee-status-text');
-  const shConn = document.getElementById('shopee-conn-text');
-  if (shConnected) {
-    shDot.className = 'status-dot connected';
-    shText.textContent = 'Conectado ✓';
-    shConn.textContent = 'Conectado ✓';
-    shConn.style.color = 'var(--success)';
-  } else {
-    shDot.className = 'status-dot disconnected';
-    shText.textContent = 'Não Conectado';
-    shConn.textContent = 'Desconectado';
-    shConn.style.color = 'var(--gray-600)';
-  }
-
-  const ttDot = document.getElementById('tiktok-dot');
-  const ttText = document.getElementById('tiktok-status-text');
-  const ttConn = document.getElementById('tiktok-conn-text');
-  if (ttConnected) {
-    ttDot.className = 'status-dot connected';
-    ttText.textContent = 'Conectado ✓';
-    ttConn.textContent = 'Conectado ✓';
-    ttConn.style.color = 'var(--success)';
-  } else {
-    ttDot.className = 'status-dot disconnected';
-    ttText.textContent = 'Não Conectado';
-    ttConn.textContent = 'Desconectado';
-    ttConn.style.color = 'var(--gray-600)';
+  // Set Bling toggles/dot colors
+  const blingDot = document.getElementById('bling-dot');
+  const blingText = document.getElementById('bling-status-text');
+  const blingConn = document.getElementById('bling-conn-text');
+  
+  if (blingDot) {
+    if (blConnected) {
+      blingDot.className = 'status-dot connected';
+      blingText.textContent = 'Conectado ✓';
+      if (blingConn) {
+        blingConn.textContent = 'Conectado ✓';
+        blingConn.style.color = 'var(--success)';
+      }
+    } else {
+      blingDot.className = 'status-dot disconnected';
+      blingText.textContent = 'Não Conectado';
+      if (blingConn) {
+        blingConn.textContent = 'Desconectado';
+        blingConn.style.color = 'var(--gray-600)';
+      }
+    }
   }
 
   // Load credential inputs
@@ -3120,6 +3150,10 @@ async function saveCategory() {
   }
 
   saveCategories();
+  
+  const savedCat = categories.find(c => c.name === name);
+  if (savedCat) syncCategoryToSheets(savedCat);
+
   renderCategories();
   closeCatModal();
   toast(catEditId ? '✅ Categoria atualizada!' : '✅ Categoria criada!', 'success');
@@ -3135,6 +3169,7 @@ function deleteCategory(id) {
   if (confirm(`Excluir categoria "${c.name}"?`)) {
     categories = categories.filter(x => x.id !== id);
     saveCategories();
+    deleteCategoryFromSheets(id);
     renderCategories();
     toast('Categoria removida', 'info');
   }
