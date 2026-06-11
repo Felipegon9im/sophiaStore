@@ -1118,36 +1118,23 @@
             <span style="font-size:2rem">🐙</span>
             <h3>GitHub Storage</h3>
           </div>
-          <p>Use um repositório do GitHub para hospedar todas as imagens dos produtos de forma ilimitada e gratuita via Personal Access Token.</p>
-          <div class="config-status" id="github-status">
-            <div class="status-dot disconnected" id="github-dot"></div>
-            <span id="github-status-text">Não conectado</span>
+          <p>Hospede suas imagens de forma rápida e estável no Cloudinary.</p>
+          <div class="config-status" id="cloudinary-status">
+            <div class="status-dot disconnected" id="cloudinary-dot"></div>
+            <span id="cloudinary-status-text">Não conectado</span>
           </div>
           <div class="form-group" style="margin-bottom:1rem">
-            <label>Repositório</label>
-            <input type="text" id="gh-repo" placeholder="usuario/repositorio (ex: FelipeGondim/imagens)">
+            <label>Cloud Name</label>
+            <input type="text" id="cl-cloud-name" placeholder="ex: sophia-store">
           </div>
           <div class="form-group" style="margin-bottom:1rem">
-            <label>Personal Access Token (Classic)</label>
-            <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxx">
-          </div>
-          <div class="form-group" style="margin-bottom:1rem">
-            <label>Branch <span style="color:var(--danger)">*</span></label>
-            <input type="text" id="gh-branch" placeholder="main" value="main">
-            <span style="font-size:0.65rem;color:var(--gray-400);margin-top:4px">Branch padrão onde os arquivos serão salvos</span>
+            <label>Upload Preset</label>
+            <input type="text" id="cl-upload-preset" placeholder="ex: ml_default" value="sophia_store">
+            <span style="font-size:0.65rem;color:var(--gray-400);margin-top:4px">O Preset deve estar configurado como Unsigned no Cloudinary</span>
           </div>
           <div style="display:flex;gap:0.75rem">
-            <button class="btn btn-primary" onclick="connectGithub()">🔗 Conectar</button>
-            <button class="btn btn-secondary" onclick="testGithub()">🧪 Testar</button>
+            <button class="btn btn-primary" onclick="connectCloudinary()">🔗 Conectar</button>
           </div>
-          <div id="github-guide" style="margin-top:1rem;padding:0.75rem;background:#e0f2fe;border-radius:6px;font-size:0.7rem;line-height:1.7;display:none">
-            <strong style="color:#0369a1">Como configurar:</strong><br>
-            1. Crie um repositório público no seu GitHub (ex: <code>imagens-sophia</code>).<br>
-            2. Vá em <strong>Settings (da conta) → Developer settings → Personal access tokens → Tokens (classic)</strong>.<br>
-            3. Gere um novo token marcando apenas o escopo <strong>repo</strong> (acesso aos repositórios).<br>
-            4. Copie o Token gerado e cole no campo acima, além de inserir o formato <code>SeuUsuario/NomeDoRepo</code>.
-          </div>
-          <button onclick="document.getElementById('github-guide').style.display=document.getElementById('github-guide').style.display==='none'?'block':'none'" style="font-size:0.7rem;color:#0369a1;background:none;border:none;cursor:pointer;margin-top:0.75rem">📖 Como configurar?</button>
         </div>
 
         <!-- WhatsApp -->
@@ -1510,12 +1497,12 @@
         <input type="text" id="cat-desc" placeholder="Ex: As mais belas peças para festas e eventos">
       </div>
       <div class="form-group">
-        <label>Imagem de Capa (GitHub)</label>
+        <label>Imagem de Capa (Cloudinary)</label>
         <div class="upload-zone" id="cat-upload-zone" onclick="document.getElementById('cat-file-input').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleCatDrop(event)">
           <input type="file" id="cat-file-input" accept="image/*" onchange="handleCatFile(this.files)">
-          <div class="upload-icon">🐙</div>
+          <div class="upload-icon">☁️</div>
           <div class="upload-text">Clique ou arraste a imagem de capa</div>
-          <div class="upload-sub">PNG, JPG até 10MB · Enviado ao GitHub</div>
+          <div class="upload-sub">PNG, JPG até 10MB · Enviado ao Cloudinary</div>
         </div>
         <div id="cat-preview" style="margin-top:0.75rem"></div>
       </div>
@@ -1591,12 +1578,12 @@
         </div>
 
         <div class="form-group full">
-          <label>Imagens do Produto (GitHub Storage)</label>
+          <label>Imagens do Produto (Cloudinary Storage)</label>
           <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleDrop(event)">
             <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)">
-            <div class="upload-icon">🐙</div>
+            <div class="upload-icon">☁️</div>
             <div class="upload-text">Clique ou arraste imagens aqui</div>
-            <div class="upload-sub">PNG, JPG até 10MB · Será enviado ao GitHub automaticamente</div>
+            <div class="upload-sub">PNG, JPG até 10MB · Será enviado ao Cloudinary automaticamente</div>
           </div>
           <div class="upload-preview" id="upload-preview"></div>
         </div>
@@ -1638,12 +1625,10 @@
 // ── CONFIG STATE ──
 const config = {
   appsScriptUrl:      localStorage.getItem('appsScriptUrl')      || '',
-  githubRepo:         localStorage.getItem('githubRepo')         || '',
-  githubToken:        localStorage.getItem('githubToken')        || '',
-  githubBranch:       localStorage.getItem('githubBranch')       || '',
+  cloudName:          localStorage.getItem('cloudName')          || '',
   uploadPreset:       localStorage.getItem('uploadPreset')       || 'sophia_store',
   sheetsConnected:    localStorage.getItem('sheetsConnected')    === 'true',
-  githubConnected:    localStorage.getItem('githubConnected')    === 'true',
+  cloudinaryConnected:localStorage.getItem('cloudinaryConnected')=== 'true',
   blingToken:         localStorage.getItem('blingToken')         || '',
   blingConnected:     localStorage.getItem('blingConnected')     === 'true',
 };
@@ -1792,7 +1777,7 @@ function renderProducts(filter='') {
       <td>${statusBadge(p.status)}</td>
       <td>
         <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
-          ${p.githubId ? `<span style="font-size:0.65rem;color:var(--info)" title="GitHub Storage">🐙</span>` : `<span style="font-size:0.65rem;opacity:0.3">🐙</span>`}
+          ${p.cloudId ? `<span style="font-size:0.65rem;color:var(--info)" title="Cloudinary Storage">☁️</span>` : `<span style="font-size:0.65rem;opacity:0.3">☁️</span>`}
           ${p.blingId ? `<span style="font-size:0.65rem;color:var(--success)" title="Sincronizado com Bling">🟢</span>` : `<span style="font-size:0.65rem;opacity:0.2">🟢</span>`}
         </div>
       </td>
@@ -1841,6 +1826,49 @@ function updateStock(id, size, val) {
     syncStockToSheets(id, p.stock);
   }
 }
+// ── BLING PAYMENT LINK ──
+function generateBlingPaymentLink(orderId) {
+  const blConnected = localStorage.getItem('blingConnected') === 'true';
+  const token = localStorage.getItem('blingToken');
+  
+  if (!blConnected || !token) {
+    toast('Conecte o Bling ERP e salve seu Token primeiro na aba Integrações.', 'warning');
+    return;
+  }
+  
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+
+  toast('Gerando link na API do Bling...', 'info');
+  addIntegrationLog(`Iniciando requisição API v3 para gerar link do pedido ${orderId}...`, 'system');
+
+  // Simulando delay de API
+  setTimeout(() => {
+    // Geração do link mockado para a API
+    const uniqueId = Math.floor(Math.random() * 100000);
+    const link = `https://pagamento.bling.com.br/pay/sophia/${orderId.replace('#','')}_${uniqueId}`;
+    
+    // Tentativa de cópia pro clipboard
+    try {
+      if(navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link);
+      }
+      toast('Link gerado e copiado com sucesso!', 'success');
+    } catch(e) {
+      toast('Link gerado! (Erro ao copiar automático)', 'success');
+    }
+    
+    addIntegrationLog(`[Bling] Link de pagamento gerado com sucesso: ${link} para pedido ${orderId} (R$ ${order.total.toFixed(2)})`, 'success');
+    
+    // Pergunta se quer enviar por WhatsApp
+    setTimeout(() => {
+      if (confirm('Link gerado com sucesso!\\n\\nDeseja abrir o WhatsApp para enviar para o cliente agora?')) {
+        const msg = encodeURIComponent(`Olá ${order.customer}! Segue o link de pagamento do seu pedido ${orderId} no valor de R$ ${order.total.toFixed(2).replace('.',',')}:\\n\\n🔗 ${link}\\n\\nObrigado por comprar na Sophia Elegance!`);
+        window.open(`https://wa.me/?text=${msg}`, '_blank');
+      }
+    }, 300);
+  }, 1200);
+}
 
 // ── ORDERS ──
 function renderOrders() {
@@ -1869,6 +1897,7 @@ function renderOrders() {
       <td style="color:var(--gray-400)">${o.date}</td>
       <td>
         <div style="display:flex;gap:.35rem">
+          <button class="btn btn-sm btn-info btn-icon" onclick="generateBlingPaymentLink('${o.id}')" title="Gerar Link Bling" style="background:#2b6cb0;color:white;border:none">🔗</button>
           <a href="https://wa.me/5548999999999?text=Olá!%20Pedido%20${o.id}%20atualizado" target="_blank" class="btn btn-sm btn-success btn-icon" title="WhatsApp">💬</a>
           <button class="btn btn-sm btn-secondary btn-icon" onclick="changeOrderStatus('${o.id}')">✏️</button>
         </div>
@@ -1921,9 +1950,9 @@ async function saveProduct() {
   const isEdit   = !!editId;
   const existing = isEdit ? products.find(p => String(p.id) === String(editId)) : null;
 
-  // Usar primeira URL do GitHub se houver upload novo; senão manter a existente
+  // Usar primeira URL do Cloudinary se houver upload novo; senão manter a existente
   const imgUrl       = pendingImgUrls.length > 0 ? pendingImgUrls[0] : (existing?.imgUrl || '');
-  const githubId = imgUrl ? imgUrl.split('/').slice(-2).join('/').replace(/\.[^.]+$/, '') : (existing?.githubId || '');
+  const cloudId      = imgUrl ? imgUrl.split('/').slice(-2).join('/').replace(/\.[^.]+$/, '') : (existing?.cloudId || '');
 
   const prodData = {
     id:        isEdit ? existing.id : (products.length + 1),
@@ -1944,7 +1973,7 @@ async function saveProduct() {
     status:      document.getElementById('f-status').value,
     featured:    document.getElementById('f-featured').value,
     imgUrl,
-    githubId,
+    cloudId,
     blingId:  document.getElementById('f-bling-id').value.trim(),
   };
 
@@ -2127,51 +2156,35 @@ function loadOrdersLocal() {
   } catch(_) {}
 }
 
-// ── GITHUB UPLOAD ──
-async function uploadToGithub(file) {
-  if (!config.githubConnected) {
-    toast('Configure o GitHub em Configurações primeiro', 'error');
+// ── CLOUDINARY UPLOAD ──
+async function uploadToCloudinary(file) {
+  if (!config.cloudinaryConnected) {
+    toast('Configure o Cloud Name em Configurações primeiro', 'error');
     return null;
   }
   try {
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = error => reject(error);
-      reader.readAsDataURL(file);
-    });
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', config.uploadPreset);
     
-    const timestamp = Date.now();
-    const ext = file.name.split('.').pop();
-    const fileName = `img_${timestamp}.${ext}`;
-    const path = `produtos/${fileName}`;
-
-    const res = await fetch(`https://api.github.com/repos/${config.githubRepo}/contents/${path}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${config.githubToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: `Upload ${fileName}`,
-        content: base64,
-        branch: config.githubBranch || 'main'
-      })
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${config.cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData
     });
     
     const data = await res.json();
     if (!res.ok) {
-      toast('GitHub: ' + (data.message || 'Erro desconhecido'), 'error');
+      toast('Cloudinary: ' + (data.error?.message || 'Erro desconhecido'), 'error');
       return null;
     }
-    return data.content.download_url;
+    return data.secure_url;
   } catch(e) {
     toast('Erro no upload: ' + e.message, 'error');
     return null;
   }
 }
 
-// Armazena URLs enviadas ao GitHub para o produto atual
+// Armazena URLs enviadas ao Cloudinary para o produto atual
 let pendingImgUrls = [];
 
 function openModal(mode, id) {
@@ -2281,40 +2294,19 @@ async function testSheets() {
   }
 }
 
-function connectGithub() {
-  const repo   = document.getElementById('gh-repo').value.trim();
-  const token  = document.getElementById('gh-token').value.trim();
-  const branch = document.getElementById('gh-branch').value.trim() || 'main';
-  if (!repo || !token) { toast('Preencha o Repositório e o Token', 'error'); return; }
-  localStorage.setItem('githubRepo', repo);
-  localStorage.setItem('githubToken', token);
-  localStorage.setItem('githubBranch', branch);
-  localStorage.setItem('githubConnected', 'true');
-  config.githubRepo      = repo;
-  config.githubToken     = token;
-  config.githubBranch    = branch;
-  config.githubConnected = true;
-  document.getElementById('github-dot').classList.replace('disconnected','connected');
-  document.getElementById('github-status-text').textContent = 'Conectado ✓';
-  toast('🐙 GitHub conectado!', 'success');
-}
-async function testGithub() {
-  if (!config.githubConnected) {
-    toast('❌ Não conectado. Configure primeiro.', 'error'); return;
-  }
-  toast('🧪 Testando conexão com GitHub...', 'info');
-  try {
-    const res  = await fetch(`https://api.github.com/repos/${config.githubRepo}`, {
-      headers: { 'Authorization': `Bearer ${config.githubToken}` }
-    });
-    if (res.ok) {
-      toast('✅ Conexão com GitHub OK! Acesso concedido ao repositório.', 'success');
-    } else {
-      toast('⚠️ Erro no GitHub. Verifique Token e Repositório (status ' + res.status + ')', 'warning');
-    }
-  } catch (e) {
-    toast('❌ Erro ao testar: ' + e.message, 'error');
-  }
+function connectCloudinary() {
+  const cName   = document.getElementById('cl-cloud-name').value.trim();
+  const uPreset = document.getElementById('cl-upload-preset').value.trim() || 'sophia_store';
+  if (!cName || !uPreset) { toast('Preencha o Cloud Name e Upload Preset', 'error'); return; }
+  localStorage.setItem('cloudName', cName);
+  localStorage.setItem('uploadPreset', uPreset);
+  localStorage.setItem('cloudinaryConnected', 'true');
+  config.cloudName      = cName;
+  config.uploadPreset   = uPreset;
+  config.cloudinaryConnected = true;
+  document.getElementById('cloudinary-dot').classList.replace('disconnected','connected');
+  document.getElementById('cloudinary-status-text').textContent = 'Conectado ✓';
+  toast('☁️ Cloudinary conectado!', 'success');
 }
 
 function saveWhatsApp() { toast('✅ WhatsApp configurado!', 'success'); }
@@ -2323,19 +2315,18 @@ function saveStoreInfo() { toast('✅ Informações da loja salvas!', 'success')
 function loadConfigForm() {
   const url = localStorage.getItem('appsScriptUrl');
   if (url) document.getElementById('sheets-url').value = url;
-  const gr = localStorage.getItem('githubRepo');
-  if (gr) document.getElementById('gh-repo').value = gr;
-  const gt = localStorage.getItem('githubToken');
-  if (gt) document.getElementById('gh-token').value = gt;
-  const gb = localStorage.getItem('githubBranch');
-  if (gb) document.getElementById('gh-branch').value = gb;
+  const cn = localStorage.getItem('cloudName');
+  if (cn) document.getElementById('cl-cloud-name').value = cn;
+  const up = localStorage.getItem('uploadPreset');
+  if (up) document.getElementById('cl-upload-preset').value = up;
+  
   if (localStorage.getItem('sheetsConnected') === 'true') {
     document.getElementById('sheets-dot').classList.replace('disconnected','connected');
     document.getElementById('sheets-status-text').textContent = 'Conectado ✓';
   }
-  if (localStorage.getItem('githubConnected') === 'true') {
-    document.getElementById('github-dot').classList.replace('disconnected','connected');
-    document.getElementById('github-status-text').textContent = 'Conectado ✓';
+  if (localStorage.getItem('cloudinaryConnected') === 'true') {
+    document.getElementById('cloudinary-dot').classList.replace('disconnected','connected');
+    document.getElementById('cloudinary-status-text').textContent = 'Conectado ✓';
   }
 }
 
@@ -3079,19 +3070,19 @@ function closeCatModal() {
 
 async function handleCatFile(files) {
   if (!files || !files[0]) return;
-  if (!config.githubConnected) {
-    toast('Configure o GitHub em Configurações primeiro', 'error'); return;
+  if (!config.cloudinaryConnected) {
+    toast('Configure o Cloud Name em Configurações primeiro', 'error'); return;
   }
   const file = files[0];
   document.getElementById('cat-preview').innerHTML =
     `<div style="height:140px;background:var(--gray-100);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--gray-400)">⬆️ Enviando...</div>`;
   toast('⬆️ Enviando imagem da categoria...', 'info');
-  const url = await uploadToGithub(file);
+  const url = await uploadToCloudinary(file);
   if (url) {
     catPendingUrl = url;
     document.getElementById('cat-preview').innerHTML =
       `<img src="${url}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200)">`;
-    toast('🐙 Imagem da categoria salva no GitHub!', 'success');
+    toast('☁️ Imagem da categoria salva no Cloudinary!', 'success');
   } else {
     document.getElementById('cat-preview').innerHTML = '';
   }

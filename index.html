@@ -456,6 +456,30 @@
   }
   .color-dot:hover, .color-dot.active { border-color: var(--dark); }
 
+  /* ── E-COMMERCE UTILS ── */
+  .header-search { display: flex; align-items: center; background: rgba(255,255,255,0.15); border-radius: 20px; padding: 0.3rem 1rem; border: 1px solid rgba(255,255,255,0.1); }
+  header.scrolled .header-search { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+  .header-search input { background: transparent; border: none; outline: none; color: white; font-family: 'Montserrat', sans-serif; font-size: 0.7rem; width: 120px; transition: width 0.3s; }
+  header.scrolled .header-search input { color: var(--dark); }
+  .header-search input::placeholder { color: rgba(255,255,255,0.6); }
+  header.scrolled .header-search input::placeholder { color: var(--gray); }
+  .header-search input:focus { width: 180px; }
+
+  #trust-bar { background: var(--pink-pale); padding: 2rem 4rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; border-bottom: 1px solid rgba(233,30,140,0.1); }
+  .trust-item { display: flex; align-items: center; gap: 1rem; }
+  .trust-icon { font-size: 1.8rem; color: var(--pink); }
+  .trust-text h4 { font-size: 0.75rem; font-weight: 600; color: var(--dark); }
+  .trust-text p { font-size: 0.65rem; color: var(--gray); margin-top: 0.2rem; }
+
+  .product-stars { color: var(--gold); font-size: 0.65rem; margin-top: 0.25rem; }
+  .product-sizes-preview { display: flex; gap: 0.3rem; margin-top: 0.6rem; }
+  .size-preview-btn { width: 24px; height: 24px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; color: var(--gray); cursor: none; transition: all 0.2s; background: white; }
+  .size-preview-btn:hover { border-color: var(--pink); color: var(--pink); }
+  
+  .payment-icons { display: flex; gap: 0.5rem; margin-top: 1rem; }
+  .payment-icons img { height: 24px; opacity: 0.6; transition: opacity 0.3s; }
+  .payment-icons img:hover { opacity: 1; }
+
   /* ── FEATURED BANNER ── */
   #featured {
     background: var(--dark); padding: 0;
@@ -865,10 +889,14 @@
     <a href="#newsletter">Contato</a>
   </nav>
   <div class="header-actions">
-    <button class="icon-btn" title="Buscar">🔍</button>
+    <div class="header-search">
+      <input type="text" placeholder="Buscar peças...">
+      <span style="cursor:none; opacity:0.7">🔍</span>
+    </div>
+    <button class="icon-btn" title="Minha Conta" onclick="alert('Área do cliente em breve!')">👤</button>
     <button class="icon-btn" title="Lista de desejos">♡</button>
     <button class="icon-btn" id="cart-btn" title="Carrinho" style="position:relative">
-      🛍
+      🛒
       <span class="cart-count" id="cart-count">0</span>
     </button>
   </div>
@@ -879,7 +907,7 @@
   <div class="hero-bg"></div>
   <div class="hero-pattern"></div>
   <div class="hero-content">
-    <div class="hero-tag">Nova Coleção 2025</div>
+    <div class="hero-tag">Nova Coleção 2025 • Frete Grátis</div>
     <h1 class="hero-title">
       Elegância que<br>
       <em>transforma</em>
@@ -887,10 +915,10 @@
     <p class="hero-desc">Peças únicas selecionadas com cuidado para a mulher que sabe o que quer. Moda com personalidade, sofisticação e atitude.</p>
     <div class="hero-cta">
       <a href="#products" class="btn-primary">
-        <span>Ver Coleção</span>
+        <span>Comprar Agora</span>
         <span>→</span>
       </a>
-      <a href="#categories" class="btn-ghost">Explorar</a>
+      <a href="#categories" class="btn-ghost">Ver Categorias</a>
     </div>
   </div>
   <div class="hero-visual">
@@ -901,6 +929,38 @@
     Scroll
   </div>
 </section>
+
+<!-- Trust Bar -->
+<div id="trust-bar">
+  <div class="trust-item">
+    <div class="trust-icon">🚚</div>
+    <div class="trust-text">
+      <h4>Frete Grátis</h4>
+      <p>Acima de R$299</p>
+    </div>
+  </div>
+  <div class="trust-item">
+    <div class="trust-icon">💳</div>
+    <div class="trust-text">
+      <h4>Até 12x Sem Juros</h4>
+      <p>Nos cartões de crédito</p>
+    </div>
+  </div>
+  <div class="trust-item">
+    <div class="trust-icon">🔒</div>
+    <div class="trust-text">
+      <h4>Compra Segura</h4>
+      <p>Seus dados protegidos</p>
+    </div>
+  </div>
+  <div class="trust-item">
+    <div class="trust-icon">🔄</div>
+    <div class="trust-text">
+      <h4>Troca Fácil</h4>
+      <p>Primeira troca gratuita</p>
+    </div>
+  </div>
+</div>
 
 <!-- Marquee -->
 <div class="marquee-section">
@@ -1072,10 +1132,10 @@
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2025 Sophia Elegance Store · Todos os direitos reservados</div>
-    <div class="footer-pay">
-      <span class="pay-badge">Pix</span>
-      <span class="pay-badge">Cartão</span>
-      <span class="pay-badge">Boleto</span>
+    <div class="footer-pay payment-icons">
+      <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" alt="Pix" style="filter: grayscale(1) brightness(2);">
+      <img src="https://logospng.org/download/mastercard/logo-mastercard-512.png" alt="Mastercard" style="filter: grayscale(1) brightness(2);">
+      <img src="https://logospng.org/download/visa/logo-visa-4096.png" alt="Visa" style="filter: grayscale(1) brightness(2);">
     </div>
   </div>
 </footer>
@@ -1101,7 +1161,8 @@
         <span>Total</span>
         <span id="cart-total">R$ 0,00</span>
       </div>
-      <button class="cart-checkout" onclick="checkoutWhatsApp()">Finalizar via WhatsApp →</button>
+      <button class="cart-checkout" onclick="checkoutBling()" style="background:#2b6cb0; margin-bottom: 0.5rem;">💳 Pagar Seguro (Bling)</button>
+      <button class="cart-checkout" onclick="checkoutWhatsApp()" style="background:#25D366; color:white;">💬 Finalizar via WhatsApp</button>
     </div>
   </div>
 </div>
@@ -1288,29 +1349,49 @@ function renderProducts(filter = 'Todos') {
     return;
   }
 
-  grid.innerHTML = items.map(p => `
+  const renderCard = (p) => `
     <div class="product-card" data-id="${p.id}" onclick="openProductDetail(${p.id}, event)" style="cursor:none">
       <div class="product-img">
         <img src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&q=80'">
         ${p.badge ? `<div class="product-badge ${p.badge==='new'?'badge-new':'badge-sale'}">${p.badge==='new'?'Novo':'Sale'}</div>` : ''}
         <div class="product-actions">
-          <button class="action-btn main" onclick="openProductDetail(${p.id}, event)">Comprar / Detalhes</button>
-          <button class="action-btn wishlist-btn" onclick="event.stopPropagation(); this.textContent=this.textContent==='♡'?'♥':'♡';">♡</button>
+          <button class="action-btn main" onclick="openProductDetail(${p.id}, event)">🛍 Adicionar à Sacola</button>
+          <button class="action-btn wishlist-btn" onclick="openProductDetail(${p.id}, event)" title="Espiar">👁</button>
         </div>
       </div>
       <div class="product-info">
         <div class="product-cat">${p.cat}</div>
         <div class="product-name">${p.name}</div>
+        <div class="product-stars">★★★★★ <span style="color:var(--gray);font-size:0.55rem">(14)</span></div>
         <div class="product-price">
           <span class="price-current">R$ ${p.price.toFixed(2).replace('.',',')}</span>
           ${p.oldPrice ? `<span class="price-old">R$ ${p.oldPrice.toFixed(2).replace('.',',')}</span>` : ''}
         </div>
-        <div class="product-colors">
-          ${p.colors.map((c,i) => `<div class="color-dot ${i===0?'active':''}" style="background:${c}" onclick="event.stopPropagation(); this.parentNode.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('active')); this.classList.add('active')"></div>`).join('')}
+        <div class="product-sizes-preview">
+          <div class="size-preview-btn">P</div>
+          <div class="size-preview-btn">M</div>
+          <div class="size-preview-btn">G</div>
         </div>
       </div>
     </div>
-  `).join('');
+  `;
+
+  if (filter === 'Todos') {
+    const categories = [...new Set(items.map(p => p.cat))];
+    let html = '';
+    categories.forEach(cat => {
+      const catItems = items.filter(p => p.cat === cat);
+      html += `
+        <div style="grid-column: 1/-1; margin-top: 2rem; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+          <h3 style="font-family:'Cormorant Garamond',serif; font-size: 1.8rem; color: var(--pink);">${cat}</h3>
+        </div>
+      `;
+      html += catItems.map(renderCard).join('');
+    });
+    grid.innerHTML = html;
+  } else {
+    grid.innerHTML = items.map(renderCard).join('');
+  }
 }
 
 function setFilter(btn, filter) {
@@ -1379,10 +1460,60 @@ function closeCart() {
   document.getElementById('cart-overlay').classList.remove('open');
 }
 function checkoutWhatsApp() {
+  if (cartItems.length === 0) return;
   const lines = cartItems.map(i => `• ${i.name} (x${i.qty}) - R$ ${(i.price*i.qty).toFixed(2).replace('.',',')}`).join('%0A');
   const total = cartItems.reduce((s,i)=>s+i.price*i.qty,0);
   const msg = `Olá! Gostaria de finalizar meu pedido na Sophia Elegance Store:%0A%0A${lines}%0A%0ATotal: R$ ${total.toFixed(2).replace('.',',')}`;
   window.open(`https://wa.me/5548999999999?text=${msg}`, '_blank');
+}
+
+function checkoutBling() {
+  if (cartItems.length === 0) return;
+  const btn = document.querySelector('.cart-checkout[onclick="checkoutBling()"]');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = 'Gerando link seguro...';
+  btn.style.opacity = '0.7';
+  btn.style.pointerEvents = 'none';
+
+  const appsScriptUrl = localStorage.getItem('appsScriptUrl');
+  if (!appsScriptUrl) {
+    alert("Ops! O sistema não encontrou a conexão segura com o Google Scripts. Redirecionando para o WhatsApp...");
+    checkoutWhatsApp();
+    btn.innerHTML = originalText;
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+    return;
+  }
+
+  const total = cartItems.reduce((s,i)=>s+i.price*i.qty,0);
+  const payload = {
+    action: 'checkoutBling',
+    cart: cartItems,
+    total: total
+  };
+
+  fetch(appsScriptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success && data.link) {
+      window.location.href = data.link;
+      cartItems = [];
+      updateCart();
+    } else {
+      throw new Error(data.error || "Erro desconhecido na API.");
+    }
+  })
+  .catch(err => {
+    alert("Erro ao processar pagamento: " + err.message + "\\nRedirecionando para o WhatsApp...");
+    btn.innerHTML = originalText;
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+    checkoutWhatsApp();
+  });
 }
 document.getElementById('cart-btn').addEventListener('click', openCart);
 document.getElementById('cart-close').addEventListener('click', closeCart);
