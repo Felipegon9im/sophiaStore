@@ -1,0 +1,35 @@
+{
+  "name": "sophia-elegance-store-admin",
+  "version": "1.0.0",
+  "description": "Painel Administrativo Desktop da Sophia Elegance Store",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "keywords": [
+    "sophia",
+    "pos",
+    "desktop",
+    "electron"
+  ],
+  "author": "Sophia Elegance Store",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^30.0.1",
+    "electron-builder": "^26.15.2"
+  },
+  "build": {
+    "appId": "com.sophiastore.admin",
+    "productName": "Sophia Store Painel",
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

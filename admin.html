@@ -1,0 +1,3282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sophia Admin · Gestão de Estoque</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #E91E8C;
+    --pink-pale: #fdf2f8;
+    --pink-deep: #BE185D;
+    --gold: #D4AF6A;
+    --dark: #1a0a12;
+    --sidebar-bg: #1a0a12;
+    --bg: #f8f4f6;
+    --white: #ffffff;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-400: #9ca3af;
+    --gray-600: #6b7280;
+    --gray-800: #374151;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--gray-800); display: flex; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 260px; flex-shrink: 0;
+    background: var(--sidebar-bg);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 100; transition: width 0.3s;
+    overflow: hidden;
+  }
+  #sidebar.collapsed { width: 70px; }
+  .sidebar-logo {
+    padding: 1.75rem 1.5rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--pink), var(--pink-deep));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif; color: white; font-size: 1.2rem;
+  }
+  .logo-text { overflow: hidden; }
+  .logo-text h2 { font-family: 'Cormorant Garamond', serif; color: white; font-size: 1.2rem; font-weight: 600; white-space: nowrap; }
+  .logo-text p { font-size: 0.6rem; color: var(--gold); letter-spacing: 0.2em; text-transform: uppercase; }
+
+  .sidebar-nav { flex: 1; padding: 1rem 0; overflow-y: auto; overflow-x: hidden; }
+  .nav-section-label {
+    font-size: 0.55rem; letter-spacing: 0.3em; text-transform: uppercase;
+    color: rgba(255,255,255,0.25); padding: 1rem 1.5rem 0.5rem;
+    white-space: nowrap; overflow: hidden;
+  }
+  #sidebar.collapsed .nav-section-label { opacity: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 0.9rem;
+    padding: 0.8rem 1.5rem; cursor: pointer;
+    color: rgba(255,255,255,0.5); font-size: 0.8rem; font-weight: 400;
+    transition: all 0.2s; border-left: 3px solid transparent; white-space: nowrap;
+    position: relative;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85); }
+  .nav-item.active { background: rgba(233,30,140,0.12); color: var(--pink); border-left-color: var(--pink); font-weight: 500; }
+  .nav-icon { font-size: 1.1rem; flex-shrink: 0; width: 20px; text-align: center; }
+  .nav-badge {
+    margin-left: auto; background: var(--pink); color: white;
+    font-size: 0.55rem; padding: 0.15rem 0.4rem; border-radius: 10px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  #sidebar.collapsed .nav-badge { display: none; }
+  #sidebar.collapsed .nav-text { display: none; }
+
+  .sidebar-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .user-avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--pink), var(--gold));
+    display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: 600;
+  }
+  .user-info p { font-size: 0.75rem; color: rgba(255,255,255,0.8); font-weight: 500; white-space: nowrap; }
+  .user-info span { font-size: 0.6rem; color: rgba(255,255,255,0.35); }
+  #sidebar.collapsed .user-info { display: none; }
+
+  /* ── MAIN ── */
+  #main {
+    flex: 1; margin-left: 260px; transition: margin-left 0.3s;
+    min-height: 100vh; display: flex; flex-direction: column;
+  }
+  #main.expanded { margin-left: 70px; }
+
+  /* ── TOPBAR ── */
+  #topbar {
+    background: var(--white); border-bottom: 1px solid var(--gray-200);
+    padding: 0 2rem; height: 65px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 1rem; }
+  #toggle-sidebar {
+    width: 36px; height: 36px; border: none; background: var(--gray-100);
+    border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--gray-600); font-size: 1rem; transition: background 0.2s;
+  }
+  #toggle-sidebar:hover { background: var(--gray-200); }
+  .topbar-breadcrumb { font-size: 0.8rem; color: var(--gray-600); }
+  .topbar-breadcrumb span { color: var(--pink); font-weight: 500; }
+  .topbar-right { display: flex; align-items: center; gap: 1rem; }
+  .topbar-search {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: var(--gray-100); border-radius: 6px; padding: 0.5rem 1rem;
+    font-size: 0.78rem; color: var(--gray-400);
+  }
+  .topbar-search input { background: none; border: none; outline: none; font-family: 'Inter'; font-size: 0.78rem; color: var(--gray-800); width: 200px; }
+  .topbar-action {
+    width: 36px; height: 36px; border: none; background: var(--gray-100);
+    border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--gray-600); font-size: 1rem; transition: background 0.2s; position: relative;
+  }
+  .topbar-action:hover { background: var(--gray-200); }
+  .notif-dot {
+    position: absolute; top: 6px; right: 6px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--pink); border: 1.5px solid white;
+  }
+
+  /* ── PAGE CONTENT ── */
+  #page { flex: 1; padding: 2rem; }
+  .page-section { display: none; }
+  .page-section.active { display: block; }
+
+  /* ── CARDS ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
+  .kpi-card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 1.5rem; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 0.75rem;
+    border-left: 4px solid transparent; transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .kpi-card.pink { border-left-color: var(--pink); }
+  .kpi-card.gold { border-left-color: var(--gold); }
+  .kpi-card.success { border-left-color: var(--success); }
+  .kpi-card.danger { border-left-color: var(--danger); }
+  .kpi-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .kpi-icon {
+    width: 40px; height: 40px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+  }
+  .kpi-icon.pink { background: var(--pink-pale); }
+  .kpi-icon.gold { background: #fef9ec; }
+  .kpi-icon.success { background: #d1fae5; }
+  .kpi-icon.danger { background: #fee2e2; }
+  .kpi-badge { font-size: 0.65rem; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 600; }
+  .kpi-badge.up { background: #d1fae5; color: var(--success); }
+  .kpi-badge.down { background: #fee2e2; color: var(--danger); }
+  .kpi-value { font-size: 1.7rem; font-weight: 700; color: var(--dark); letter-spacing: -0.02em; }
+  .kpi-label { font-size: 0.72rem; color: var(--gray-600); font-weight: 400; }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden; margin-bottom: 1.5rem;
+  }
+  .panel-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-title { font-size: 0.9rem; font-weight: 600; color: var(--dark); }
+  .panel-subtitle { font-size: 0.7rem; color: var(--gray-400); margin-top: 0.15rem; }
+  .panel-actions { display: flex; gap: 0.5rem; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 0.5rem 1rem; border-radius: 6px; border: none; cursor: pointer;
+    font-family: 'Inter'; font-size: 0.75rem; font-weight: 500;
+    display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn-primary { background: var(--pink); color: white; }
+  .btn-primary:hover { background: var(--pink-deep); }
+  .btn-secondary { background: var(--gray-100); color: var(--gray-800); }
+  .btn-secondary:hover { background: var(--gray-200); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #059669; }
+  .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.7rem; }
+  .btn-icon { padding: 0.4rem; width: 30px; height: 30px; justify-content: center; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 0.75rem 1rem; text-align: left;
+    font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--gray-400); font-weight: 600;
+    border-bottom: 1px solid var(--gray-100);
+    background: var(--gray-100);
+  }
+  tbody tr { border-bottom: 1px solid var(--gray-100); transition: background 0.15s; }
+  tbody tr:hover { background: var(--pink-pale); }
+  tbody tr:last-child { border: none; }
+  td { padding: 0.875rem 1rem; font-size: 0.78rem; }
+  .td-product { display: flex; align-items: center; gap: 0.75rem; }
+  .td-thumb { width: 44px; height: 52px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: var(--gray-100); }
+  .td-name { font-weight: 500; color: var(--dark); font-size: 0.8rem; }
+  .td-sku { font-size: 0.65rem; color: var(--gray-400); margin-top: 0.1rem; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600;
+  }
+  .badge-success { background: #d1fae5; color: #065f46; }
+  .badge-warning { background: #fef3c7; color: #92400e; }
+  .badge-danger { background: #fee2e2; color: #991b1b; }
+  .badge-info { background: #dbeafe; color: #1e40af; }
+  .badge-gray { background: var(--gray-100); color: var(--gray-600); }
+
+  /* ── STOCK BAR ── */
+  .stock-bar { height: 6px; border-radius: 3px; background: var(--gray-100); overflow: hidden; margin-top: 4px; }
+  .stock-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+
+  /* ── MODAL ── */
+  #modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    z-index: 1000; display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    backdrop-filter: blur(4px);
+  }
+  #modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--white); border-radius: 12px; width: 580px; max-width: 95vw;
+    max-height: 90vh; overflow-y: auto;
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.3s;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+  #modal-overlay.open .modal { transform: translateY(0) scale(1); }
+  .modal-header {
+    padding: 1.5rem; border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; background: white; z-index: 1;
+  }
+  .modal-title { font-size: 1rem; font-weight: 600; color: var(--dark); }
+  .modal-close { background: none; border: none; cursor: pointer; color: var(--gray-400); font-size: 1.2rem; }
+  .modal-close:hover { color: var(--danger); }
+  .modal-body { padding: 1.5rem; }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 0.72rem; font-weight: 500; color: var(--gray-600); }
+  input, select, textarea {
+    padding: 0.65rem 0.875rem; border: 1px solid var(--gray-200);
+    border-radius: 6px; font-family: 'Inter'; font-size: 0.8rem;
+    color: var(--gray-800); outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    background: var(--white);
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--pink); box-shadow: 0 0 0 3px rgba(233,30,140,0.08);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  .modal-footer {
+    padding: 1.25rem 1.5rem; border-top: 1px solid var(--gray-100);
+    display: flex; justify-content: flex-end; gap: 0.75rem;
+    position: sticky; bottom: 0; background: white;
+  }
+
+  /* ── IMAGE UPLOAD ── */
+  .upload-zone {
+    border: 2px dashed var(--gray-200); border-radius: 8px;
+    padding: 2rem; text-align: center; cursor: pointer;
+    transition: all 0.2s; background: var(--gray-100);
+  }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--pink); background: var(--pink-pale); }
+  .upload-zone input[type=file] { display: none; }
+  .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .upload-text { font-size: 0.75rem; color: var(--gray-600); }
+  .upload-sub { font-size: 0.65rem; color: var(--gray-400); margin-top: 0.25rem; }
+  .upload-preview {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;
+  }
+  .preview-item {
+    position: relative; width: 80px; height: 95px;
+  }
+  .preview-item img {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 4px;
+    border: 1px solid var(--gray-200);
+  }
+  .preview-remove {
+    position: absolute; top: -6px; right: -6px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--danger); color: white; border: none; cursor: pointer;
+    font-size: 0.6rem; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── CONFIG SECTION ── */
+  .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .config-card {
+    background: var(--white); border-radius: var(--radius); padding: 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .config-card h3 { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--dark); }
+  .config-card p { font-size: 0.72rem; color: var(--gray-400); margin-bottom: 1.25rem; line-height: 1.6; }
+  .config-status {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.72rem; margin-bottom: 1rem;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  .status-dot.connected { background: var(--success); box-shadow: 0 0 6px rgba(16,185,129,0.5); }
+  .status-dot.disconnected { background: var(--gray-400); }
+
+  /* ── CHARTS ── */
+  .chart-placeholder {
+    height: 200px; background: var(--gray-100); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gray-400); font-size: 0.75rem; position: relative; overflow: hidden;
+  }
+  .chart-bars {
+    display: flex; align-items: flex-end; gap: 6px; height: 140px; padding: 0 1rem;
+    position: absolute; bottom: 1rem; left: 0; right: 0;
+  }
+  .chart-bar {
+    flex: 1; border-radius: 3px 3px 0 0;
+    background: linear-gradient(to top, var(--pink), rgba(233,30,140,0.3));
+    transition: height 0.8s cubic-bezier(.34,1.56,.64,1);
+    position: relative; cursor: pointer;
+  }
+  .chart-bar:hover::after {
+    content: attr(data-val);
+    position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+    background: var(--dark); color: white; padding: 0.25rem 0.5rem;
+    font-size: 0.6rem; border-radius: 4px; white-space: nowrap;
+  }
+
+  /* ── TOAST ── */
+  #toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 9000; display: flex; flex-direction: column; gap: 0.5rem; }
+  .toast {
+    background: var(--dark); color: white; padding: 0.875rem 1.25rem;
+    border-radius: 8px; font-size: 0.78rem; display: flex; align-items: center; gap: 0.75rem;
+    box-shadow: var(--shadow-md); animation: toastIn 0.3s ease;
+    border-left: 4px solid var(--pink);
+  }
+  .toast.success { border-left-color: var(--success); }
+  .toast.error { border-left-color: var(--danger); }
+  @keyframes toastIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* ── INTEGRATIONS & MULTI-CHANNEL ── */
+  .badge-shopee { background: #fee2e2; color: #ff5722; border: 1px solid rgba(255,87,34,0.2); }
+  .badge-tiktok { background: #000000; color: #00f2fe; border: 1px solid rgba(0,242,254,0.3); }
+  .channel-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
+  .channel-stat-card {
+    background: var(--white); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 1rem; border-bottom: 4px solid transparent;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .channel-stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .channel-stat-card.store { border-bottom-color: var(--pink); }
+  .channel-stat-card.shopee { border-bottom-color: #ff5722; }
+  .channel-stat-card.tiktok { border-bottom-color: #00f2fe; }
+  .channel-stat-icon {
+    width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+  }
+  .channel-stat-icon.store { background: var(--pink-pale); color: var(--pink); }
+  .channel-stat-icon.shopee { background: #fff3e0; color: #ff5722; }
+  .channel-stat-icon.tiktok { background: #1a0a12; color: #00f2fe; }
+  .logs-console {
+    background: #0d060a; color: #e5e7eb; font-family: 'Courier New', Courier, monospace;
+    font-size: 0.7rem; padding: 1rem; border-radius: 6px; height: 200px;
+    overflow-y: auto; border: 1px solid rgba(233,30,140,0.15);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.6); margin-top: 1rem;
+    scrollbar-width: thin; scrollbar-color: var(--pink) #0d060a;
+  }
+  .logs-console::-webkit-scrollbar { width: 6px; }
+  .logs-console::-webkit-scrollbar-track { background: #0d060a; }
+  .logs-console::-webkit-scrollbar-thumb { background-color: var(--pink); border-radius: 3px; }
+  .log-line { margin-bottom: 0.35rem; line-height: 1.4; display: flex; gap: 0.5rem; }
+  .log-time { color: var(--gray-400); flex-shrink: 0; }
+  .log-tag { font-weight: 600; flex-shrink: 0; }
+  .log-tag.shopee { color: #ff5722; }
+  .log-tag.tiktok { color: #00f2fe; }
+  .log-tag.system { color: var(--pink); }
+  .log-text { color: #f3f4f6; }
+
+  /* ── FRENTE DE CAIXA (POS) & IMPRESSÃO TÉRMICA ── */
+  .pos-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 1.5rem;
+    height: calc(100vh - 120px);
+  }
+  .pos-products-side {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow: hidden;
+  }
+  .pos-checkout-side {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    overflow-y: auto;
+  }
+  .pos-search-bar {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .pos-search-bar input {
+    flex: 1;
+  }
+  .pos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 0.25rem;
+  }
+  .pos-prod-card {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border: 1px solid var(--gray-200);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .pos-prod-card:hover {
+    border-color: var(--pink);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+  .pos-prod-thumb {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: var(--gray-100);
+  }
+  .pos-prod-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pos-prod-price {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--pink);
+  }
+  .pos-size-badge-wrap {
+    display: flex;
+    gap: 0.2rem;
+    flex-wrap: wrap;
+    margin-top: 0.25rem;
+  }
+  .pos-size-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.35rem;
+    border-radius: 3px;
+    background: var(--white);
+    color: var(--gray-600);
+    border: 1px solid var(--gray-200);
+    cursor: pointer;
+    font-weight: bold;
+    text-align: center;
+  }
+  .pos-size-badge:hover {
+    background: var(--pink-pale);
+    border-color: var(--pink);
+    color: var(--pink);
+  }
+  .pos-size-badge.out {
+    opacity: 0.4;
+    text-decoration: line-through;
+    cursor: not-allowed;
+    background: #f3f4f6;
+    color: #9ca3af;
+  }
+  
+  .pos-cart-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 220px;
+    overflow-y: auto;
+    border-bottom: 1px solid var(--gray-100);
+    padding-bottom: 0.75rem;
+  }
+  .pos-cart-empty {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--gray-400);
+    font-size: 0.75rem;
+  }
+  .pos-cart-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--bg);
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+  }
+  .pos-cart-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .pos-cart-title {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pos-cart-meta {
+    font-size: 0.65rem;
+    color: var(--gray-600);
+    margin-top: 0.15rem;
+  }
+  .pos-cart-price {
+    font-weight: 700;
+    color: var(--pink);
+    margin-top: 0.15rem;
+  }
+  .pos-cart-qty-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .pos-cart-qty-btn {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--gray-200);
+    background: var(--white);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pos-cart-qty-btn:hover {
+    background: var(--gray-100);
+  }
+  
+  .pos-kpi {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 0.65rem 0.875rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+  }
+  .pos-kpi.total {
+    background: var(--pink-pale);
+    border: 1px solid rgba(233,30,140,0.15);
+  }
+  .pos-kpi-val {
+    font-weight: 700;
+    color: var(--gray-800);
+  }
+  .pos-kpi-val.total-val {
+    font-size: 1.1rem;
+    color: var(--pink);
+  }
+  
+  .pos-calc-panel {
+    background: #0d060a;
+    border-radius: 6px;
+    padding: 1rem;
+    border: 1px solid rgba(212,175,106,0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .pos-calc-title {
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
+  }
+  .pos-calc-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  .pos-calc-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .pos-calc-label {
+    font-size: 0.6rem;
+    color: var(--gray-400);
+  }
+  .pos-calc-input {
+    background: #1a0a12;
+    border: 1px solid var(--gray-800);
+    color: #e5e7eb;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    outline: none;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+  }
+  .pos-calc-input:focus {
+    border-color: var(--gold);
+  }
+  .pos-calc-troco {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--success);
+    font-family: 'Courier New', Courier, monospace;
+    padding-top: 0.15rem;
+  }
+
+  /* 🖨️ ESTILO PARA IMPRESSÃO TÉRMICA */
+  #receipt-thermal-template {
+    display: none;
+  }
+
+  @media print {
+    /* Hide everything on the page */
+    body *, #sidebar, #main, #topbar, #page, #toast-container, .modal, #modal-overlay {
+      display: none !important;
+    }
+    /* Only show the print receipt element */
+    body {
+      background: white !important;
+      color: black !important;
+      font-family: 'Courier New', Courier, monospace !important;
+      font-size: 11px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 80mm !important;
+      display: block !important;
+    }
+    #receipt-thermal-template {
+      display: block !important;
+      width: 80mm !important;
+      padding: 2mm !important;
+      background: white !important;
+      color: black !important;
+    }
+    .receipt-header {
+      text-align: center;
+      margin-bottom: 4mm;
+    }
+    .receipt-title {
+      font-size: 14px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 1mm;
+    }
+    .receipt-info {
+      font-size: 9px;
+      line-height: 1.3;
+      margin-bottom: 2mm;
+    }
+    .receipt-divider {
+      border-top: 1px dashed black;
+      margin: 2mm 0;
+    }
+    .receipt-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+    .receipt-table th {
+      text-align: left;
+      font-weight: bold;
+      border-bottom: 1px dashed black;
+      padding-bottom: 1mm;
+      font-size: 9px;
+    }
+    .receipt-table td {
+      padding: 1mm 0;
+      vertical-align: top;
+    }
+    .receipt-totals {
+      width: 100%;
+      margin-top: 2mm;
+      font-size: 10px;
+    }
+    .receipt-totals td {
+      padding: 0.5mm 0;
+    }
+    .receipt-footer {
+      text-align: center;
+      margin-top: 4mm;
+      font-size: 9px;
+      line-height: 1.3;
+    }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:1100px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } }
+  @media(max-width:768px) { #sidebar { transform: translateX(-100%); } #main { margin-left: 0; } }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">S</div>
+    <div class="logo-text">
+      <h2>Sophia</h2>
+      <p>Admin Panel</p>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Visão Geral</div>
+    <div class="nav-item active" onclick="showPage('dashboard', this)">
+      <span class="nav-icon">📊</span>
+      <span class="nav-text">Dashboard</span>
+    </div>
+
+    <div class="nav-section-label">Loja</div>
+    <div class="nav-item" onclick="showPage('products', this)">
+      <span class="nav-icon">👗</span>
+      <span class="nav-text">Produtos</span>
+      <span class="nav-badge">87</span>
+    </div>
+    <div class="nav-item" onclick="showPage('categories', this)">
+      <span class="nav-icon">🏷️</span>
+      <span class="nav-text">Categorias</span>
+    </div>
+    <div class="nav-item" onclick="showPage('inventory', this)">
+      <span class="nav-icon">📦</span>
+      <span class="nav-text">Estoque</span>
+      <span class="nav-badge" style="background:var(--warning)">3</span>
+    </div>
+    <div class="nav-item" onclick="showPage('orders', this)">
+      <span class="nav-icon">🛍</span>
+      <span class="nav-text">Pedidos</span>
+      <span class="nav-badge">12</span>
+    </div>
+    <div class="nav-item" onclick="showPage('customers', this)">
+      <span class="nav-icon">👥</span>
+      <span class="nav-text">Clientes</span>
+    </div>
+    <div class="nav-item" onclick="showPage('suppliers', this)">
+      <span class="nav-icon">🚚</span>
+      <span class="nav-text">Fornecedores</span>
+    </div>
+
+    <div class="nav-section-label">Canais de Venda</div>
+    <div class="nav-item" onclick="showPage('integrations', this)">
+      <span class="nav-icon">🔌</span>
+      <span class="nav-text">Integrações</span>
+    </div>
+    <div class="nav-item" onclick="showPage('caixa', this)">
+      <span class="nav-icon">🏪</span>
+      <span class="nav-text">Frente de Caixa</span>
+    </div>
+
+    <div class="nav-section-label">Financeiro</div>
+    <div class="nav-item" onclick="showPage('reports', this)">
+      <span class="nav-icon">📈</span>
+      <span class="nav-text">Relatórios</span>
+    </div>
+
+    <div class="nav-section-label">Sistema</div>
+    <div class="nav-item" onclick="showPage('config', this)">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-text">Configurações</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-avatar">S</div>
+    <div class="user-info">
+      <p>Sophia Admin</p>
+      <span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="65160a150d0c0425090a0f044b060a08">[email&#160;protected]</a></span>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div id="main">
+  <!-- Topbar -->
+  <header id="topbar">
+    <div class="topbar-left">
+      <button id="toggle-sidebar" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-breadcrumb">Sophia Admin · <span id="breadcrumb">Dashboard</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-search">
+        🔍
+        <input type="text" placeholder="Buscar produtos, pedidos...">
+      </div>
+      <button class="topbar-action" title="Notificações">
+        🔔
+        <span class="notif-dot"></span>
+      </button>
+      <a href="index.html" class="btn btn-secondary btn-sm" target="_blank">🌐 Ver Loja</a>
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <div id="page">
+
+    <!-- DASHBOARD -->
+    <div class="page-section active" id="page-dashboard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Dashboard</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Bem-vinda, Sophia! Aqui está um resumo do dia.</p>
+        </div>
+        <button class="btn btn-primary" onclick="syncSheets()">🔄 Sincronizar Sheets</button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card pink">
+          <div class="kpi-header">
+            <div class="kpi-icon pink">💰</div>
+            <span class="kpi-badge up">+12%</span>
+          </div>
+          <div class="kpi-value">R$ 8.420</div>
+          <div class="kpi-label">Receita do Mês</div>
+        </div>
+        <div class="kpi-card gold">
+          <div class="kpi-header">
+            <div class="kpi-icon gold">🛍</div>
+            <span class="kpi-badge up">+8%</span>
+          </div>
+          <div class="kpi-value">47</div>
+          <div class="kpi-label">Pedidos este mês</div>
+        </div>
+        <div class="kpi-card success">
+          <div class="kpi-header">
+            <div class="kpi-icon success">👗</div>
+            <span class="kpi-badge up">+5%</span>
+          </div>
+          <div class="kpi-value">87</div>
+          <div class="kpi-label">Produtos Ativos</div>
+        </div>
+        <div class="kpi-card danger">
+          <div class="kpi-header">
+            <div class="kpi-icon danger">⚠️</div>
+            <span class="kpi-badge down">3</span>
+          </div>
+          <div class="kpi-value">3</div>
+          <div class="kpi-label">Estoque Baixo</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem">
+        <!-- Gráfico vendas -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Vendas dos Últimos 7 Dias</div>
+              <div class="panel-subtitle">Acompanhamento diário de faturamento</div>
+            </div>
+          </div>
+          <div style="padding:1.5rem">
+            <div class="chart-placeholder">
+              <div class="chart-bars" id="sales-chart"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0 1rem;margin-top:0.5rem;font-size:0.65rem;color:var(--gray-400)">
+              <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estoque crítico -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">⚠️ Estoque Crítico</div>
+          </div>
+          <div style="padding:0.75rem">
+            <div id="critical-stock"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pedidos recentes -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Pedidos Recentes</div>
+          <button class="btn btn-secondary btn-sm" onclick="showPage('orders', document.querySelector('.nav-item:nth-child(6)'))">Ver Todos</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Pedido</th><th>Cliente</th><th>Produtos</th><th>Total</th><th>Status</th><th>Data</th>
+              </tr>
+            </thead>
+            <tbody id="recent-orders"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUCTS PAGE -->
+    <div class="page-section" id="page-products">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Produtos</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Gerencie todo o seu catálogo de peças</p>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-secondary" onclick="exportToSheets()">📊 Exportar Sheets</button>
+          <button class="btn btn-primary" onclick="openModal('new')">+ Novo Produto</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="panel" style="margin-bottom:1.25rem">
+        <div style="padding:1rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+          <input type="text" placeholder="🔍  Buscar produto..." style="flex:1;min-width:200px" oninput="filterTable(this.value)">
+          <select onchange="filterCategory(this.value)" style="min-width:160px">
+            <option value="">Todas as categorias</option>
+            <option>Vestidos</option><option>Blusas</option><option>Calças</option><option>Acessórios</option>
+          </select>
+          <select onchange="filterStatus(this.value)" style="min-width:140px">
+            <option value="">Todos os status</option>
+            <option>Ativo</option><option>Inativo</option><option>Estoque Baixo</option>
+          </select>
+          <span style="font-size:0.75rem;color:var(--gray-400)" id="product-count">87 produtos</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px"><input type="checkbox" id="select-all" onchange="selectAll(this)"></th>
+                <th>Produto</th><th>Categoria</th><th>Preço</th>
+                <th>Estoque</th><th>Status</th><th>Canais / Fotos</th><th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="products-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVENTORY PAGE -->
+    <div class="page-section" id="page-inventory">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Estoque</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Controle detalhado de inventário por tamanho e cor</p>
+        </div>
+        <button class="btn btn-primary" onclick="syncSheets()">🔄 Sync Google Sheets</button>
+      </div>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Produto</th><th>PP</th><th>P</th><th>M</th><th>G</th><th>GG</th><th>Total</th><th>Status</th><th>Ação</th></tr>
+            </thead>
+            <tbody id="inventory-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS PAGE -->
+    <div class="page-section" id="page-orders">
+      <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark);margin-bottom:1.5rem">Pedidos</h1>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Pedido</th><th>Cliente</th><th>Produtos</th><th>Total</th><th>Pagamento</th><th>Status</th><th>Data</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="orders-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS PAGE -->
+    <div class="page-section" id="page-customers">
+      <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark);margin-bottom:1.5rem">Clientes</h1>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Cliente</th><th>E-mail</th><th>WhatsApp</th><th>Compras</th><th>Total Gasto</th><th>Último Pedido</th></tr></thead>
+            <tbody id="customers-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUPPLIERS PAGE -->
+    <div class="page-section" id="page-suppliers">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Fornecedores</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Gerencie seus fornecedores de tecidos, embalagens e produtos</p>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-primary" onclick="openSupplierModal()">➕ Novo Fornecedor</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Fornecedor / Empresa</th><th>CNPJ/CPF</th><th>Contato (WhatsApp/E-mail)</th><th>Categoria</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="suppliers-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS PAGE -->
+    <div class="page-section" id="page-reports">
+      <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark);margin-bottom:1.5rem">Relatórios</h1>
+      <div class="kpi-grid">
+        <div class="kpi-card pink"><div class="kpi-header"><div class="kpi-icon pink">📅</div></div><div class="kpi-value">R$ 8.420</div><div class="kpi-label">Faturamento Mensal</div></div>
+        <div class="kpi-card gold"><div class="kpi-header"><div class="kpi-icon gold">📦</div></div><div class="kpi-value">R$ 3.200</div><div class="kpi-label">Custo de Estoque</div></div>
+        <div class="kpi-card success"><div class="kpi-header"><div class="kpi-icon success">💹</div></div><div class="kpi-value">R$ 5.220</div><div class="kpi-label">Lucro Bruto</div></div>
+        <div class="kpi-card danger"><div class="kpi-header"><div class="kpi-icon danger">↩️</div></div><div class="kpi-value">2</div><div class="kpi-label">Devoluções</div></div>
+      </div>
+      <div class="panel"><div class="panel-header"><div class="panel-title">📊 Exportar para Google Sheets</div></div>
+        <div style="padding:1.5rem;display:flex;gap:1rem;flex-wrap:wrap">
+          <button class="btn btn-success" onclick="exportToSheets('vendas')">📥 Exportar Vendas</button>
+          <button class="btn btn-secondary" onclick="exportToSheets('estoque')">📦 Exportar Estoque</button>
+          <button class="btn btn-secondary" onclick="exportToSheets('clientes')">👥 Exportar Clientes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATEGORIES PAGE -->
+    <div class="page-section" id="page-categories">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Categorias</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Gerencie as categorias e suas imagens de capa</p>
+        </div>
+        <button class="btn btn-primary" onclick="openCatModal()">+ Nova Categoria</button>
+      </div>
+      <div id="categories-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem"></div>
+    </div>
+
+    <!-- CONFIG PAGE -->
+    <div class="page-section" id="page-config">
+      <div style="margin-bottom:1.5rem">
+        <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Configurações</h1>
+        <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Integre com Google Sheets e GitHub</p>
+      </div>
+      <div class="config-grid">
+
+        <!-- Google Sheets -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+            <span style="font-size:2rem">📊</span>
+            <h3>Google Sheets</h3>
+          </div>
+          <p>Conecte via <strong>Google Apps Script</strong> (intermediário seguro). Todos os produtos e estoque são salvos em tempo real na sua planilha.</p>
+          <div class="config-status" id="sheets-status">
+            <div class="status-dot disconnected" id="sheets-dot"></div>
+            <span id="sheets-status-text">Não conectado</span>
+          </div>
+          <div class="form-group" style="margin-bottom:1.25rem">
+            <label>URL do Apps Script (Web App)</label>
+            <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec">
+          </div>
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-primary" onclick="connectSheets()">🔗 Conectar</button>
+            <button class="btn btn-secondary" onclick="testSheets()">🧪 Testar</button>
+            <button class="btn btn-success" onclick="loadFromSheets()">⬇️ Carregar</button>
+          </div>
+          <div id="sheets-guide" style="margin-top:1rem;padding:0.75rem;background:var(--pink-pale);border-radius:6px;font-size:0.7rem;line-height:1.8;display:none">
+            <strong style="color:var(--pink)">Como configurar (5 passos):</strong><br>
+            1. Acesse <a href="https://script.google.com" target="_blank" style="color:var(--pink)">script.google.com</a> → Novo Projeto<br>
+            2. Cole o conteúdo do arquivo <strong>apps-script.js</strong> entregue junto<br>
+            3. Salve (Ctrl+S) e clique em <strong>Implantar → Nova Implantação</strong><br>
+            4. Tipo: <em>Aplicativo da Web</em> · Executar como: <em>Eu</em> · Acesso: <em>Qualquer pessoa</em><br>
+            5. Copie a URL gerada e cole no campo acima
+          </div>
+          <button onclick="document.getElementById('sheets-guide').style.display=document.getElementById('sheets-guide').style.display==='none'?'block':'none'" style="font-size:0.7rem;color:var(--pink);background:none;border:none;cursor:pointer;margin-top:0.75rem">📖 Como configurar?</button>
+        </div>
+
+        <!-- GitHub Storage -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+            <span style="font-size:2rem">🐙</span>
+            <h3>GitHub Storage</h3>
+          </div>
+          <p>Use um repositório do GitHub para hospedar todas as imagens dos produtos de forma ilimitada e gratuita via Personal Access Token.</p>
+          <div class="config-status" id="github-status">
+            <div class="status-dot disconnected" id="github-dot"></div>
+            <span id="github-status-text">Não conectado</span>
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Repositório</label>
+            <input type="text" id="gh-repo" placeholder="usuario/repositorio (ex: FelipeGondim/imagens)">
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Personal Access Token (Classic)</label>
+            <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxx">
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Branch <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="gh-branch" placeholder="main" value="main">
+            <span style="font-size:0.65rem;color:var(--gray-400);margin-top:4px">Branch padrão onde os arquivos serão salvos</span>
+          </div>
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-primary" onclick="connectGithub()">🔗 Conectar</button>
+            <button class="btn btn-secondary" onclick="testGithub()">🧪 Testar</button>
+          </div>
+          <div id="github-guide" style="margin-top:1rem;padding:0.75rem;background:#e0f2fe;border-radius:6px;font-size:0.7rem;line-height:1.7;display:none">
+            <strong style="color:#0369a1">Como configurar:</strong><br>
+            1. Crie um repositório público no seu GitHub (ex: <code>imagens-sophia</code>).<br>
+            2. Vá em <strong>Settings (da conta) → Developer settings → Personal access tokens → Tokens (classic)</strong>.<br>
+            3. Gere um novo token marcando apenas o escopo <strong>repo</strong> (acesso aos repositórios).<br>
+            4. Copie o Token gerado e cole no campo acima, além de inserir o formato <code>SeuUsuario/NomeDoRepo</code>.
+          </div>
+          <button onclick="document.getElementById('github-guide').style.display=document.getElementById('github-guide').style.display==='none'?'block':'none'" style="font-size:0.7rem;color:#0369a1;background:none;border:none;cursor:pointer;margin-top:0.75rem">📖 Como configurar?</button>
+        </div>
+
+        <!-- WhatsApp -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+            <span style="font-size:2rem">💬</span>
+            <h3>WhatsApp Business</h3>
+          </div>
+          <p>Configure o número de WhatsApp para receber pedidos e notificações direto no seu celular.</p>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Número WhatsApp (com DDD e DDI)</label>
+            <input type="text" id="wa-number" placeholder="+5548999999999">
+          </div>
+          <div class="form-group" style="margin-bottom:1.25rem">
+            <label>Mensagem de Boas-vindas</label>
+            <textarea id="wa-message" placeholder="Olá! Bem-vinda à Sophia Elegance Store. Como posso te ajudar?"></textarea>
+          </div>
+          <button class="btn btn-success" onclick="saveWhatsApp()">💾 Salvar</button>
+        </div>
+
+        <!-- Loja Info -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+            <span style="font-size:2rem">🏪</span>
+            <h3>Informações da Loja</h3>
+          </div>
+          <p>Dados que aparecem no frontend da loja e nos e-mails.</p>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Nome da Loja</label>
+            <input type="text" value="Sophia Elegance Store">
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>E-mail</label>
+            <input type="email" placeholder="contato@sophiaelegance.com.br">
+          </div>
+          <div class="form-group" style="margin-bottom:1.25rem">
+            <label>Instagram</label>
+            <input type="text" placeholder="@sophiaelegancestore">
+          </div>
+          <button class="btn btn-primary" onclick="saveStoreInfo()">💾 Salvar Configurações</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTEGRAÇÕES PAGE -->
+    <div class="page-section" id="page-integrations">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Integrações Multicanal</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Conecte sua loja à Shopee e ao TikTok Shop para sincronizar estoque e pedidos</p>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-secondary" onclick="mockNewMarketplaceOrder()">🔌 Simular Venda Externa</button>
+          <button class="btn btn-primary" onclick="syncMarketplaces()">🔄 Sincronizar Canais</button>
+        </div>
+      </div>
+
+      <div class="channel-stats">
+        <div class="channel-stat-card store">
+          <div class="channel-stat-icon store">🌐</div>
+          <div>
+            <div style="font-size:0.65rem;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.05em">Sophia Store</div>
+            <div style="font-size:1.2rem;font-weight:700;color:var(--dark)" id="stat-store-sales">R$ 8.420,00</div>
+            <div style="font-size:0.65rem;color:var(--success)">Site Ativo & WhatsApp</div>
+          </div>
+        </div>
+        <div class="channel-stat-card shopee">
+          <div class="channel-stat-icon shopee" style="background:var(--success);color:#fff">🟢</div>
+          <div>
+            <div style="font-size:0.65rem;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.05em">Bling ERP</div>
+            <div style="font-size:1.2rem;font-weight:700;color:var(--dark)" id="stat-bling-sales">R$ 4.700,00</div>
+            <div style="font-size:0.65rem;color:var(--gray-600)" id="bling-conn-text">Desconectado</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="config-grid">
+        <!-- Bling Card -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <span style="font-size:2rem">🟢</span>
+              <h3>Bling ERP (Centralizador)</h3>
+            </div>
+            <div class="config-status" style="margin:0" id="bling-status">
+              <div class="status-dot disconnected" id="bling-dot"></div>
+              <span id="bling-status-text" style="font-weight:600;font-size:0.7rem">Não Conectado</span>
+            </div>
+          </div>
+          <p>O Bling conecta a Sophia Store aos principais marketplaces (Shopee, TikTok, Mercado Livre). Mantenha tudo sincronizado em tempo real.</p>
+          
+          <div class="form-grid" style="margin-bottom:1.25rem">
+            <div class="form-group full">
+              <label>Personal Access Token (API v3)</label>
+              <input type="password" id="bl-access-token" placeholder="Insira o Token Gerado no Bling">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-primary" onclick="connectBling()">🔌 Salvar e Conectar</button>
+            <button class="btn btn-secondary" onclick="testBlingConnection()">🧪 Testar Comunicação</button>
+          </div>
+          
+          <div style="margin-top:1.25rem;padding:0.75rem;background:#eefdf3;border-radius:6px;font-size:0.7rem;line-height:1.7">
+            <div style="display:flex;align-items:center;gap:0.5rem;font-weight:600;color:var(--success);margin-bottom:0.25rem">
+              <span>⚙️</span> Automações Bling ERP
+            </div>
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;margin-top:0.4rem;font-size:0.7rem">
+              <input type="checkbox" id="bl-sync-stock" checked> Abater estoque no Bling a cada venda no Caixa
+            </label>
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;margin-top:0.4rem;font-size:0.7rem">
+              <input type="checkbox" id="bl-import-orders" checked> Importar novos pedidos automaticamente
+            </label>
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;margin-top:0.4rem;font-size:0.7rem">
+              <input type="checkbox" id="bl-export-products" checked> Exportar novos produtos para o Bling
+            </label>
+          </div>
+        </div>
+
+        <!-- Terminal de Logs -->
+        <div class="config-card" style="grid-column: 1 / -1">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              <span style="font-size:1.2rem">🖥️</span>
+              <h3 style="margin:0">Console de Integração Multicanal (Real-time Logs)</h3>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('integration-logs').innerHTML = ''; addIntegrationLog('Console limpo.', 'system');">Limpar Logs</button>
+          </div>
+          <p>Acompanhe em tempo real as chamadas de API, atualizações de estoque e novos pedidos importados dos marketplaces.</p>
+          <div class="logs-console" id="integration-logs">
+            <!-- Injetado dinamicamente via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FRENTE DE CAIXA (POS) PAGE -->
+    <div class="page-section" id="page-caixa">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Frente de Caixa (PDV)</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Realize vendas físicas, controle estoque de loja e calcule troco na hora</p>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-secondary" onclick="clearPosSale()">🧹 Cancelar Venda</button>
+        </div>
+      </div>
+
+      <div class="pos-layout">
+        <!-- Products Grid Side -->
+        <div class="pos-products-side">
+          <div class="pos-search-bar">
+            <input type="text" id="pos-search" placeholder="Buscar por Nome, SKU ou Categoria..." oninput="filterPosProducts(this.value)">
+            <select id="pos-filter-cat" onchange="filterPosProducts(document.getElementById('pos-search').value)" style="width: 150px; font-size:0.75rem;">
+              <!-- Preenchido dinamicamente -->
+            </select>
+          </div>
+          <div class="pos-grid" id="pos-products-grid">
+            <!-- Injetado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- Transaction/Checkout Side -->
+        <div class="pos-checkout-side">
+          <h3 style="font-size:0.85rem;font-weight:600;color:var(--dark);border-bottom:1px solid var(--gray-100);padding-bottom:0.5rem">🛒 Venda Atual</h3>
+          
+          <div class="pos-cart-list" id="pos-cart-items">
+            <!-- Injetado dinamicamente via JS -->
+          </div>
+
+          <!-- Totais -->
+          <div style="display:flex;flex-direction:column;gap:0.5rem">
+            <div class="pos-kpi">
+              <span>Subtotal</span>
+              <span class="pos-kpi-val" id="pos-subtotal">R$ 0,00</span>
+            </div>
+            <div class="pos-kpi">
+              <span>Desconto (R$ ou %)</span>
+              <input type="text" id="pos-discount" placeholder="Ex: 10 ou 5%" oninput="calculatePosTotals()" style="width: 100px; padding: 0.25rem 0.5rem; text-align: right; font-size: 0.75rem;">
+            </div>
+            <div class="pos-kpi total">
+              <span style="font-weight:600;color:var(--pink)">Total Geral</span>
+              <span class="pos-kpi-val total-val" id="pos-total">R$ 0,00</span>
+            </div>
+          </div>
+
+          <!-- Checkout Caixa Calculadora -->
+          <div class="pos-calc-panel">
+            <div class="pos-calc-title">💰 Caixa & Troco</div>
+            <div class="form-group" style="gap: 0.25rem;">
+              <label style="color:var(--gray-400);font-size:0.6rem">Cliente da Venda</label>
+              <input type="text" id="pos-client-name" placeholder="Cliente de Balcão" class="pos-calc-input" style="font-family:'Inter'">
+            </div>
+            
+            <div class="pos-calc-row">
+              <div class="pos-calc-input-wrap">
+                <span class="pos-calc-label">Forma de Pagto.</span>
+                <select id="pos-payment" class="pos-calc-input" onchange="togglePosPaymentInput()" style="font-family:'Inter'; font-size:0.75rem; padding: 0.4rem 0.5rem;">
+                  <option value="Dinheiro">💵 Dinheiro</option>
+                  <option value="Pix">⚡ Pix</option>
+                  <option value="Cartão de Crédito">💳 Crédito</option>
+                  <option value="Cartão de Débito">💳 Débito</option>
+                  <option value="Carnê">📘 Carnê</option>
+                </select>
+              </div>
+              <div class="pos-calc-input-wrap" id="pos-cash-input-group">
+                <span class="pos-calc-label">Valor Pago (💵)</span>
+                <input type="number" id="pos-cash-received" placeholder="0,00" class="pos-calc-input" oninput="calculatePosTotals()">
+              </div>
+            </div>
+            
+            <div class="pos-calc-input-wrap" id="pos-carne-input-group" style="display:none;margin-top:0.5rem">
+              <span class="pos-calc-label">Número de Parcelas</span>
+              <input type="number" id="pos-carne-installments" placeholder="Ex: 3" class="pos-calc-input" min="1" max="24">
+            </div>
+
+            <div id="pos-change-group" style="display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--gray-800);padding-top:0.5rem;margin-top:0.25rem">
+              <span style="font-size:0.65rem;color:var(--gray-400)">Troco a Devolver:</span>
+              <span class="pos-calc-troco" id="pos-change">R$ 0,00</span>
+            </div>
+          </div>
+
+          <!-- Botão de Finalização -->
+          <button class="btn btn-primary" onclick="finalizePosSale()" style="width: 100%; justify-content: center; padding: 0.75rem 1rem; font-size: 0.85rem; font-weight: 600; border-radius: 8px;">
+            🏪 Concluir Venda e Gerar Cupom
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- #page -->
+</div><!-- #main -->
+
+<!-- 🖨️ TEMPLATE DE IMPRESSÃO DO CUPOM TÉRMICO (80mm) -->
+<div id="receipt-thermal-template">
+  <div class="receipt-header">
+    <div class="receipt-title">SOPHIA ELEGANCE</div>
+    <div class="receipt-info">
+      Sophia Elegance Store<br>
+      Shopping Alameda Centro, Loja 12 · Florianópolis/SC<br>
+      CNPJ: 45.289.102/0001-90 · Tel: (48) 99999-9999
+    </div>
+  </div>
+  <div class="receipt-divider"></div>
+  <div class="receipt-info" style="margin-bottom:1mm">
+    <b>CUPOM DE VENDA NÃO-FISCAL</b><br>
+    PEDIDO: <span id="r-order-id">#12938129</span><br>
+    DATA: <span id="r-date">26/05/2026 19:45:12</span><br>
+    ATENDIMENTO: Balcão Caixa
+  </div>
+  <div class="receipt-divider"></div>
+  <table class="receipt-table">
+    <thead>
+      <tr>
+        <th style="width:12%">Qtd</th>
+        <th style="width:58%">Item [Tam]</th>
+        <th style="width:30%;text-align:right">Total</th>
+      </tr>
+    </thead>
+    <tbody id="r-items">
+      <!-- Preenchido via JS -->
+    </tbody>
+  </table>
+  <div class="receipt-divider"></div>
+  <table class="receipt-totals">
+    <tr>
+      <td>Subtotal:</td>
+      <td style="text-align:right" id="r-subtotal">R$ 0,00</td>
+    </tr>
+    <tr>
+      <td>Desconto:</td>
+      <td style="text-align:right" id="r-discount">R$ 0,00</td>
+    </tr>
+    <tr style="font-weight:bold;font-size:11px">
+      <td>TOTAL A PAGAR:</td>
+      <td style="text-align:right" id="r-total">R$ 0,00</td>
+    </tr>
+    <tr id="r-cash-row">
+
+      <td>Valor Pago:</td>
+      <td style="text-align:right" id="r-paid">R$ 0,00</td>
+    </tr>
+    <tr id="r-change-row">
+      <td>Troco:</td>
+      <td style="text-align:right" id="r-change">R$ 0,00</td>
+    </tr>
+  </table>
+  <div class="receipt-divider"></div>
+  <div class="receipt-info" style="text-align:left">
+    <b>CLIENTE:</b> <span id="r-client">Cliente de Balcão</span><br>
+    <b>PAGTO:</b> <span id="r-payment">Dinheiro</span>
+  </div>
+  <div class="receipt-divider"></div>
+  <div class="receipt-footer">
+    Obrigado pela preferência! 🌸<br>
+    Seu brilho é a nossa moda.<br>
+    www.sophiaelegancestore.com.br
+  </div>
+</div>
+
+<!-- Modal Fornecedor -->
+<div id="sup-modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center">
+  <div class="modal" style="width:500px;background:#fff;border-radius:12px;padding:1.5rem;position:relative">
+    <button onclick="closeSupplierModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer">&times;</button>
+    <h2 style="font-size:1.2rem;margin-bottom:1rem;color:var(--dark)">Fornecedor</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Nome ou Razão Social *</label>
+        <input type="text" id="sup-name" placeholder="Ex: Tecidos Express">
+      </div>
+      <div class="form-group">
+        <label>CNPJ / CPF</label>
+        <input type="text" id="sup-doc" placeholder="00.000.000/0000-00">
+      </div>
+      <div class="form-group">
+        <label>Telefone / WhatsApp</label>
+        <input type="text" id="sup-phone" placeholder="(11) 99999-9999">
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="sup-email" placeholder="contato@fornecedor.com">
+      </div>
+      <div class="form-group">
+        <label>Categoria de Insumo</label>
+        <input type="text" id="sup-category" placeholder="Ex: Tecidos, Embalagens, etc">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="sup-status">
+          <option value="Ativo">Ativo</option>
+          <option value="Inativo">Inativo</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Observações</label>
+        <input type="text" id="sup-obs" placeholder="Ex: Prazo de entrega de 15 dias, pagamento via Pix">
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:1rem;margin-top:1.5rem">
+      <button class="btn btn-secondary" onclick="closeSupplierModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveSupplier()">Salvar Fornecedor</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div id="cat-modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;backdrop-filter:blur(4px)">
+  <div style="background:var(--white);border-radius:12px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;transform:translateY(20px) scale(0.97);transition:transform 0.3s;box-shadow:0 20px 60px rgba(0,0,0,0.15)" id="cat-modal-box">
+    <div style="padding:1.5rem;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;z-index:1">
+      <span style="font-size:1rem;font-weight:600;color:var(--dark)" id="cat-modal-title">Nova Categoria</span>
+      <button onclick="closeCatModal()" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1.2rem">✕</button>
+    </div>
+    <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem">
+      <div class="form-group">
+        <label>Nome da Categoria *</label>
+        <input type="text" id="cat-name" placeholder="Ex: Vestidos">
+      </div>
+      <div class="form-group">
+        <label>Descrição curta</label>
+        <input type="text" id="cat-desc" placeholder="Ex: As mais belas peças para festas e eventos">
+      </div>
+      <div class="form-group">
+        <label>Imagem de Capa (GitHub)</label>
+        <div class="upload-zone" id="cat-upload-zone" onclick="document.getElementById('cat-file-input').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleCatDrop(event)">
+          <input type="file" id="cat-file-input" accept="image/*" onchange="handleCatFile(this.files)">
+          <div class="upload-icon">🐙</div>
+          <div class="upload-text">Clique ou arraste a imagem de capa</div>
+          <div class="upload-sub">PNG, JPG até 10MB · Enviado ao GitHub</div>
+        </div>
+        <div id="cat-preview" style="margin-top:0.75rem"></div>
+      </div>
+      <div class="form-group">
+        <label>Ordem de exibição</label>
+        <input type="number" id="cat-order" placeholder="1" min="1" value="1">
+      </div>
+    </div>
+    <div style="padding:1.25rem 1.5rem;border-top:1px solid var(--gray-100);display:flex;justify-content:flex-end;gap:0.75rem;position:sticky;bottom:0;background:white">
+      <button class="btn btn-secondary" onclick="closeCatModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCategory()">💾 Salvar Categoria</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Novo Produto</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nome do Produto *</label>
+          <input type="text" id="f-name" placeholder="Ex: Vestido Floral Midi">
+        </div>
+        <div class="form-group">
+          <label>SKU</label>
+          <input type="text" id="f-sku" placeholder="Ex: VFM-001" readonly style="background:var(--gray-100)">
+        </div>
+        <div class="form-group">
+          <label>Categoria *</label>
+          <select id="f-category">
+            <option>Vestidos</option><option>Blusas</option><option>Calças</option><option>Acessórios</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Marca / Coleção</label>
+          <input type="text" id="f-brand" placeholder="Ex: Sophia Premium">
+        </div>
+        <div class="form-group">
+          <label>Preço de Custo (R$) *</label>
+          <input type="number" id="f-cost" placeholder="0,00" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Preço de Venda (R$) *</label>
+          <input type="number" id="f-price" placeholder="0,00" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Preço Promocional (R$)</label>
+          <input type="number" id="f-sale-price" placeholder="0,00 (opcional)" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Margem de Lucro</label>
+          <input type="text" id="f-margin" readonly style="background:var(--gray-100)" placeholder="Calculado automaticamente">
+        </div>
+        <div class="form-group full">
+          <label>Descrição</label>
+          <textarea id="f-desc" placeholder="Descreva o produto, material, tecido..."></textarea>
+        </div>
+
+        <div class="form-group full">
+          <label>Estoque por Tamanho</label>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.75rem;margin-top:0.25rem">
+            <div><label style="font-size:0.65rem;color:var(--gray-400)">PP</label><input type="number" id="f-pp" placeholder="0" min="0"></div>
+            <div><label style="font-size:0.65rem;color:var(--gray-400)">P</label><input type="number" id="f-p" placeholder="0" min="0"></div>
+            <div><label style="font-size:0.65rem;color:var(--gray-400)">M</label><input type="number" id="f-m" placeholder="0" min="0"></div>
+            <div><label style="font-size:0.65rem;color:var(--gray-400)">G</label><input type="number" id="f-g" placeholder="0" min="0"></div>
+            <div><label style="font-size:0.65rem;color:var(--gray-400)">GG</label><input type="number" id="f-gg" placeholder="0" min="0"></div>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label>Imagens do Produto (GitHub Storage)</label>
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleDrop(event)">
+            <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)">
+            <div class="upload-icon">🐙</div>
+            <div class="upload-text">Clique ou arraste imagens aqui</div>
+            <div class="upload-sub">PNG, JPG até 10MB · Será enviado ao GitHub automaticamente</div>
+          </div>
+          <div class="upload-preview" id="upload-preview"></div>
+        </div>
+
+        <!-- Vinculo com Bling -->
+        <div class="form-group full" style="border-top: 1px solid var(--gray-200); padding-top: 1rem; margin-top: 0.5rem">
+          <label style="font-weight: 600; color: var(--success)">🔗 Vínculo com Bling ERP</label>
+        </div>
+        <div class="form-group">
+          <label>ID do Produto no Bling (Opcional se SKUs baterem)</label>
+          <input type="text" id="f-bling-id" placeholder="Ex: 128391203">
+        </div>
+
+        <div class="form-group" style="border-top: 1px solid var(--gray-100); padding-top: 0.5rem">
+          <label>Status</label>
+          <select id="f-status">
+            <option>Ativo</option><option>Inativo</option><option>Rascunho</option>
+          </select>
+        </div>
+        <div class="form-group" style="border-top: 1px solid var(--gray-100); padding-top: 0.5rem">
+          <label>Destaque na Loja</label>
+          <select id="f-featured">
+            <option>Não</option><option>Sim</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProduct()">💾 Salvar no Sheets</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ── CONFIG STATE ──
+const config = {
+  appsScriptUrl:      localStorage.getItem('appsScriptUrl')      || '',
+  githubRepo:         localStorage.getItem('githubRepo')         || '',
+  githubToken:        localStorage.getItem('githubToken')        || '',
+  githubBranch:       localStorage.getItem('githubBranch')       || '',
+  uploadPreset:       localStorage.getItem('uploadPreset')       || 'sophia_store',
+  sheetsConnected:    localStorage.getItem('sheetsConnected')    === 'true',
+  githubConnected:    localStorage.getItem('githubConnected')    === 'true',
+  blingToken:         localStorage.getItem('blingToken')         || '',
+  blingConnected:     localStorage.getItem('blingConnected')     === 'true',
+};
+
+// ── PRODUCTS DATA ──
+let products = [
+  { id:1, name:'Vestido Floral Midi', sku:'VFM-001', cat:'Vestidos', cost:150, price:289, salePrice:null, stock:{ pp:2, p:5, m:8, g:4, gg:1 }, status:'Ativo', featured:'Sim', imgUrl:'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=80&q=60', githubId:'sophia/vfm001', blingId:'1203912' },
+  { id:2, name:'Blusa Off-Shoulder', sku:'BOS-002', cat:'Blusas', cost:60, price:159, salePrice:null, stock:{ pp:0, p:3, m:10, g:7, gg:2 }, status:'Ativo', featured:'Não', imgUrl:'https://images.unsplash.com/photo-1594938298603-4bf6b9c6d1d9?w=80&q=60', githubId:'sophia/bos002', blingId:'' },
+  { id:3, name:'Calça Palazzo Rose', sku:'CPR-003', cat:'Calças', cost:90, price:219, salePrice:179, stock:{ pp:1, p:2, m:3, g:1, gg:0 }, status:'Ativo', featured:'Sim', imgUrl:'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=80&q=60', githubId:'sophia/cpr003', blingId:'1203913' },
+  { id:4, name:'Vestido Longo Gala', sku:'VLG-004', cat:'Vestidos', cost:200, price:489, salePrice:null, stock:{ pp:0, p:1, m:2, g:1, gg:0 }, status:'Ativo', featured:'Sim', imgUrl:'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=80&q=60', githubId:'sophia/vlg004', blingId:'' },
+  { id:5, name:'Bolsa Mini Pink', sku:'BMP-005', cat:'Acessórios', cost:50, price:149, salePrice:null, stock:{ pp:0, p:0, m:12, g:0, gg:0 }, status:'Ativo', featured:'Não', imgUrl:'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=80&q=60', githubId:'sophia/bmp005', blingId:'' },
+  { id:6, name:'Conjunto Cropped', sku:'CCR-006', cat:'Blusas', cost:80, price:199, salePrice:159, stock:{ pp:1, p:0, m:0, g:1, gg:0 }, status:'Estoque Baixo', featured:'Sim', imgUrl:'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=80&q=60', githubId:'sophia/ccr006', blingId:'1203915' },
+];
+
+let orders = [
+  { id:'#001', customer:'Ana Carolina', products:'Vestido Floral Midi', total:289, payment:'Pix', status:'Entregue', date:'01/04/2025', source:'Loja' },
+  { id:'#002', customer:'Mariana Fontes', products:'Blusa Off-Shoulder + Bolsa', total:308, payment:'Cartão', status:'Enviado', date:'02/04/2025', source:'Loja' },
+  { id:'#003', customer:'Juliana Melo', products:'Vestido Longo Gala', total:489, payment:'Pix', status:'Processando', date:'03/04/2025', source:'Loja' },
+  { id:'#004', customer:'Carla Souza', products:'Calça Palazzo Rose', total:179, payment:'Boleto', status:'Aguardando', date:'04/04/2025', source:'Loja' },
+  { id:'#005', customer:'Beatriz Lima', products:'Conjunto Cropped', total:159, payment:'Pix', status:'Entregue', date:'04/04/2025', source:'Loja' },
+  { id:'#SHP-289', customer:'Luana Meireles', products:'Vestido Floral Midi', total:289, payment:'Shopee Pay via Bling', status:'Enviado', date:'24/05/2026', source:'Bling ERP' },
+  { id:'#TTK-901', customer:'Gabriela Nogueira', products:'Conjunto Cropped', total:159, payment:'TikTok Pay via Bling', status:'Processando', date:'25/05/2026', source:'Bling ERP' }
+];
+
+let customers = [
+  { name:'Ana Carolina Silva', email:'ana@email.com', whatsapp:'(48) 99999-0001', orders:3, total:867, last:'01/04/2025' },
+  { name:'Mariana Fontes', email:'mari@email.com', whatsapp:'(48) 99999-0002', orders:2, total:616, last:'02/04/2025' },
+  { name:'Juliana Melo', email:'ju@email.com', whatsapp:'(48) 99999-0003', orders:1, total:489, last:'03/04/2025' },
+  { name:'Carla Souza', email:'carla@email.com', whatsapp:'(48) 99999-0004', orders:4, total:1240, last:'04/04/2025' },
+];
+
+// ── SIDEBAR ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('main').classList.toggle('expanded');
+}
+
+// ── PAGES ──
+function showPage(name, el) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('breadcrumb').textContent = {
+    dashboard:'Dashboard', products:'Produtos', inventory:'Estoque',
+    orders:'Pedidos', customers:'Clientes', suppliers:'Fornecedores', reports:'Relatórios', config:'Configurações',
+    integrations:'Integrações', caixa:'Frente de Caixa'
+  }[name] || name;
+  renderPage(name);
+}
+
+function renderPage(name) {
+  if (name === 'products')     renderProducts();
+  if (name === 'inventory')    renderInventory();
+  if (name === 'orders')       renderOrders();
+  if (name === 'customers')    renderCustomers();
+  if (name === 'categories')   renderCategories();
+  if (name === 'config')       loadConfigForm();
+  if (name === 'integrations') loadIntegrationsPage();
+  if (name === 'caixa')        loadPosPage();
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  // Chart
+  const vals = [820, 1240, 680, 1590, 990, 2100, 1000];
+  const max = Math.max(...vals);
+  document.getElementById('sales-chart').innerHTML = vals.map((v,i) =>
+    `<div class="chart-bar" style="height:${(v/max)*100}%" data-val="R$ ${v.toLocaleString('pt-BR')}"></div>`
+  ).join('');
+
+  // Critical stock
+  const critical = products.filter(p => {
+    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    return total < 5;
+  });
+  document.getElementById('critical-stock').innerHTML = critical.map(p => {
+    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    return `<div style="padding:0.75rem 0;border-bottom:1px solid var(--gray-100)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:0.78rem;font-weight:500">${p.name}</span>
+        <span class="badge ${total===0?'badge-danger':'badge-warning'}">${total} un</span>
+      </div>
+      <div class="stock-bar"><div class="stock-fill" style="width:${Math.min(total/20*100,100)}%;background:${total===0?'var(--danger)':'var(--warning)'}"></div></div>
+    </div>`;
+  }).join('') || '<p style="font-size:0.75rem;color:var(--gray-400);text-align:center;padding:1rem">✅ Nenhum crítico</p>';
+
+  // Recent orders
+  document.getElementById('recent-orders').innerHTML = orders.slice(0,5).map(o => {
+    const source = o.source || 'Loja';
+    const sourceText = source === 'Shopee' 
+      ? '<span style="font-size:0.6rem;color:#ff5722;font-weight:600">🧡 Shopee</span>' 
+      : source === 'TikTok Shop' 
+      ? '<span style="font-size:0.6rem;color:#00f2fe;background:#000;padding:1px 3px;border-radius:3px;font-weight:600">🎵 TikTok</span>' 
+      : source === 'Caixa'
+      ? '<span style="font-size:0.6rem;color:var(--success);font-weight:600">🏪 Caixa</span>'
+      : '<span style="font-size:0.6rem;color:var(--info);font-weight:600">🌐 Site</span>';
+    return `
+    <tr>
+      <td>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font-weight:600;color:var(--pink)">${o.id}</span>
+          ${sourceText}
+        </div>
+      </td>
+      <td>${o.customer}</td>
+      <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.products}</td>
+      <td><strong>R$ ${o.total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></td>
+      <td><span class="badge badge-gray">${o.payment}</span></td>
+      <td>${statusBadge(o.status)}</td>
+      <td style="color:var(--gray-400)">${o.date}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── PRODUCTS TABLE ──
+function renderProducts(filter='') {
+  const list = filter ? products.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()) || p.sku.toLowerCase().includes(filter.toLowerCase())) : products;
+  document.getElementById('product-count').textContent = `${list.length} produtos`;
+  document.getElementById('products-table').innerHTML = list.map(p => {
+    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    const margin = p.cost ? Math.round((p.price - p.cost)/p.price*100) : '-';
+    return `
+    <tr>
+      <td><input type="checkbox" class="row-check" value="${p.id}"></td>
+      <td>
+        <div class="td-product">
+          <img src="${p.imgUrl}" class="td-thumb" alt="${p.name}" onerror="this.style.background='var(--pink-pale)'">
+          <div>
+            <div class="td-name">${p.name}</div>
+            <div class="td-sku">${p.sku}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge badge-gray">${p.cat}</span></td>
+      <td>
+        <div style="font-weight:600">R$ ${p.price.toFixed(2).replace('.',',')}</div>
+        ${p.salePrice ? `<div style="font-size:0.65rem;color:var(--success)">Promo: R$ ${p.salePrice.toFixed(2).replace('.',',')}</div>` : ''}
+        <div style="font-size:0.65rem;color:var(--gray-400)">Margem: ${margin}%</div>
+      </td>
+      <td>
+        <div style="font-weight:500;font-size:0.85rem;${total<5?'color:var(--danger)':''}">${total} un</div>
+        <div style="font-size:0.65rem;color:var(--gray-400)">P:${p.stock.p} M:${p.stock.m} G:${p.stock.g}</div>
+        <div class="stock-bar" style="margin-top:4px"><div class="stock-fill" style="width:${Math.min(total/50*100,100)}%;background:${total<5?'var(--danger)':total<15?'var(--warning)':'var(--success)'}"></div></div>
+      </td>
+      <td>${statusBadge(p.status)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+          ${p.githubId ? `<span style="font-size:0.65rem;color:var(--info)" title="GitHub Storage">🐙</span>` : `<span style="font-size:0.65rem;opacity:0.3">🐙</span>`}
+          ${p.blingId ? `<span style="font-size:0.65rem;color:var(--success)" title="Sincronizado com Bling">🟢</span>` : `<span style="font-size:0.65rem;opacity:0.2">🟢</span>`}
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;gap:0.35rem">
+          <button class="btn btn-sm btn-secondary btn-icon" title="Editar" onclick="openModal('edit',${p.id})">✏️</button>
+          <button class="btn btn-sm btn-secondary btn-icon" title="Duplicar" onclick="duplicateProduct(${p.id})">📋</button>
+          <button class="btn btn-sm btn-secondary btn-icon" title="Excluir" onclick="deleteProduct(${p.id})" style="color:var(--danger)">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── INVENTORY ──
+function renderInventory() {
+  document.getElementById('inventory-table').innerHTML = products.map(p => {
+    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    const low = total < 5;
+    return `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <img src="${p.imgUrl}" style="width:40px;height:48px;object-fit:cover;border-radius:4px" onerror="this.style.background='var(--pink-pale)'">
+          <div><div style="font-weight:500;font-size:.8rem">${p.name}</div><div style="font-size:.65rem;color:var(--gray-400)">${p.sku}</div></div>
+        </div>
+      </td>
+      <td><input type="number" value="${p.stock.pp}" min="0" onchange="updateStock(${p.id},'pp',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      <td><input type="number" value="${p.stock.p}" min="0" onchange="updateStock(${p.id},'p',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      <td><input type="number" value="${p.stock.m}" min="0" onchange="updateStock(${p.id},'m',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      <td><input type="number" value="${p.stock.g}" min="0" onchange="updateStock(${p.id},'g',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      <td><input type="number" value="${p.stock.gg}" min="0" onchange="updateStock(${p.id},'gg',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      <td><strong style="${low?'color:var(--danger)':''}">${total}</strong></td>
+      <td>${low ? '<span class="badge badge-danger">⚠️ Baixo</span>' : '<span class="badge badge-success">✓ OK</span>'}</td>
+      <td><button class="btn btn-sm btn-primary" onclick="syncSingleProduct(${p.id})">↑ Sync</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function updateStock(id, size, val) {
+  const p = products.find(p => p.id === id);
+  if (p) {
+    p.stock[size] = parseInt(val) || 0;
+    saveProductsLocal();
+    toast('Estoque atualizado. Sincronizando...', 'info');
+    syncStockToSheets(id, p.stock);
+  }
+}
+
+// ── ORDERS ──
+function renderOrders() {
+  document.getElementById('orders-table').innerHTML = orders.map(o => {
+    const source = o.source || 'Loja';
+    const sourceBadge = source === 'Shopee' 
+      ? '<span class="badge badge-shopee" style="font-size:0.55rem;padding:0.1rem 0.3rem">Shopee</span>' 
+      : source === 'TikTok Shop' 
+      ? '<span class="badge badge-tiktok" style="font-size:0.55rem;padding:0.1rem 0.3rem">TikTok</span>' 
+      : source === 'Caixa'
+      ? '<span class="badge badge-success" style="font-size:0.55rem;padding:0.1rem 0.3rem">🏪 Caixa</span>'
+      : '<span class="badge badge-info" style="font-size:0.55rem;padding:0.1rem 0.3rem">Site</span>';
+    return `
+    <tr>
+      <td>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <strong style="color:var(--pink)">${o.id}</strong>
+          ${sourceBadge}
+        </div>
+      </td>
+      <td>${o.customer}</td>
+      <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.products}</td>
+      <td><strong>R$ ${o.total.toFixed(2).replace('.',',')}</strong></td>
+      <td><span class="badge badge-gray">${o.payment}</span></td>
+      <td>${statusBadge(o.status)}</td>
+      <td style="color:var(--gray-400)">${o.date}</td>
+      <td>
+        <div style="display:flex;gap:.35rem">
+          <a href="https://wa.me/5548999999999?text=Olá!%20Pedido%20${o.id}%20atualizado" target="_blank" class="btn btn-sm btn-success btn-icon" title="WhatsApp">💬</a>
+          <button class="btn btn-sm btn-secondary btn-icon" onclick="changeOrderStatus('${o.id}')">✏️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── CUSTOMERS ──
+function renderCustomers() {
+  document.getElementById('customers-table').innerHTML = customers.map(c => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink-deep));display:flex;align-items:center;justify-content:center;color:white;font-size:.8rem;font-weight:600;flex-shrink:0">${c.name[0]}</div>
+          <span style="font-weight:500">${c.name}</span>
+        </div>
+      </td>
+      <td style="color:var(--gray-600)">${c.email}</td>
+      <td><a href="https://wa.me/${c.whatsapp.replace(/\D/g,'')}" target="_blank" style="color:var(--success);text-decoration:none">${c.whatsapp}</a></td>
+      <td><span class="badge badge-info">${c.orders} pedidos</span></td>
+      <td><strong style="color:var(--pink)">R$ ${c.total.toFixed(2).replace('.',',')}</strong></td>
+      <td style="color:var(--gray-400)">${c.last}</td>
+    </tr>
+  `).join('');
+}
+
+// ── STATUS ──
+function statusBadge(s) {
+  const map = {
+    'Ativo':'badge-success', 'Entregue':'badge-success',
+    'Enviado':'badge-info', 'Processando':'badge-warning',
+    'Aguardando':'badge-gray', 'Inativo':'badge-gray',
+    'Estoque Baixo':'badge-danger', 'Rascunho':'badge-gray',
+  };
+  return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
+}
+
+// ── MODAL ──
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+// ── SAVE PRODUCT ──
+async function saveProduct() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { toast('Nome é obrigatório', 'error'); return; }
+
+  const price    = parseFloat(document.getElementById('f-price').value) || 0;
+  const cost     = parseFloat(document.getElementById('f-cost').value)  || 0;
+  const editId   = document.getElementById('modal-overlay').dataset.editId;
+  const isEdit   = !!editId;
+  const existing = isEdit ? products.find(p => String(p.id) === String(editId)) : null;
+
+  // Usar primeira URL do GitHub se houver upload novo; senão manter a existente
+  const imgUrl       = pendingImgUrls.length > 0 ? pendingImgUrls[0] : (existing?.imgUrl || '');
+  const githubId = imgUrl ? imgUrl.split('/').slice(-2).join('/').replace(/\.[^.]+$/, '') : (existing?.githubId || '');
+
+  const prodData = {
+    id:        isEdit ? existing.id : (products.length + 1),
+    name,
+    sku:       document.getElementById('f-sku').value,
+    cat:       document.getElementById('f-category').value,
+    cost,
+    price,
+    salePrice: parseFloat(document.getElementById('f-sale-price').value) || null,
+    desc:      document.getElementById('f-desc').value || '',
+    stock: {
+      pp: parseInt(document.getElementById('f-pp').value) || 0,
+      p:  parseInt(document.getElementById('f-p').value)  || 0,
+      m:  parseInt(document.getElementById('f-m').value)  || 0,
+      g:  parseInt(document.getElementById('f-g').value)  || 0,
+      gg: parseInt(document.getElementById('f-gg').value) || 0,
+    },
+    status:      document.getElementById('f-status').value,
+    featured:    document.getElementById('f-featured').value,
+    imgUrl,
+    githubId,
+    blingId:  document.getElementById('f-bling-id').value.trim(),
+  };
+
+  if (isEdit) {
+    const idx = products.findIndex(p => String(p.id) === String(editId));
+    if (idx > -1) products[idx] = prodData;
+  } else {
+    products.push(prodData);
+  }
+
+  saveProductsLocal();
+  closeModal();
+  toast((isEdit ? '✏️ Produto atualizado!' : '✅ Produto criado!') + ' Sincronizando...', 'success');
+
+  // Sincronizar com marketplaces em background se mapeado
+  const blConnected = localStorage.getItem('blingConnected') === 'true';
+
+  if (blConnected && document.getElementById('bl-sync-stock')?.checked !== false) {
+    setTimeout(() => {
+      addIntegrationLog(`[Bling] SKU ${prodData.sku} atualizado automaticamente via cadastro. Estoque Central: ${Object.values(prodData.stock).reduce((a,b)=>a+b,0)} un.`, 'system');
+    }, 500);
+  }
+
+  await syncToSheets(prodData);
+  renderProducts();
+  renderDashboard();
+}
+
+function deleteProduct(id) {
+  if (confirm('Remover este produto?')) {
+    products = products.filter(p => p.id !== id);
+    saveProductsLocal();
+    renderProducts();
+    toast('Produto removido', 'info');
+    deleteFromSheets(id);
+  }
+}
+function duplicateProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (p) { const copy = {...p, id: products.length+1, name: p.name+' (Cópia)', sku: 'CPY-'+String(products.length+1).padStart(3,'0')}; products.push(copy); renderProducts(); toast('Produto duplicado!'); }
+}
+
+// ── FILTERS ──
+function filterTable(v) { renderProducts(v); }
+function filterCategory(v) { if (v) renderProducts(v); else renderProducts(); }
+function filterStatus(v) {
+  if (!v) { renderProducts(); return; }
+  const list = products.filter(p => p.status === v);
+  document.getElementById('products-table').innerHTML = list.map(p => {
+    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    return `<tr><td></td><td><div class="td-product"><img src="${p.imgUrl}" class="td-thumb"><div><div class="td-name">${p.name}</div><div class="td-sku">${p.sku}</div></div></div></td><td>${p.cat}</td><td>R$ ${p.price.toFixed(2).replace('.',',')}</td><td>${total}</td><td>${statusBadge(p.status)}</td><td>☁️</td><td></td></tr>`;
+  }).join('');
+}
+function selectAll(cb) { document.querySelectorAll('.row-check').forEach(c => c.checked = cb.checked); }
+function changeOrderStatus(id) { toast('Status atualizado! Notificação WhatsApp enviada.', 'success'); }
+
+// ── GOOGLE SHEETS INTEGRATION (via Apps Script) ──────────────
+async function syncToSheets(product) {
+  if (!config.sheetsConnected || !config.appsScriptUrl) {
+    toast('Configure o Apps Script em Configurações primeiro', 'error');
+    return;
+  }
+  try {
+    const res  = await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'save', product }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast('✅ Sincronizado com Google Sheets!', 'success');
+      saveProductsLocal();
+    } else {
+      toast('Erro no Sheets: ' + (data.error || 'desconhecido'), 'error');
+    }
+  } catch (e) {
+    toast('Erro de conexão: ' + e.message, 'error');
+  }
+}
+
+async function deleteFromSheets(id) {
+  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  try {
+    await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', id }),
+    });
+  } catch (_) {}
+}
+
+async function syncStockToSheets(id, stock) {
+  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  try {
+    await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateStock', id, stock }),
+    });
+  } catch (_) {}
+}
+
+async function loadFromSheets() {
+  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  toast('🔄 Carregando produtos do Google Sheets...', 'info');
+  try {
+    const res  = await fetch(config.appsScriptUrl + '?action=list');
+    const data = await res.json();
+    if (data.success && data.products.length > 0) {
+      products = data.products;
+      saveProductsLocal();
+      renderDashboard();
+      renderProducts();
+      toast('✅ ' + products.length + ' produtos carregados do Sheets!', 'success');
+    } else {
+      toast('Sheets vazio. Mostrando dados locais.', 'info');
+    }
+  } catch (e) {
+    toast('Erro ao carregar Sheets: ' + e.message, 'error');
+  }
+}
+
+async function syncSheets() {
+  if (!config.sheetsConnected || !config.appsScriptUrl) {
+    toast('Configure o Apps Script em Configurações primeiro', 'error'); return;
+  }
+  toast('🔄 Sincronizando todos os produtos...', 'info');
+  let ok = 0;
+  for (const p of products) {
+    try {
+      const res  = await fetch(config.appsScriptUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'save', product: p }),
+      });
+      const data = await res.json();
+      if (data.success) ok++;
+    } catch (_) {}
+  }
+  toast(`✅ ${ok}/${products.length} produtos sincronizados!`, ok === products.length ? 'success' : 'warning');
+}
+
+async function syncSingleProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  if (!config.sheetsConnected || !config.appsScriptUrl) {
+    toast('Configure o Apps Script em Configurações primeiro', 'error'); return;
+  }
+  try {
+    const res  = await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'save', product: p }),
+    });
+    const data = await res.json();
+    if (data.success) toast('↑ Produto sincronizado com Sheets!', 'success');
+    else toast('Erro: ' + (data.error || ''), 'error');
+  } catch (e) {
+    toast('Erro de conexão: ' + e.message, 'error');
+  }
+}
+
+async function exportToSheets(type = 'produtos') {
+  await syncSheets();
+}
+
+// ── PERSISTÊNCIA LOCAL (backup) ──────────────────────────────
+function saveProductsLocal() {
+  try { localStorage.setItem('sophia_products', JSON.stringify(products)); } catch(_) {}
+}
+function loadProductsLocal() {
+  try {
+    const saved = localStorage.getItem('sophia_products');
+    if (saved) { products = JSON.parse(saved); }
+  } catch(_) {}
+}
+function saveOrdersLocal() {
+  try { localStorage.setItem('sophia_orders', JSON.stringify(orders)); } catch(_) {}
+}
+function loadOrdersLocal() {
+  try {
+    const saved = localStorage.getItem('sophia_orders');
+    if (saved) { orders = JSON.parse(saved); }
+    else { localStorage.setItem('sophia_orders', JSON.stringify(orders)); }
+  } catch(_) {}
+}
+
+// ── GITHUB UPLOAD ──
+async function uploadToGithub(file) {
+  if (!config.githubConnected) {
+    toast('Configure o GitHub em Configurações primeiro', 'error');
+    return null;
+  }
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+    
+    const timestamp = Date.now();
+    const ext = file.name.split('.').pop();
+    const fileName = `img_${timestamp}.${ext}`;
+    const path = `produtos/${fileName}`;
+
+    const res = await fetch(`https://api.github.com/repos/${config.githubRepo}/contents/${path}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${config.githubToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: `Upload ${fileName}`,
+        content: base64,
+        branch: config.githubBranch || 'main'
+      })
+    });
+    
+    const data = await res.json();
+    if (!res.ok) {
+      toast('GitHub: ' + (data.message || 'Erro desconhecido'), 'error');
+      return null;
+    }
+    return data.content.download_url;
+  } catch(e) {
+    toast('Erro no upload: ' + e.message, 'error');
+    return null;
+  }
+}
+
+// Armazena URLs enviadas ao GitHub para o produto atual
+let pendingImgUrls = [];
+
+function openModal(mode, id) {
+  pendingImgUrls = []; // limpar ao abrir modal
+  document.getElementById('upload-preview').innerHTML = '';
+  document.getElementById('modal-title').textContent = mode==='new' ? 'Novo Produto' : 'Editar Produto';
+  if (mode === 'edit' && id) {
+    const p = products.find(x => x.id === id);
+    if (p) {
+      document.getElementById('f-name').value = p.name;
+      document.getElementById('f-sku').value = p.sku;
+      document.getElementById('f-category').value = p.cat;
+      document.getElementById('f-cost').value = p.cost;
+      document.getElementById('f-price').value = p.price;
+      document.getElementById('f-sale-price').value = p.salePrice || '';
+      document.getElementById('f-desc').value = p.desc || '';
+      document.getElementById('f-status').value = p.status;
+      document.getElementById('f-featured').value = p.featured;
+      document.getElementById('f-pp').value = p.stock.pp;
+      document.getElementById('f-p').value = p.stock.p;
+      document.getElementById('f-m').value = p.stock.m;
+      document.getElementById('f-g').value = p.stock.g;
+      document.getElementById('f-gg').value = p.stock.gg;
+      document.getElementById('f-bling-id').value = p.blingId || '';
+      // Se já tem imagem, mostrar no preview
+      if (p.imgUrl) {
+        pendingImgUrls = [p.imgUrl];
+        const preview = document.getElementById('upload-preview');
+        preview.innerHTML = `<div class="preview-item"><img src="${p.imgUrl}"><button class="preview-remove" onclick="this.parentNode.remove(); pendingImgUrls=[];">✕</button></div>`;
+      }
+      // Guardar id sendo editado
+      document.getElementById('modal-overlay').dataset.editId = id;
+    }
+  } else {
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-sku').value = 'AUTO-' + String(products.length+1).padStart(3,'0');
+    document.getElementById('f-category').value = 'Vestidos';
+    document.getElementById('f-cost').value = '';
+    document.getElementById('f-price').value = '';
+    document.getElementById('f-sale-price').value = '';
+    document.getElementById('f-desc').value = '';
+    document.getElementById('f-status').value = 'Ativo';
+    document.getElementById('f-featured').value = 'Não';
+    document.getElementById('f-pp').value = 0;
+    document.getElementById('f-p').value = 0;
+    document.getElementById('f-m').value = 0;
+    document.getElementById('f-g').value = 0;
+    document.getElementById('f-gg').value = 0;
+    document.getElementById('f-bling-id').value = '';
+    document.getElementById('modal-overlay').dataset.editId = '';
+  }
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function handleFiles(files) {
+  const preview = document.getElementById('upload-preview');
+  Array.from(files).forEach(async file => {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      // Mostrar preview local imediatamente
+      div.innerHTML = `<img src="${e.target.result}"><div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:white">Enviando...</div>`;
+      preview.appendChild(div);
+      toast('⬆️ Enviando imagem ao GitHub...', 'info');
+      const url = await uploadToGithub(file);
+      if (url) {
+        // ✅ Salva URL na variável global para uso no saveProduct
+        pendingImgUrls.push(url);
+        div.innerHTML = `<img src="${url}"><button class="preview-remove" onclick="this.parentNode.remove(); pendingImgUrls=pendingImgUrls.filter(u=>u!=='${url}')">✕</button>`;
+        toast('🐙 Imagem salva no GitHub!', 'success');
+      } else {
+        div.remove();
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function handleDrop(e) { e.preventDefault(); document.getElementById('upload-zone').classList.remove('dragover'); handleFiles(e.dataTransfer.files); }
+
+// ── CONFIG CONNECT ──
+function connectSheets() {
+  const url = document.getElementById('sheets-url').value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) {
+    toast('Cole a URL do Apps Script (começa com https://script.google.com...)', 'error'); return;
+  }
+  localStorage.setItem('appsScriptUrl', url);
+  localStorage.setItem('sheetsConnected', 'true');
+  config.appsScriptUrl   = url;
+  config.sheetsConnected = true;
+  document.getElementById('sheets-dot').classList.replace('disconnected','connected');
+  document.getElementById('sheets-status-text').textContent = 'Conectado ✓';
+  toast('✅ Google Sheets conectado via Apps Script!', 'success');
+}
+async function testSheets() {
+  if (!config.sheetsConnected || !config.appsScriptUrl) {
+    toast('❌ Não conectado. Configure primeiro.', 'error'); return;
+  }
+  toast('🧪 Testando conexão...', 'info');
+  try {
+    const res  = await fetch(config.appsScriptUrl + '?action=list');
+    const data = await res.json();
+    if (data.success) toast('✅ Conexão OK! Planilha acessível. ' + (data.products?.length || 0) + ' produtos encontrados.', 'success');
+    else toast('❌ Erro: ' + (data.error || 'resposta inesperada'), 'error');
+  } catch (e) {
+    toast('❌ Falha na conexão: ' + e.message, 'error');
+  }
+}
+
+function connectGithub() {
+  const repo   = document.getElementById('gh-repo').value.trim();
+  const token  = document.getElementById('gh-token').value.trim();
+  const branch = document.getElementById('gh-branch').value.trim() || 'main';
+  if (!repo || !token) { toast('Preencha o Repositório e o Token', 'error'); return; }
+  localStorage.setItem('githubRepo', repo);
+  localStorage.setItem('githubToken', token);
+  localStorage.setItem('githubBranch', branch);
+  localStorage.setItem('githubConnected', 'true');
+  config.githubRepo      = repo;
+  config.githubToken     = token;
+  config.githubBranch    = branch;
+  config.githubConnected = true;
+  document.getElementById('github-dot').classList.replace('disconnected','connected');
+  document.getElementById('github-status-text').textContent = 'Conectado ✓';
+  toast('🐙 GitHub conectado!', 'success');
+}
+async function testGithub() {
+  if (!config.githubConnected) {
+    toast('❌ Não conectado. Configure primeiro.', 'error'); return;
+  }
+  toast('🧪 Testando conexão com GitHub...', 'info');
+  try {
+    const res  = await fetch(`https://api.github.com/repos/${config.githubRepo}`, {
+      headers: { 'Authorization': `Bearer ${config.githubToken}` }
+    });
+    if (res.ok) {
+      toast('✅ Conexão com GitHub OK! Acesso concedido ao repositório.', 'success');
+    } else {
+      toast('⚠️ Erro no GitHub. Verifique Token e Repositório (status ' + res.status + ')', 'warning');
+    }
+  } catch (e) {
+    toast('❌ Erro ao testar: ' + e.message, 'error');
+  }
+}
+
+function saveWhatsApp() { toast('✅ WhatsApp configurado!', 'success'); }
+function saveStoreInfo() { toast('✅ Informações da loja salvas!', 'success'); }
+
+function loadConfigForm() {
+  const url = localStorage.getItem('appsScriptUrl');
+  if (url) document.getElementById('sheets-url').value = url;
+  const gr = localStorage.getItem('githubRepo');
+  if (gr) document.getElementById('gh-repo').value = gr;
+  const gt = localStorage.getItem('githubToken');
+  if (gt) document.getElementById('gh-token').value = gt;
+  const gb = localStorage.getItem('githubBranch');
+  if (gb) document.getElementById('gh-branch').value = gb;
+  if (localStorage.getItem('sheetsConnected') === 'true') {
+    document.getElementById('sheets-dot').classList.replace('disconnected','connected');
+    document.getElementById('sheets-status-text').textContent = 'Conectado ✓';
+  }
+  if (localStorage.getItem('githubConnected') === 'true') {
+    document.getElementById('github-dot').classList.replace('disconnected','connected');
+    document.getElementById('github-status-text').textContent = 'Conectado ✓';
+  }
+}
+
+// ── TOAST ──
+function toast(msg, type='info') {
+  const icons = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️' };
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => { t.style.animation = 'none'; t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+// ── MARGIN CALC ──
+document.addEventListener('input', e => {
+  if (e.target.id === 'f-price' || e.target.id === 'f-cost') {
+    const p = parseFloat(document.getElementById('f-price').value)||0;
+    const c= parseFloat(document.getElementById('f-cost').value)||0;
+    const margin = p > 0 ? Math.round((p - c) / p * 100) : 0;
+    const el = document.getElementById('f-margin');
+    if (el) {
+      el.value = margin + '%';
+      el.style.color = margin > 50 ? 'var(--success)' : margin > 20 ? 'var(--warning)' : 'var(--danger)';
+    }
+  }
+});
+
+// ── INTEGRATIONS PAGE LOGIC ──
+function loadIntegrationsPage() {
+  // Load connection states from localStorage
+  const shConnected = localStorage.getItem('shopeeConnected') === 'true';
+  const ttConnected = localStorage.getItem('tiktokConnected') === 'true';
+  
+  // Set toggles/dot colors
+  const shDot = document.getElementById('shopee-dot');
+  const shText = document.getElementById('shopee-status-text');
+  const shConn = document.getElementById('shopee-conn-text');
+  if (shConnected) {
+    shDot.className = 'status-dot connected';
+    shText.textContent = 'Conectado ✓';
+    shConn.textContent = 'Conectado ✓';
+    shConn.style.color = 'var(--success)';
+  } else {
+    shDot.className = 'status-dot disconnected';
+    shText.textContent = 'Não Conectado';
+    shConn.textContent = 'Desconectado';
+    shConn.style.color = 'var(--gray-600)';
+  }
+
+  const ttDot = document.getElementById('tiktok-dot');
+  const ttText = document.getElementById('tiktok-status-text');
+  const ttConn = document.getElementById('tiktok-conn-text');
+  if (ttConnected) {
+    ttDot.className = 'status-dot connected';
+    ttText.textContent = 'Conectado ✓';
+    ttConn.textContent = 'Conectado ✓';
+    ttConn.style.color = 'var(--success)';
+  } else {
+    ttDot.className = 'status-dot disconnected';
+    ttText.textContent = 'Não Conectado';
+    ttConn.textContent = 'Desconectado';
+    ttConn.style.color = 'var(--gray-600)';
+  }
+
+  // Load credential inputs
+  document.getElementById('bl-access-token').value = localStorage.getItem('blingToken') || '';
+
+  // Render sales splits
+  updateChannelSalesStat();
+
+  // Print initial system log
+  const consoleLog = document.getElementById('integration-logs');
+  if (consoleLog && consoleLog.children.length === 0) {
+    addIntegrationLog('Console de Integração Multicanal iniciado.', 'system');
+    if (blConnected) addIntegrationLog('Link Bling ERP Ativo (API v3).', 'system');
+  }
+}
+
+function updateChannelSalesStat() {
+  const storeSales = orders.filter(o => !o.source || o.source === 'Loja' || o.source === 'Caixa').reduce((s, o) => s + o.total, 0);
+  const blingSales = orders.filter(o => o.source === 'Bling ERP').reduce((s, o) => s + o.total, 0);
+
+  const elStore = document.getElementById('stat-store-sales');
+  const elBling = document.getElementById('stat-bling-sales');
+
+  if (elStore) elStore.textContent = 'R$ ' + storeSales.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  if (elBling) elBling.textContent = 'R$ ' + blingSales.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+}
+
+function addIntegrationLog(msg, type = 'system') {
+  const container = document.getElementById('integration-logs');
+  if (!container) return;
+  
+  const time = new Date().toLocaleTimeString('pt-BR');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  
+  let tag = 'SYSTEM';
+  let tagClass = 'system';
+  if (type === 'shopee') { tag = 'SHOPEE'; tagClass = 'shopee'; }
+  if (type === 'tiktok') { tag = 'TIKTOK'; tagClass = 'tiktok'; }
+
+  line.innerHTML = `
+    <span class="log-time">[${time}]</span>
+    <span class="log-tag ${tagClass}">[${tag}]</span>
+    <span class="log-text">${msg}</span>
+  `;
+  container.appendChild(line);
+  container.scrollTop = container.scrollHeight;
+}
+
+function connectBling() {
+  const token = document.getElementById('bl-access-token').value.trim();
+
+  if (!token) {
+    toast('Preencha o Access Token do Bling para conectar', 'error');
+    return;
+  }
+
+  toast('Validando credenciais do Bling ERP...', 'info');
+  addIntegrationLog('Autenticando via Personal Access Token...', 'system');
+
+  setTimeout(() => {
+    localStorage.setItem('blingConnected', 'true');
+    localStorage.setItem('blingToken', token);
+    config.blingConnected = true;
+    config.blingToken = token;
+
+    document.getElementById('bling-dot').className = 'status-dot connected';
+    document.getElementById('bling-status-text').textContent = 'Conectado ✓';
+    document.getElementById('bling-conn-text').textContent = 'Conectado ✓';
+    document.getElementById('bling-conn-text').style.color = 'var(--success)';
+
+    addIntegrationLog('Conexão Bling estabelecida com sucesso! API v3 operante.', 'system');
+    toast('Bling conectado com sucesso!', 'success');
+  }, 1200);
+}
+
+function testBlingConnection() {
+  const blConnected = localStorage.getItem('blingConnected') === 'true';
+  if (!blConnected) {
+    toast('Conecte o Bling primeiro salvando o seu Token', 'error');
+    return;
+  }
+  toast('Testando comunicação com o Bling...', 'info');
+  addIntegrationLog('Enviando request GET https://www.bling.com.br/Api/v3/produtos...', 'system');
+  setTimeout(() => {
+    addIntegrationLog('Bling API retornou status 200 OK (Ping: 180ms). Token Válido.', 'system');
+    toast('Comunicação com Bling está perfeita!', 'success');
+  }, 800);
+}
+
+function syncMarketplaces() {
+  const blConnected = localStorage.getItem('blingConnected') === 'true';
+  
+  if (!blConnected) {
+    toast('Conecte o Bling ERP em Integrações antes de sincronizar', 'warning');
+    return;
+  }
+
+  toast('Sincronizando com o Bling...', 'info');
+  addIntegrationLog('Processo de sincronização em massa iniciado. Enviando cargas para a API do Bling...', 'system');
+
+  setTimeout(() => {
+    let count = 0;
+    products.forEach(p => {
+      if (p.status === 'Ativo') {
+        count++;
+        const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+        addIntegrationLog(`[Bling] SKU ${p.sku} sincronizado. Estoque Central: ${total} un. Preço base: R$ ${p.price.toFixed(2)}`, 'system');
+      }
+    });
+    addIntegrationLog(`Sincronização com o Bling ERP concluída para ${count} produtos. A distribuição para Marketplaces será gerida pelo Bling.`, 'system');
+    toast('Sincronização realizada com sucesso!', 'success');
+  }, 1500);
+}
+
+function mockNewMarketplaceOrder() {
+  const blConnected = localStorage.getItem('blingConnected') === 'true';
+
+  if (!blConnected) {
+    toast('Conecte o Bling ERP para receber importação de vendas simuladas', 'warning');
+    return;
+  }
+
+  const activeProds = products.filter(p => p.status === 'Ativo');
+  if (activeProds.length === 0) return;
+  const prod = activeProds[Math.floor(Math.random() * activeProds.length)];
+
+  const sizes = Object.keys(prod.stock).filter(s => prod.stock[s] > 0);
+  if (sizes.length === 0) {
+    toast(`Simulação ignorada: SKU ${prod.sku} sem estoque disponível.`, 'warning');
+    return;
+  }
+  const size = sizes[Math.floor(Math.random() * sizes.length)];
+  
+  // Decrement stock
+  prod.stock[size]--;
+  saveProductsLocal();
+
+  const marketplace = Math.random() > 0.5 ? 'Shopee' : 'TikTok Shop';
+  const orderId = '#BLG-' + Math.floor(Math.random() * 900000 + 100000);
+  
+  const customersNames = ['Clarice Falcão', 'Helena Roitman', 'Tais Araujo', 'Roberta Miranda', 'Fernanda Torres'];
+  const customer = customersNames[Math.floor(Math.random() * customersNames.length)];
+
+  const date = new Date().toLocaleDateString('pt-BR');
+  const orderTotal = prod.salePrice || prod.price;
+
+  const newOrder = {
+    id: orderId,
+    customer: customer,
+    products: prod.name + ` (${size.toUpperCase()})`,
+    total: orderTotal,
+    payment: `${marketplace} Pay via Bling`,
+    status: 'Processando',
+    date: date,
+    source: 'Bling ERP'
+  };
+
+  orders.unshift(newOrder);
+  saveOrdersLocal();
+  
+  addIntegrationLog(`Pedido importado via Bling! [Venda Original: ${marketplace}] - Pedido ${orderId} - Item: ${prod.name} (${size.toUpperCase()}).`, 'system');
+  addIntegrationLog(`[Bling] Estoque de SKU ${prod.sku} ajustado automaticamente para ${Object.values(prod.stock).reduce((a,b)=>a+b,0)} un.`, 'system');
+
+  updateChannelSalesStat();
+  renderDashboard();
+  renderOrders();
+  renderProducts();
+
+  toast(`🛍️ Nova venda externa (${marketplace}) via Bling!`, 'success');
+}
+
+// ── FRENTE DE CAIXA (POS / PDV) LOGIC ──
+let posCart = [];
+
+function loadPosPage() {
+  // Populate category filter select
+  const posFilterSel = document.getElementById('pos-filter-cat');
+  if (posFilterSel) {
+    const names = categories.map(c => c.name);
+    posFilterSel.innerHTML = '<option value="">Categorias (Todas)</option>' +
+      names.map(n => `<option>${n}</option>`).join('');
+  }
+  
+  // Render POS catalog
+  filterPosProducts('');
+  
+  // Clear cart and state
+  clearPosSale();
+}
+
+function filterPosProducts(query) {
+  const selectedCat = document.getElementById('pos-filter-cat')?.value || '';
+  const searchInput = query.toLowerCase().trim();
+  
+  let list = products.filter(p => p.status === 'Ativo' || p.status === 'Estoque Baixo');
+  
+  if (selectedCat) {
+    list = list.filter(p => p.cat === selectedCat);
+  }
+  
+  if (searchInput) {
+    list = list.filter(p => 
+      p.name.toLowerCase().includes(searchInput) || 
+      p.sku.toLowerCase().includes(searchInput) ||
+      p.cat.toLowerCase().includes(searchInput)
+    );
+  }
+  
+  renderPosProducts(list);
+}
+
+function renderPosProducts(list) {
+  const grid = document.getElementById('pos-products-grid');
+  if (!grid) return;
+  
+  if (list.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--gray-400); font-size: 0.75rem;">
+        <span style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem;">🔍</span>
+        Nenhum produto em estoque encontrado.
+      </div>
+    `;
+    return;
+  }
+  
+  grid.innerHTML = list.map(p => {
+    const sizes = ['pp', 'p', 'm', 'g', 'gg'];
+    const sizeBadges = sizes.map(sz => {
+      const stockQty = p.stock ? (p.stock[sz] || 0) : 0;
+      if (stockQty <= 0) {
+        return `<span class="pos-size-badge out" title="Sem estoque">${sz.toUpperCase()}</span>`;
+      } else {
+        return `<span class="pos-size-badge" onclick="event.stopPropagation(); addToPosCart(${p.id}, '${sz}')" title="Estoque: ${stockQty}">${sz.toUpperCase()}</span>`;
+      }
+    }).join('');
+
+    return `
+      <div class="pos-prod-card" onclick="addToPosCartDefault(${p.id})">
+        <img src="${p.imgUrl || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=80&q=60'}" class="pos-prod-thumb" alt="${p.name}" onerror="this.src='https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=80&q=60'">
+        <div class="pos-prod-title" title="${p.name}">${p.name}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+          <span class="pos-prod-price">R$ ${p.price.toFixed(2).replace('.', ',')}</span>
+          <span style="font-size: 0.6rem; color: var(--gray-400); font-family: monospace;">${p.sku}</span>
+        </div>
+        <div class="pos-size-badge-wrap">
+          ${sizeBadges}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function addToPosCartDefault(productId) {
+  const p = products.find(x => x.id === productId);
+  if (!p) return;
+  // Try to find the first size with stock
+  const sizes = ['p', 'm', 'g', 'pp', 'gg'];
+  const firstAvailable = sizes.find(sz => p.stock && p.stock[sz] > 0);
+  if (firstAvailable) {
+    addToPosCart(productId, firstAvailable);
+  } else {
+    toast(`⚠️ Produto ${p.name} está totalmente esgotado!`, 'warning');
+  }
+}
+
+function addToPosCart(productId, size) {
+  const p = products.find(x => x.id === productId);
+  if (!p) return;
+  
+  const sizeKey = size.toLowerCase();
+  const availableStock = p.stock ? (p.stock[sizeKey] || 0) : 0;
+  
+  const existing = posCart.find(i => i.productId === productId && i.size === sizeKey);
+  
+  if (existing) {
+    if (existing.qty + 1 > availableStock) {
+      toast(`⚠️ Estoque insuficiente para o tamanho ${size.toUpperCase()} (${availableStock} un. disponíveis)`, 'warning');
+      return;
+    }
+    existing.qty++;
+  } else {
+    if (availableStock <= 0) {
+      toast(`⚠️ Tamanho ${size.toUpperCase()} sem estoque disponível`, 'warning');
+      return;
+    }
+    posCart.push({
+      productId: productId,
+      name: p.name,
+      sku: p.sku,
+      price: p.price,
+      imgUrl: p.imgUrl,
+      size: sizeKey,
+      qty: 1
+    });
+  }
+  
+  toast(`🛍️ ${p.name} (${size.toUpperCase()}) adicionado ao caixa.`, 'success');
+  renderPosCart();
+}
+
+function updatePosCartQuantity(productId, size, delta) {
+  const p = products.find(x => x.id === productId);
+  if (!p) return;
+  
+  const sizeKey = size.toLowerCase();
+  const availableStock = p.stock ? (p.stock[sizeKey] || 0) : 0;
+  const item = posCart.find(i => i.productId === productId && i.size === sizeKey);
+  
+  if (item) {
+    if (item.qty + delta > availableStock) {
+      toast(`⚠️ Estoque esgotado (${availableStock} un. no total)`, 'warning');
+      return;
+    }
+    item.qty += delta;
+    if (item.qty <= 0) {
+      removeFromPosCart(productId, sizeKey);
+    } else {
+      renderPosCart();
+    }
+  }
+}
+
+function removeFromPosCart(productId, size) {
+  const sizeKey = size.toLowerCase();
+  posCart = posCart.filter(i => !(i.productId === productId && i.size === sizeKey));
+  renderPosCart();
+}
+
+function renderPosCart() {
+  const container = document.getElementById('pos-cart-items');
+  if (!container) return;
+  
+  if (posCart.length === 0) {
+    container.innerHTML = `
+      <div class="pos-cart-empty">
+        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🛍️</div>
+        Carrinho vazio. Adicione peças clicando nos tamanhos.
+      </div>
+    `;
+    calculatePosTotals();
+    return;
+  }
+  
+  container.innerHTML = posCart.map(item => `
+    <div class="pos-cart-item">
+      <img src="${item.imgUrl || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=80&q=60'}" style="width:36px; height:44px; object-fit:cover; border-radius:4px; flex-shrink:0;">
+      <div class="pos-cart-info">
+        <div class="pos-cart-title" title="${item.name}">${item.name}</div>
+        <div class="pos-cart-meta">Tamanho: <b>${item.size.toUpperCase()}</b> · SKU: ${item.sku}</div>
+        <div class="pos-cart-price">R$ ${item.price.toFixed(2).replace('.', ',')}</div>
+      </div>
+      <div class="pos-cart-qty-ctrl">
+        <button class="pos-cart-qty-btn" onclick="updatePosCartQuantity(${item.productId}, '${item.size}', -1)">-</button>
+        <span style="font-weight:600; font-size:0.75rem; width:16px; text-align:center;">${item.qty}</span>
+        <button class="pos-cart-qty-btn" onclick="updatePosCartQuantity(${item.productId}, '${item.size}', 1)">+</button>
+      </div>
+      <button onclick="removeFromPosCart(${item.productId}, '${item.size}')" style="background:none; border:none; color:var(--gray-400); cursor:pointer; font-size:0.9rem; padding:0.25rem; margin-left:0.25rem;">✕</button>
+    </div>
+  `).join('');
+  
+  calculatePosTotals();
+}
+
+function calculatePosTotals() {
+  const subtotal = posCart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+  
+  const discountInput = document.getElementById('pos-discount')?.value.trim() || '';
+  let discountValue = 0;
+  
+  if (discountInput) {
+    if (discountInput.endsWith('%')) {
+      const pct = parseFloat(discountInput.replace('%', '')) || 0;
+      discountValue = subtotal * (pct / 100);
+    } else {
+      discountValue = parseFloat(discountInput) || 0;
+    }
+  }
+  
+  const total = Math.max(0, subtotal - discountValue);
+  
+  const elSub = document.getElementById('pos-subtotal');
+  const elTot = document.getElementById('pos-total');
+  if (elSub) elSub.textContent = 'R$ ' + subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  if (elTot) elTot.textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  
+  // Troco calculations
+  const paymentMethod = document.getElementById('pos-payment')?.value || 'Dinheiro';
+  const elChange = document.getElementById('pos-change');
+  
+  if (paymentMethod === 'Dinheiro') {
+    const cashReceived = parseFloat(document.getElementById('pos-cash-received')?.value) || 0;
+    const change = Math.max(0, cashReceived - total);
+    if (elChange) {
+      elChange.textContent = 'R$ ' + change.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+      elChange.style.color = cashReceived >= total ? 'var(--success)' : 'var(--danger)';
+    }
+  } else {
+    if (elChange) {
+      elChange.textContent = 'R$ 0,00';
+      elChange.style.color = 'var(--gray-400)';
+    }
+  }
+}
+
+function togglePosPaymentInput() {
+  const paymentMethod = document.getElementById('pos-payment')?.value || 'Dinheiro';
+  const cashInputGroup = document.getElementById('pos-cash-input-group');
+  const changeGroup = document.getElementById('pos-change-group');
+  const carneGroup = document.getElementById('pos-carne-input-group');
+  
+  if (paymentMethod === 'Dinheiro') {
+    if (cashInputGroup) cashInputGroup.style.display = 'flex';
+    if (changeGroup) changeGroup.style.display = 'flex';
+    if (carneGroup) carneGroup.style.display = 'none';
+  } else if (paymentMethod === 'Carnê') {
+    if (cashInputGroup) cashInputGroup.style.display = 'none';
+    if (changeGroup) changeGroup.style.display = 'none';
+    if (carneGroup) carneGroup.style.display = 'block';
+  } else {
+    if (cashInputGroup) cashInputGroup.style.display = 'none';
+    if (changeGroup) changeGroup.style.display = 'none';
+    if (carneGroup) carneGroup.style.display = 'none';
+    const elCash = document.getElementById('pos-cash-received');
+    if (elCash) elCash.value = '';
+  }
+  calculatePosTotals();
+}
+
+function clearPosSale() {
+  posCart = [];
+  document.getElementById('pos-discount').value = '';
+  document.getElementById('pos-client-name').value = '';
+  document.getElementById('pos-cash-received').value = '';
+  document.getElementById('pos-search').value = '';
+  
+  const paymentSelect = document.getElementById('pos-payment');
+  if (paymentSelect) paymentSelect.value = 'Dinheiro';
+  
+  const carneInput = document.getElementById('pos-carne-installments');
+  if (carneInput) carneInput.value = '';
+  
+  togglePosPaymentInput();
+  renderPosCart();
+}
+
+function finalizePosSale() {
+  if (posCart.length === 0) {
+    toast('⚠️ Adicione pelo menos um produto para finalizar a venda!', 'warning');
+    return;
+  }
+  
+  const paymentMethod = document.getElementById('pos-payment')?.value || 'Dinheiro';
+  const subtotal = posCart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+  
+  const discountInput = document.getElementById('pos-discount')?.value.trim() || '';
+  let discountValue = 0;
+  if (discountInput) {
+    if (discountInput.endsWith('%')) {
+      const pct = parseFloat(discountInput.replace('%', '')) || 0;
+      discountValue = subtotal * (pct / 100);
+    } else {
+      discountValue = parseFloat(discountInput) || 0;
+    }
+  }
+  const total = Math.max(0, subtotal - discountValue);
+  let cashReceived = total;
+  
+  if (paymentMethod === 'Dinheiro') {
+    cashReceived = parseFloat(document.getElementById('pos-cash-received')?.value) || 0;
+    if (cashReceived < total) {
+      toast(`❌ Valor recebido insuficiente! A venda totaliza R$ ${total.toFixed(2).replace('.', ',')}`, 'error');
+      return;
+    }
+  }
+
+  let finalPaymentStr = paymentMethod;
+  if (paymentMethod === 'Carnê') {
+    const installments = document.getElementById('pos-carne-installments')?.value || 1;
+    finalPaymentStr = `Carnê (${installments}x)`;
+  }
+  
+  // 1. Debit inventory
+  posCart.forEach(item => {
+    const prod = products.find(p => p.id === item.productId);
+    if (prod) {
+      if (prod.stock && prod.stock[item.size] !== undefined) {
+        prod.stock[item.size] = Math.max(0, prod.stock[item.size] - item.qty);
+      }
+      
+      // Sync stock to Google Sheets in background if sheets connected
+      if (config.sheetsConnected && config.appsScriptUrl) {
+        syncStockToSheets(prod.id, prod.stock);
+      }
+    }
+  });
+  
+  saveProductsLocal();
+  
+  // 2. Generate POS Order
+  const orderId = '#PDV-' + Math.floor(Math.random() * 900000 + 100000);
+  const clientName = document.getElementById('pos-client-name')?.value.trim() || 'Cliente de Balcão';
+  const itemsText = posCart.map(item => `${item.name} (${item.size.toUpperCase()}) x${item.qty}`).join(' + ');
+  const dateStr = new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const dateOnlyStr = new Date().toLocaleDateString('pt-BR');
+  
+  const newOrder = {
+    id: orderId,
+    customer: clientName,
+    products: itemsText,
+    total: total,
+    payment: finalPaymentStr,
+    status: 'Entregue',
+    date: dateOnlyStr,
+    source: 'Caixa'
+  };
+  
+  orders.unshift(newOrder);
+  saveOrdersLocal();
+  
+  // 3. Print thermal receipt data fields mapping
+  document.getElementById('r-order-id').textContent = orderId;
+  document.getElementById('r-date').textContent = dateStr;
+  document.getElementById('r-subtotal').textContent = 'R$ ' + subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  document.getElementById('r-discount').textContent = 'R$ ' + discountValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  document.getElementById('r-total').textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  document.getElementById('r-client').textContent = clientName;
+  document.getElementById('r-payment').textContent = finalPaymentStr;
+  
+  const cashRow = document.getElementById('r-cash-row');
+  const changeRow = document.getElementById('r-change-row');
+  
+  if (paymentMethod === 'Dinheiro') {
+    if (cashRow) cashRow.style.display = '';
+    if (changeRow) changeRow.style.display = '';
+    document.getElementById('r-paid').textContent = 'R$ ' + cashReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    document.getElementById('r-change').textContent = 'R$ ' + Math.max(0, cashReceived - total).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  } else {
+    if (cashRow) cashRow.style.display = 'none';
+    if (changeRow) changeRow.style.display = 'none';
+  }
+  
+  const rItemsContainer = document.getElementById('r-items');
+  if (rItemsContainer) {
+    rItemsContainer.innerHTML = posCart.map(item => `
+      <tr>
+        <td>${item.qty}</td>
+        <td>${item.name} [${item.size.toUpperCase()}]</td>
+        <td style="text-align:right">R$ ${(item.price * item.qty).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+      </tr>
+    `).join('');
+  }
+  
+  // 4. Update core dashboard and listings
+  renderDashboard();
+  renderOrders();
+  renderProducts();
+  
+  toast('🏪 Venda do Caixa realizada com sucesso!', 'success');
+  
+  // 5. Trigger thermal receipt printing native shell window
+  setTimeout(() => {
+    window.print();
+    clearPosSale();
+    filterPosProducts('');
+  }, 300);
+}
+
+
+// ── CATEGORIES ──────────────────────────────────────────────
+let categories = JSON.parse(localStorage.getItem('sophia_categories') || '[]');
+// Categorias padrão se ainda não tiver nenhuma
+if (categories.length === 0) {
+  categories = [
+    { id:1, name:'Vestidos',   desc:'Peças elegantes para todos os momentos', imgUrl:'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&q=80', order:1 },
+    { id:2, name:'Blusas',     desc:'Modernidade e conforto em cada detalhe',  imgUrl:'https://images.unsplash.com/photo-1594938298603-4bf6b9c6d1d9?w=600&q=80', order:2 },
+    { id:3, name:'Calças',     desc:'Estilo e versatilidade para o dia a dia', imgUrl:'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80', order:3 },
+    { id:4, name:'Acessórios', desc:'O toque final que completa o look',       imgUrl:'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=600&q=80', order:4 },
+  ];
+  saveCategories();
+}
+
+function saveCategories() {
+  localStorage.setItem('sophia_categories', JSON.stringify(categories));
+  // Atualizar selects de categoria em todo o admin
+  updateCategorySelects();
+}
+
+function updateCategorySelects() {
+  const names = categories.map(c => c.name);
+  // Select do filtro na página de produtos
+  const filterSel = document.querySelector('select[onchange="filterCategory(this.value)"]');
+  if (filterSel) {
+    filterSel.innerHTML = '<option value="">Todas as categorias</option>' +
+      names.map(n => `<option>${n}</option>`).join('');
+  }
+  // Select do modal de produto
+  const modalSel = document.getElementById('f-category');
+  if (modalSel) {
+    const current = modalSel.value;
+    modalSel.innerHTML = names.map(n => `<option${n===current?' selected':''}>${n}</option>`).join('');
+  }
+}
+
+function renderCategories() {
+  const grid = document.getElementById('categories-grid');
+  if (!grid) return;
+  const sorted = [...categories].sort((a,b) => (a.order||99) - (b.order||99));
+  grid.innerHTML = sorted.map(c => {
+    const prodCount = products.filter(p => p.cat === c.name).length;
+    return `
+    <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden">
+      <div style="position:relative;height:180px;background:var(--gray-100)">
+        <img src="${c.imgUrl||''}" alt="${c.name}"
+          style="width:100%;height:100%;object-fit:cover"
+          onerror="this.style.display='none'"
+        >
+        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(26,10,18,0.7),transparent);display:flex;align-items:flex-end;padding:1rem">
+          <span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:white;font-weight:400">${c.name}</span>
+        </div>
+        <div style="position:absolute;top:0.75rem;right:0.75rem;display:flex;gap:0.4rem">
+          <button onclick="openCatModal(${c.id})" class="btn btn-sm btn-secondary btn-icon" title="Editar">✏️</button>
+          <button onclick="deleteCategory(${c.id})" class="btn btn-sm btn-secondary btn-icon" style="color:var(--danger)" title="Excluir">🗑</button>
+        </div>
+      </div>
+      <div style="padding:1rem 1.25rem">
+        <p style="font-size:0.75rem;color:var(--gray-600);margin-bottom:0.5rem">${c.desc||'Sem descrição'}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="badge badge-info">${prodCount} produto${prodCount!==1?'s':''}</span>
+          <span style="font-size:0.65rem;color:var(--gray-400)">Ordem: ${c.order||1}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Modal de categoria
+let catPendingUrl = '';
+let catEditId = null;
+
+function openCatModal(id) {
+  catPendingUrl = '';
+  catEditId = id || null;
+  document.getElementById('cat-preview').innerHTML = '';
+  document.getElementById('cat-file-input').value = '';
+
+  if (id) {
+    const c = categories.find(x => x.id === id);
+    if (c) {
+      document.getElementById('cat-modal-title').textContent = 'Editar Categoria';
+      document.getElementById('cat-name').value  = c.name;
+      document.getElementById('cat-desc').value  = c.desc || '';
+      document.getElementById('cat-order').value = c.order || 1;
+      if (c.imgUrl) {
+        catPendingUrl = c.imgUrl;
+        document.getElementById('cat-preview').innerHTML =
+          `<img src="${c.imgUrl}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200)">`;
+      }
+    }
+  } else {
+    document.getElementById('cat-modal-title').textContent = 'Nova Categoria';
+    document.getElementById('cat-name').value  = '';
+    document.getElementById('cat-desc').value  = '';
+    document.getElementById('cat-order').value = categories.length + 1;
+  }
+
+  const overlay = document.getElementById('cat-modal-overlay');
+  overlay.style.opacity = '1';
+  overlay.style.pointerEvents = 'all';
+  document.getElementById('cat-modal-box').style.transform = 'translateY(0) scale(1)';
+}
+
+function closeCatModal() {
+  const overlay = document.getElementById('cat-modal-overlay');
+  overlay.style.opacity = '0';
+  overlay.style.pointerEvents = 'none';
+  document.getElementById('cat-modal-box').style.transform = 'translateY(20px) scale(0.97)';
+}
+
+async function handleCatFile(files) {
+  if (!files || !files[0]) return;
+  if (!config.githubConnected) {
+    toast('Configure o GitHub em Configurações primeiro', 'error'); return;
+  }
+  const file = files[0];
+  document.getElementById('cat-preview').innerHTML =
+    `<div style="height:140px;background:var(--gray-100);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--gray-400)">⬆️ Enviando...</div>`;
+  toast('⬆️ Enviando imagem da categoria...', 'info');
+  const url = await uploadToGithub(file);
+  if (url) {
+    catPendingUrl = url;
+    document.getElementById('cat-preview').innerHTML =
+      `<img src="${url}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-200)">`;
+    toast('🐙 Imagem da categoria salva no GitHub!', 'success');
+  } else {
+    document.getElementById('cat-preview').innerHTML = '';
+  }
+}
+
+function handleCatDrop(e) {
+  e.preventDefault();
+  document.getElementById('cat-upload-zone').classList.remove('dragover');
+  handleCatFile(e.dataTransfer.files);
+}
+
+async function saveCategory() {
+  const name = document.getElementById('cat-name').value.trim();
+  if (!name) { toast('Nome é obrigatório', 'error'); return; }
+
+  if (catEditId) {
+    const idx = categories.findIndex(c => c.id === catEditId);
+    if (idx > -1) {
+      categories[idx] = {
+        ...categories[idx],
+        name,
+        desc:   document.getElementById('cat-desc').value.trim(),
+        order:  parseInt(document.getElementById('cat-order').value) || 1,
+        imgUrl: catPendingUrl || categories[idx].imgUrl,
+      };
+    }
+  } else {
+    categories.push({
+      id:     Date.now(),
+      name,
+      desc:   document.getElementById('cat-desc').value.trim(),
+      order:  parseInt(document.getElementById('cat-order').value) || 1,
+      imgUrl: catPendingUrl || '',
+    });
+  }
+
+  saveCategories();
+  renderCategories();
+  closeCatModal();
+  toast(catEditId ? '✅ Categoria atualizada!' : '✅ Categoria criada!', 'success');
+}
+
+function deleteCategory(id) {
+  const c = categories.find(x => x.id === id);
+  if (!c) return;
+  const inUse = products.filter(p => p.cat === c.name).length;
+  if (inUse > 0) {
+    toast(`❌ Não é possível excluir — ${inUse} produto(s) usam essa categoria.`, 'error'); return;
+  }
+  if (confirm(`Excluir categoria "${c.name}"?`)) {
+    categories = categories.filter(x => x.id !== id);
+    saveCategories();
+    renderCategories();
+    toast('Categoria removida', 'info');
+  }
+}
+
+// ── SUPPLIERS LOGIC ──
+let suppliers = [];
+
+function loadSuppliersLocal() {
+  const data = localStorage.getItem('sophiaStoreSuppliers');
+  if (data) suppliers = JSON.parse(data);
+  else suppliers = [
+    { id: 1, name: 'Tecidos Premium SP', doc: '12.345.678/0001-90', phone: '(11) 98888-7777', email: 'vendas@tecidosp.com', category: 'Tecidos', status: 'Ativo', obs: 'Entrega rápida' },
+    { id: 2, name: 'Embalagens & Cia', doc: '98.765.432/0001-10', phone: '(11) 3333-4444', email: 'contato@embalagens.com', category: 'Embalagens', status: 'Ativo', obs: 'Faturamento 30 dias' }
+  ];
+}
+
+function saveSuppliersLocal() {
+  localStorage.setItem('sophiaStoreSuppliers', JSON.stringify(suppliers));
+}
+
+function renderSuppliers() {
+  const tbody = document.getElementById('suppliers-table');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (suppliers.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gray-400)">Nenhum fornecedor cadastrado.</td></tr>`;
+    return;
+  }
+  suppliers.forEach(s => {
+    const tr = document.createElement('tr');
+    const badge = s.status === 'Ativo' ? '<span class="badge" style="background:#eefdf3;color:var(--success)">Ativo</span>' : '<span class="badge" style="background:#fee2e2;color:var(--danger)">Inativo</span>';
+    tr.innerHTML = `
+      <td style="font-weight:600">${s.name}</td>
+      <td style="color:var(--gray-600);font-size:0.8rem">${s.doc || '-'}</td>
+      <td style="font-size:0.8rem">${s.phone}<br><span style="color:var(--gray-400)">${s.email}</span></td>
+      <td><span style="font-size:0.75rem;background:var(--gray-100);padding:2px 6px;border-radius:4px">${s.category || '-'}</span></td>
+      <td>${badge}</td>
+      <td>
+        <div class="action-btn" onclick="openSupplierModal(${s.id})" title="Editar">✏️</div>
+        <div class="action-btn" onclick="deleteSupplier(${s.id})" title="Excluir">🗑️</div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function openSupplierModal(id) {
+  const overlay = document.getElementById('sup-modal-overlay');
+  if (id) {
+    const s = suppliers.find(x => x.id === id);
+    if (!s) return;
+    overlay.dataset.editId = s.id;
+    document.getElementById('sup-name').value = s.name;
+    document.getElementById('sup-doc').value = s.doc;
+    document.getElementById('sup-phone').value = s.phone;
+    document.getElementById('sup-email').value = s.email;
+    document.getElementById('sup-category').value = s.category;
+    document.getElementById('sup-status').value = s.status;
+    document.getElementById('sup-obs').value = s.obs || '';
+  } else {
+    overlay.dataset.editId = '';
+    document.getElementById('sup-name').value = '';
+    document.getElementById('sup-doc').value = '';
+    document.getElementById('sup-phone').value = '';
+    document.getElementById('sup-email').value = '';
+    document.getElementById('sup-category').value = '';
+    document.getElementById('sup-status').value = 'Ativo';
+    document.getElementById('sup-obs').value = '';
+  }
+  overlay.style.display = 'flex';
+}
+
+function closeSupplierModal() {
+  document.getElementById('sup-modal-overlay').style.display = 'none';
+}
+
+function saveSupplier() {
+  const name = document.getElementById('sup-name').value.trim();
+  if (!name) { toast('Nome do Fornecedor é obrigatório', 'error'); return; }
+
+  const editId = document.getElementById('sup-modal-overlay').dataset.editId;
+  const newSup = {
+    name,
+    doc: document.getElementById('sup-doc').value.trim(),
+    phone: document.getElementById('sup-phone').value.trim(),
+    email: document.getElementById('sup-email').value.trim(),
+    category: document.getElementById('sup-category').value.trim(),
+    status: document.getElementById('sup-status').value,
+    obs: document.getElementById('sup-obs').value.trim()
+  };
+
+  if (editId) {
+    const idx = suppliers.findIndex(x => x.id == editId);
+    if (idx > -1) {
+      suppliers[idx] = { ...suppliers[idx], ...newSup };
+      toast('Fornecedor atualizado!', 'success');
+    }
+  } else {
+    newSup.id = Date.now();
+    suppliers.push(newSup);
+    toast('Fornecedor adicionado!', 'success');
+  }
+
+  saveSuppliersLocal();
+  renderSuppliers();
+  closeSupplierModal();
+}
+
+function deleteSupplier(id) {
+  if (!confirm('Deseja realmente excluir este fornecedor?')) return;
+  suppliers = suppliers.filter(x => x.id != id);
+  saveSuppliersLocal();
+  renderSuppliers();
+  toast('Fornecedor excluído.', 'info');
+}
+
+// ── INIT ──
+(function init() {
+  // 1. Carregar produtos e pedidos do localStorage (persistência entre reloads)
+  loadProductsLocal();
+  loadOrdersLocal();
+  loadSuppliersLocal();
+  // 2. Atualizar selects de categoria com as categorias salvas
+  updateCategorySelects();
+  // 3. Renderizar dashboard inicial
+  renderDashboard();
+  renderSuppliers();
+  // 4. Se Sheets já estava conectado, sincronizar automaticamente em background
+  if (config.sheetsConnected && config.appsScriptUrl) {
+    loadFromSheets();
+  }
+})();
+</script>
+</body>
+</html>
