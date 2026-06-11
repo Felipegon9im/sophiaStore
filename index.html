@@ -32,26 +32,10 @@
   }
 
   /* ── CURSOR ── */
-  body { cursor: none; }
-  #cursor {
-    width: 12px; height: 12px;
-    background: var(--pink);
-    border-radius: 50%;
-    position: fixed; top: 0; left: 0;
-    pointer-events: none; z-index: 9999;
-    transition: transform 0.15s ease, background 0.2s;
-    mix-blend-mode: multiply;
-  }
-  #cursor-ring {
-    width: 36px; height: 36px;
-    border: 1.5px solid var(--pink);
-    border-radius: 50%;
-    position: fixed; top: 0; left: 0;
-    pointer-events: none; z-index: 9998;
-    transition: all 0.35s cubic-bezier(.25,.1,.25,1);
-    opacity: 0.6;
-  }
-  a:hover ~ #cursor, button:hover ~ #cursor { transform: scale(2); }
+  body {  }
+  
+  
+  a:hover ~ #cursor, button:hover ~ 
 
   /* ── LOADER ── */
   #loader {
@@ -145,7 +129,7 @@
 
   .header-actions { display: flex; gap: 1.5rem; align-items: center; }
   .icon-btn {
-    background: none; border: none; cursor: none;
+    background: none; border: none; 
     color: rgba(255,255,255,0.85); font-size: 1.1rem;
     transition: color 0.3s; position: relative;
   }
@@ -220,7 +204,7 @@
   .btn-primary {
     padding: 1rem 2.5rem;
     background: linear-gradient(135deg, var(--pink), var(--pink-deep));
-    color: white; border: none; cursor: none;
+    color: white; border: none; 
     font-family: 'Montserrat', sans-serif;
     font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase;
     font-weight: 500;
@@ -240,7 +224,7 @@
     padding: 1rem 2rem; border: 1px solid rgba(255,255,255,0.2);
     color: rgba(255,255,255,0.7); font-size: 0.65rem;
     letter-spacing: 0.3em; text-transform: uppercase;
-    background: none; cursor: none; text-decoration: none;
+    background: none;  text-decoration: none;
     transition: all 0.3s;
     font-family: 'Montserrat', sans-serif;
   }
@@ -330,7 +314,7 @@
   }
   .cat-card {
     position: relative; overflow: hidden;
-    aspect-ratio: 3/4; cursor: none;
+    aspect-ratio: 3/4; 
     background: var(--dark);
   }
   .cat-card img {
@@ -376,7 +360,7 @@
   .filter-tab {
     padding: 0.5rem 1.25rem;
     border: 1px solid #e5e7eb;
-    background: none; cursor: none;
+    background: none; 
     font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase;
     color: var(--gray); font-family: 'Montserrat', sans-serif;
     transition: all 0.3s;
@@ -388,7 +372,7 @@
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem;
   }
   .product-card {
-    position: relative; cursor: none;
+    position: relative; 
   }
   .product-img {
     position: relative; overflow: hidden;
@@ -417,7 +401,7 @@
   .action-btn {
     flex: 1; padding: 0.75rem;
     background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
-    border: none; cursor: none;
+    border: none; 
     font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
     font-family: 'Montserrat', sans-serif; font-weight: 500;
     transition: all 0.2s;
@@ -451,7 +435,7 @@
   }
   .product-colors { display: flex; gap: 0.4rem; margin-top: 0.6rem; }
   .color-dot {
-    width: 14px; height: 14px; border-radius: 50%; cursor: none;
+    width: 14px; height: 14px; border-radius: 50%; 
     border: 1.5px solid transparent; transition: border-color 0.2s;
   }
   .color-dot:hover, .color-dot.active { border-color: var(--dark); }
@@ -473,7 +457,7 @@
 
   .product-stars { color: var(--gold); font-size: 0.65rem; margin-top: 0.25rem; }
   .product-sizes-preview { display: flex; gap: 0.3rem; margin-top: 0.6rem; }
-  .size-preview-btn { width: 24px; height: 24px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; color: var(--gray); cursor: none; transition: all 0.2s; background: white; }
+  .size-preview-btn { width: 24px; height: 24px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; color: var(--gray);  transition: all 0.2s; background: white; }
   .size-preview-btn:hover { border-color: var(--pink); color: var(--pink); }
   
   .payment-icons { display: flex; gap: 0.5rem; margin-top: 1rem; }
@@ -576,7 +560,7 @@
   .newsletter-form input::placeholder { color: rgba(255,255,255,0.5); }
   .newsletter-form button {
     padding: 1rem 2rem; background: var(--dark); color: white;
-    border: none; cursor: none; font-family: 'Montserrat', sans-serif;
+    border: none;  font-family: 'Montserrat', sans-serif;
     font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase;
     transition: background 0.3s;
   }
@@ -660,7 +644,7 @@
     font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 400;
   }
   .cart-close {
-    background: none; border: none; cursor: none; font-size: 1.2rem; color: var(--gray);
+    background: none; border: none;  font-size: 1.2rem; color: var(--gray);
     transition: color 0.2s;
   }
   .cart-close:hover { color: var(--pink); }
@@ -678,7 +662,7 @@
   .cart-checkout {
     width: 100%; padding: 1rem;
     background: linear-gradient(135deg, var(--pink), var(--pink-deep));
-    color: white; border: none; cursor: none;
+    color: white; border: none; 
     font-family: 'Montserrat', sans-serif;
     font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase;
     font-weight: 500; transition: opacity 0.3s;
@@ -764,7 +748,7 @@
   .detail-close-btn {
     position: absolute; top: 1.25rem; right: 1.25rem;
     width: 32px; height: 32px; border-radius: 50%;
-    background: rgba(255,255,255,0.9); border: none; cursor: none;
+    background: rgba(255,255,255,0.9); border: none; 
     display: flex; align-items: center; justify-content: center;
     font-size: 1rem; color: var(--dark); z-index: 10;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: all 0.2s;
@@ -806,7 +790,7 @@
   .size-selector-btn {
     width: 38px; height: 38px; border: 1px solid #e5e7eb; background: none;
     font-size: 0.7rem; font-family: 'Montserrat', sans-serif; font-weight: 500;
-    cursor: none; display: flex; align-items: center; justify-content: center;
+     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
   }
   .size-selector-btn:hover, .size-selector-btn.active {
@@ -821,7 +805,7 @@
   }
   
   .checkout-channel-btn {
-    width: 100%; padding: 0.85rem 1.5rem; border: none; cursor: none;
+    width: 100%; padding: 0.85rem 1.5rem; border: none; 
     font-family: 'Montserrat', sans-serif; font-size: 0.65rem;
     letter-spacing: 0.25em; text-transform: uppercase; font-weight: 600;
     display: flex; align-items: center; justify-content: center; gap: 0.75rem;
@@ -865,8 +849,8 @@
 <body>
 
 <!-- Cursor -->
-<div id="cursor"></div>
-<div id="cursor-ring"></div>
+
+
 
 <!-- Loader -->
 <div id="loader">
@@ -891,7 +875,7 @@
   <div class="header-actions">
     <div class="header-search">
       <input type="text" placeholder="Buscar peças...">
-      <span style="cursor:none; opacity:0.7">🔍</span>
+      <span style=" opacity:0.7">🔍</span>
     </div>
     <button class="icon-btn" title="Minha Conta" onclick="alert('Área do cliente em breve!')">👤</button>
     <button class="icon-btn" title="Lista de desejos">♡</button>
@@ -1368,7 +1352,7 @@ function renderProducts(filter = 'Todos') {
   }
 
   const renderCard = (p) => `
-    <div class="product-card" data-id="${p.id}" onclick="openProductDetail(${p.id}, event)" style="cursor:none">
+    <div class="product-card" data-id="${p.id}" onclick="openProductDetail(${p.id}, event)" style="">
       <div class="product-img">
         <img src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&q=80'">
         ${p.badge ? `<div class="product-badge ${p.badge==='new'?'badge-new':'badge-sale'}">${p.badge==='new'?'Novo':'Sale'}</div>` : ''}
@@ -1474,12 +1458,12 @@ function updateCart() {
           <div style="font-size:.7rem;color:var(--gray);margin:.25rem 0">${item.cat}</div>
           <div style="font-size:.9rem;color:var(--pink);font-weight:500">R$ ${item.price.toFixed(2).replace('.',',')}</div>
           <div style="display:flex;align-items:center;gap:.75rem;margin-top:.5rem">
-            <button onclick="changeQty(${item.id},-1)" style="width:26px;height:26px;border:1px solid #e5e7eb;background:none;cursor:none;font-size:.8rem">-</button>
+            <button onclick="changeQty(${item.id},-1)" style="width:26px;height:26px;border:1px solid #e5e7eb;background:none;font-size:.8rem">-</button>
             <span style="font-size:.8rem">${item.qty}</span>
-            <button onclick="changeQty(${item.id},1)" style="width:26px;height:26px;border:1px solid #e5e7eb;background:none;cursor:none;font-size:.8rem">+</button>
+            <button onclick="changeQty(${item.id},1)" style="width:26px;height:26px;border:1px solid #e5e7eb;background:none;font-size:.8rem">+</button>
           </div>
         </div>
-        <button onclick="removeFromCart(${item.id})" style="background:none;border:none;cursor:none;color:var(--gray);font-size:1.1rem;padding:.25rem">✕</button>
+        <button onclick="removeFromCart(${item.id})" style="background:none;border:none;color:var(--gray);font-size:1.1rem;padding:.25rem">✕</button>
       </div>
     `).join('');
   }
@@ -1682,23 +1666,6 @@ function openProductDetail(id, event) {
 
   // Show Modal
   document.getElementById('product-detail-modal-overlay').classList.add('open');
-  
-  // Recalculate custom cursor bindings for dynamically created buttons
-  document.querySelectorAll('.size-selector-btn').forEach(el => {
-    el.addEventListener('mouseenter', () => { 
-      const cursor = document.getElementById('cursor');
-      const ring = document.getElementById('cursor-ring');
-      if (cursor && ring) {
-        cursor.style.transform = 'scale(2)'; 
-        ring.style.transform = 'scale(1.5)'; 
-        ring.style.opacity = '0.3'; 
-      }
-    });
-    el.addEventListener('mouseleave', () => { 
-      const ring = document.getElementById('cursor-ring');
-      if (ring) ring.style.opacity = '0.6'; 
-    });
-  });
 }
 
 function closeProductDetail() {
