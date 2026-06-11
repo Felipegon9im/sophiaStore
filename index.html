@@ -844,6 +844,34 @@
     .footer-grid { grid-template-columns: 1fr; }
     #cart-sidebar { width: 100%; }
   }
+  /* ── TOAST NOTIFICATION ── */
+  #toast-container {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 11000; display: flex; flex-direction: column; gap: 10px;
+    pointer-events: none; width: 90%; max-width: 400px;
+  }
+  .toast {
+    background: white; color: var(--dark);
+    padding: 1rem 1.25rem; border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 500;
+    display: flex; align-items: center; gap: 0.75rem;
+    animation: toastSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    opacity: 0; pointer-events: auto;
+  }
+  .toast.toast-error { border-left: 4px solid #ef4444; }
+  .toast.toast-success { border-left: 4px solid #10b981; }
+  .toast.toast-info { border-left: 4px solid var(--pink); }
+  .toast.fadeOut { animation: toastFadeOut 0.3s ease forwards; }
+
+  @keyframes toastSlideIn {
+    0% { opacity: 0; transform: translateY(-20px) scale(0.9); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes toastFadeOut {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-20px) scale(0.9); }
+  }
 </style>
 </head>
 <body>
@@ -858,6 +886,9 @@
   <div class="loader-sub">Elegance Store</div>
   <div class="loader-bar"></div>
 </div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
 
 <!-- Header -->
 <header id="header">
@@ -877,7 +908,7 @@
       <input type="text" placeholder="Buscar peças...">
       <span style=" opacity:0.7">🔍</span>
     </div>
-    <button class="icon-btn" title="Minha Conta" onclick="alert('Área do cliente em breve!')">👤</button>
+    <button class="icon-btn" title="Minha Conta" onclick="showToast('Área do cliente em breve!', 'info')">👤</button>
     <button class="icon-btn" title="Lista de desejos">♡</button>
     <button class="icon-btn" id="cart-btn" title="Carrinho" style="position:relative">
       🛒
@@ -1230,6 +1261,23 @@ window.addEventListener('load', () => {
   }, 2200);
 });
 
+// ── TOAST SYSTEM ──
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  let icon = '✨';
+  if (type === 'error') icon = '⚠️';
+  if (type === 'success') icon = '✅';
+  toast.innerHTML = `<span style="font-size:1.1rem">${icon}</span> <span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('fadeOut');
+    toast.addEventListener('animationend', () => toast.remove());
+  }, 3500);
+}
+
 // ── SCROLL EVENTS ──
 const header = document.getElementById('header');
 const waBubble = document.getElementById('whatsapp-bubble');
@@ -1425,7 +1473,7 @@ window.shareProduct = function(id, e) {
     }).catch(console.error);
   } else {
     navigator.clipboard.writeText(text);
-    alert('Link do produto copiado para a área de transferência! Você pode colar no WhatsApp.');
+    showToast('Link do produto copiado para a área de transferência! Você pode colar no WhatsApp.', 'success');
   }
 }
 
@@ -1497,7 +1545,7 @@ function checkoutBling() {
 
   const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwnQHZRDOynJddpoadm2s86J8TEWfTqaEOAK6RmdUcksYjBCRtO0N1Tr3KyN-hQqFLy/exec';
   if (!appsScriptUrl) {
-    alert("Ops! O sistema não encontrou a conexão segura com o Google Scripts. Redirecionando para o WhatsApp...");
+    showToast("Ops! O sistema não encontrou a conexão segura. Redirecionando...", 'error');
     checkoutWhatsApp();
     btn.innerHTML = originalText;
     btn.style.opacity = '1';
@@ -1528,7 +1576,7 @@ function checkoutBling() {
     }
   })
   .catch(err => {
-    alert("Erro ao processar pagamento: " + err.message + "\\nRedirecionando para o WhatsApp...");
+    showToast("Erro ao processar pagamento. Redirecionando...", 'error');
     btn.innerHTML = originalText;
     btn.style.opacity = '1';
     btn.style.pointerEvents = 'auto';
@@ -1680,7 +1728,7 @@ function selectSize(size, btn) {
 function checkoutSingleWhatsApp() {
   if (!currentDetailProduct) return;
   if (!selectedSize) {
-    alert('Por favor, selecione um tamanho antes de prosseguir!');
+    showToast('Por favor, selecione um tamanho antes de prosseguir!', 'error');
     return;
   }
   const msg = `Olá! Gostaria de comprar o produto *${currentDetailProduct.name}* no tamanho *${selectedSize}* no valor de R$ ${currentDetailProduct.price.toFixed(2).replace('.',',')}!`;
@@ -1690,7 +1738,7 @@ function checkoutSingleWhatsApp() {
 function addCurrentToCart() {
   if (!currentDetailProduct) return;
   if (!selectedSize) {
-    alert('Por favor, selecione um tamanho antes de adicionar ao carrinho!');
+    showToast('Por favor, selecione um tamanho antes de adicionar ao carrinho!', 'error');
     return;
   }
   
