@@ -1186,6 +1186,20 @@
   </div>
 </div>
 
+<!-- Cart Success Modal -->
+<div id="cart-success-modal" class="modal-overlay" onclick="if(event.target===this) closeCartSuccess()">
+  <div class="modal-content" style="max-width: 400px; text-align: center; padding: 2.5rem 2rem; border-radius: 16px;">
+    <button class="detail-close-btn" onclick="closeCartSuccess()" style="top: 1rem; right: 1rem;">✕</button>
+    <div style="font-size: 3.5rem; margin-bottom: 1rem;">🛍️</div>
+    <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 2rem; margin-bottom: 0.5rem; color: var(--dark);">Adicionado!</h3>
+    <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 2rem;">Sua peça foi colocada no carrinho com sucesso.</p>
+    <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+      <button onclick="closeCartSuccess(); openCart()" style="background: var(--dark); color: white; padding: 1.1rem; border: none; border-radius: 8px; font-family: 'Montserrat', sans-serif; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--pink)'" onmouseout="this.style.background='var(--dark)'">Finalizar Compra</button>
+      <button onclick="closeCartSuccess()" style="background: white; color: var(--dark); border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.1rem; font-family: 'Montserrat', sans-serif; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: border-color 0.2s;" onmouseover="this.style.borderColor='var(--dark)'" onmouseout="this.style.borderColor='#e5e7eb'">Continuar Comprando</button>
+    </div>
+  </div>
+</div>
+
 <!-- Product Detail Modal Overlay -->
 <div id="product-detail-modal-overlay">
   <div class="detail-modal" id="product-detail-box">
@@ -1757,7 +1771,15 @@ function addCurrentToCart() {
   }
   updateCart();
   closeProductDetail();
-  openCart();
+  openCartSuccess();
+}
+
+function openCartSuccess() {
+  document.getElementById('cart-success-modal').classList.add('open');
+}
+
+function closeCartSuccess() {
+  document.getElementById('cart-success-modal').classList.remove('open');
 }
 
 document.getElementById('product-detail-modal-overlay').addEventListener('click', e => { 
