@@ -187,11 +187,37 @@ function doPost(e) {
           if (String(oData[i][0]) === String(pId)) { rIndex = i + 1; found = true; break; }
         }
         
-        const rowData = [pId, pNum, pCliente, pTotal, pStatus, pOrigem, JSON.stringify(d.itens || []), new Date()];
+        // Busca dados completos do pedido na API do Bling para ter Itens e Nome do Cliente
+        let fullItemsStr = "[]";
+        let fetchedCustomer = "Desconhecido";
+        
+        const token = getValidBlingToken();
+        if (token) {
+          try {
+            const res = UrlFetchApp.fetch("https://api.bling.com.br/v3/pedidos/vendas/" + pId, {
+              "method": "GET",
+              "headers": { "Authorization": "Bearer " + token, "Accept": "1.0" },
+              "muteHttpExceptions": true
+            });
+            if (res.getResponseCode() === 200) {
+              const fullOrder = JSON.parse(res.getContentText()).data;
+              if (fullOrder.contato && fullOrder.contato.nome) {
+                fetchedCustomer = fullOrder.contato.nome;
+              }
+              if (fullOrder.itens && Array.isArray(fullOrder.itens)) {
+                fullItemsStr = JSON.stringify(fullOrder.itens);
+              }
+            }
+          } catch(e) {
+            registrarLog("Aviso API", "Falha ao buscar detalhes do pedido " + pId + ": " + e.toString());
+          }
+        }
+        
+        const rowData = [pId, pNum, fetchedCustomer, pTotal, pStatus, pOrigem, fullItemsStr, new Date()];
         if (found) oSheet.getRange(rIndex, 1, 1, rowData.length).setValues([rowData]);
         else oSheet.appendRow(rowData);
         
-        registrarLog("Webhook Pedido", `Pedido ${pNum} (${pOrigem}) de ${pCliente} processado.`);
+        registrarLog("Webhook Pedido", `Pedido ${pNum} (${pOrigem}) de ${fetchedCustomer} processado e detalhes baixados.`);
         return jsonResponse({ success: true, msg: "Webhook de pedido processado" });
       } else {
         // Fallback: Se chegou um webhook mas não é nem estoque nem pedido no formato esperado
