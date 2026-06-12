@@ -112,13 +112,30 @@ function doGet(e) {
 
 function doPost(e) {
   try {
+    // Debug absoluto: Loga tudo o que chega, seja JSON ou Form Data
+    let rawPayload = "";
+    if (e.postData && e.postData.contents) rawPayload += "CONTENTS: " + e.postData.contents + " | ";
+    if (e.parameter) rawPayload += "PARAM: " + JSON.stringify(e.parameter);
+    
+    // Só loga se não for uma requisição interna de listar/salvar para não poluir
+    if (rawPayload && !rawPayload.includes('"action":"save"')) {
+      registrarLog("DEBUG INICIAL", rawPayload);
+    }
+
     let requestData = {};
     if (e.postData && e.postData.contents) {
       try {
         requestData = JSON.parse(e.postData.contents);
       } catch (parseErr) {
-        requestData = {}; // Evita quebrar se o Bling mandar formato inválido
+        requestData = {}; 
       }
+    }
+    
+    // Se o Bling mandou como form-data (application/x-www-form-urlencoded) em V3
+    if (Object.keys(requestData).length === 0 && e.parameter && e.parameter.data) {
+      try {
+        requestData = { data: JSON.parse(e.parameter.data) };
+      } catch (e2) {}
     }
     
     // =====================================
