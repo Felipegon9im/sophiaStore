@@ -1063,8 +1063,13 @@
                   <label>Mensagem</label>
                   <textarea id="wp-message" placeholder="Olá! Temos novidades na coleção..." style="min-height: 120px;"></textarea>
                 </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                  <label>Agendar para (Opcional)</label>
+                  <input type="datetime-local" id="wp-schedule-time" onchange="updateWpButtonState()" />
+                </div>
                 
-                <button id="wp-send-btn" class="btn btn-success" onclick="sendWhatsappCampaign()" style="width: 100%; justify-content: center; padding: 0.75rem;"><span class="icon">🚀</span> Iniciar Disparo</button>
+                <button id="wp-send-btn" class="btn btn-success" onclick="handleWpSubmit()" style="width: 100%; justify-content: center; padding: 0.75rem;"><span class="icon">🚀</span> Iniciar Disparo</button>
               </div>
               
               <div class="config-card">
@@ -1083,6 +1088,19 @@
                 <div class="status-dot connected" style="display: inline-block; width: 12px; height: 12px; margin-right: 0.5rem;"></div>
                 <span style="font-size: 0.8rem; font-weight: 600; color: var(--success);">WhatsApp Autenticado e Pronto</span>
                 <p style="font-size: 0.75rem; color: var(--gray-600); margin-top: 0.5rem;">O disparo possui um delay aleatório de 2 a 4 segundos entre as mensagens para evitar bloqueios do WhatsApp.</p>
+              </div>
+            </div>
+
+            <!-- TABELA DE AGENDAMENTOS -->
+            <div class="panel" style="margin-top: 2rem; box-shadow: none; border: 1px solid var(--gray-200);">
+              <div class="panel-header" style="background: var(--gray-50);">
+                <h3 style="font-size: 0.85rem; font-weight: 600; color: var(--dark);">Campanhas Agendadas e Histórico</h3>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Data/Hora Agendada</th><th>Mensagem (Resumo)</th><th>Qtd Números</th><th>Status</th><th>Ações</th></tr></thead>
+                  <tbody id="wp-scheduled-table"></tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -3396,7 +3414,122 @@ function deleteSupplier(id) {
   toast('Fornecedor excluído.', 'info');
 }
 
-// ── WHATSAPP HEADLESS ──
+// ── WHATSAPP HEADLESS & AGENDADOR ──
+let scheduledCampaigns = JSON.parse(localStorage.getItem('scheduledCampaigns')) || [];
+
+function updateWpButtonState() {
+  const time = document.getElementById('wp-schedule-time').value;
+  const btn = document.getElementById('wp-send-btn');
+  if (time) {
+    btn.innerHTML = '<span class="icon">⏰</span> Agendar Disparo';
+    btn.classList.remove('btn-success');
+    btn.classList.add('btn-primary');
+  } else {
+    btn.innerHTML = '<span class="icon">🚀</span> Iniciar Disparo';
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-success');
+  }
+}
+
+function handleWpSubmit() {
+  const time = document.getElementById('wp-schedule-time').value;
+  if (time) {
+    scheduleWhatsappCampaign(time);
+  } else {
+    sendWhatsappCampaign();
+  }
+}
+
+function scheduleWhatsappCampaign(timeStr) {
+  const numbers = document.getElementById('wp-numbers').value.split('\n').map(n => n.trim()).filter(n => n);
+  const message = document.getElementById('wp-message').value.trim();
+  
+  if (numbers.length === 0) { toast('Adicione pelo menos um número.', 'error'); return; }
+  if (!message) { toast('Digite uma mensagem.', 'error'); return; }
+  
+  const scheduleTime = new Date(timeStr).getTime();
+  if (scheduleTime <= Date.now()) {
+    toast('A data agendada deve estar no futuro.', 'error');
+    return;
+  }
+  
+  const newCamp = {
+    id: Date.now(),
+    time: scheduleTime,
+    numbers,
+    message,
+    status: 'Aguardando'
+  };
+  
+  scheduledCampaigns.push(newCamp);
+  saveScheduledCampaigns();
+  renderScheduledCampaigns();
+  
+  document.getElementById('wp-numbers').value = '';
+  document.getElementById('wp-message').value = '';
+  document.getElementById('wp-schedule-time').value = '';
+  updateWpButtonState();
+  
+  toast('Campanha Agendada com sucesso!', 'success');
+}
+
+function saveScheduledCampaigns() {
+  localStorage.setItem('scheduledCampaigns', JSON.stringify(scheduledCampaigns));
+}
+
+function renderScheduledCampaigns() {
+  const tbody = document.getElementById('wp-scheduled-table');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  
+  if (scheduledCampaigns.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--gray-400)">Nenhuma campanha agendada.</td></tr>`;
+    return;
+  }
+  
+  // Ordenar: Aguardando primeiro, e por data
+  const sorted = [...scheduledCampaigns].sort((a,b) => a.time - b.time);
+  
+  sorted.forEach(c => {
+    const d = new Date(c.time);
+    const dateStr = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    let badge = '';
+    if (c.status === 'Aguardando') badge = `<span class="badge badge-warning">Aguardando</span>`;
+    else if (c.status === 'Concluído') badge = `<span class="badge badge-success">Concluído</span>`;
+    else if (c.status === 'Em Andamento') badge = `<span class="badge badge-info">Em Andamento</span>`;
+    
+    const msgSnippet = c.message.substring(0, 30) + (c.message.length > 30 ? '...' : '');
+    
+    const actionHtml = c.status === 'Aguardando' 
+      ? `<div class="action-btn" onclick="cancelCampaign(${c.id})" title="Cancelar">🗑️</div>` 
+      : `<div class="action-btn" onclick="deleteCampaign(${c.id})" title="Excluir Histórico">🗑️</div>`;
+      
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${dateStr}</td>
+      <td style="color:var(--gray-600); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.message.replace(/"/g, '&quot;')}">${msgSnippet}</td>
+      <td>${c.numbers.length} contatos</td>
+      <td>${badge}</td>
+      <td>${actionHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function cancelCampaign(id) {
+  if (!confirm('Deseja cancelar este agendamento?')) return;
+  scheduledCampaigns = scheduledCampaigns.filter(c => c.id !== id);
+  saveScheduledCampaigns();
+  renderScheduledCampaigns();
+  toast('Agendamento cancelado.', 'info');
+}
+
+function deleteCampaign(id) {
+  scheduledCampaigns = scheduledCampaigns.filter(c => c.id !== id);
+  saveScheduledCampaigns();
+  renderScheduledCampaigns();
+}
+
 function startWhatsappSession() {
   document.getElementById('qr-loading-text').style.display = 'block';
   document.getElementById('qr-loading-text').innerText = 'Iniciando serviço do WhatsApp...';
@@ -3489,6 +3622,8 @@ if (window.whatsappAPI) {
   // 3. Renderizar dashboard inicial
   renderDashboard();
   renderSuppliers();
+  renderScheduledCampaigns();
+  
   // 4. Se Sheets já estava conectado, sincronizar automaticamente em background
   if (config.sheetsConnected && config.appsScriptUrl) {
     loadFromSheets();
@@ -3498,6 +3633,38 @@ if (window.whatsappAPI) {
   if (window.whatsappAPI) {
     startWhatsappSession();
   }
+  
+  // 6. Iniciar Daemon do Agendador (roda a cada 30 segundos)
+  setInterval(() => {
+    const now = Date.now();
+    let hasChanges = false;
+    
+    // Procura por campanhas aguardando cujo horário já chegou ou passou
+    for (let c of scheduledCampaigns) {
+      if (c.status === 'Aguardando' && now >= c.time) {
+        c.status = 'Em Andamento';
+        hasChanges = true;
+        
+        // Se a tela de campanhas não estiver ativada, a gente apenas manda pro IPC,
+        // mas aqui vamos preencher os campos silenciosamente se a tela estiver aberta, 
+        // ou só enviar direto via API. O ideal é enviar direto via API.
+        if (window.whatsappAPI) {
+          window.whatsappAPI.sendCampaign({ numbers: c.numbers, message: c.message });
+          // No mundo ideal, o progresso voltaria para o card da campanha, mas para simplificar:
+          c.status = 'Concluído'; // Atualizamos para concluído imediatamente e o IPC trabalha em background
+          toast('Campanha agendada foi disparada!', 'success');
+        } else {
+          c.status = 'Erro (Wpp API off)';
+        }
+      }
+    }
+    
+    if (hasChanges) {
+      saveScheduledCampaigns();
+      renderScheduledCampaigns();
+    }
+  }, 30000); // Checa a cada 30s
+
 })();
 </script>
 </body>
