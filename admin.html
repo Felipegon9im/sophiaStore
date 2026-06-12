@@ -853,27 +853,27 @@
       <div class="kpi-grid">
         <div class="kpi-card pink">
           <div class="kpi-header">
-            <div class="kpi-icon pink">💰</div>
+            <div class="kpi-icon pink">📈</div>
             <span class="kpi-badge up">+12%</span>
           </div>
-          <div class="kpi-value">R$ 8.420</div>
-          <div class="kpi-label">Receita do Mês</div>
-        </div>
-        <div class="kpi-card gold">
-          <div class="kpi-header">
-            <div class="kpi-icon gold">🛍</div>
-            <span class="kpi-badge up">+8%</span>
-          </div>
-          <div class="kpi-value">47</div>
-          <div class="kpi-label">Pedidos este mês</div>
+          <div class="kpi-value" id="kpi-sales">R$ 0,00</div>
+          <div class="kpi-label">Vendas Brutas (Mês)</div>
         </div>
         <div class="kpi-card success">
           <div class="kpi-header">
-            <div class="kpi-icon success">👗</div>
+            <div class="kpi-icon success">📦</div>
             <span class="kpi-badge up">+5%</span>
           </div>
-          <div class="kpi-value">87</div>
-          <div class="kpi-label">Produtos Ativos</div>
+          <div class="kpi-value" id="kpi-orders">0</div>
+          <div class="kpi-label">Pedidos Concluídos</div>
+        </div>
+        <div class="kpi-card gold">
+          <div class="kpi-header">
+            <div class="kpi-icon gold">💰</div>
+            <span class="kpi-badge down">-2%</span>
+          </div>
+          <div class="kpi-value" id="kpi-ticket">R$ 0,00</div>
+          <div class="kpi-label">Ticket Médio</div>
         </div>
         <div class="kpi-card danger">
           <div class="kpi-header">
@@ -1156,7 +1156,7 @@
       <div class="panel">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Cliente</th><th>E-mail</th><th>WhatsApp</th><th>Compras</th><th>Total Gasto</th><th>Último Pedido</th></tr></thead>
+            <thead><tr><th>Cliente</th><th>WhatsApp</th><th>Compras</th><th>Total Gasto</th><th>Última</th><th>Ações</th></tr></thead>
             <tbody id="customers-table"></tbody>
           </table>
         </div>
@@ -1822,6 +1822,7 @@ function showPage(name, el) {
 }
 
 function renderPage(name) {
+  if (name === 'dashboard')    renderDashboard();
   if (name === 'products')     renderProducts();
   if (name === 'inventory')    renderInventory();
   if (name === 'orders')       renderOrders();
@@ -1834,9 +1835,16 @@ function renderPage(name) {
 
 // ── DASHBOARD ──
 function renderDashboard() {
-  // Chart
-  const vals = [820, 1240, 680, 1590, 990, 2100, 1000];
-  const max = Math.max(...vals);
+  const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
+  const totalOrders = orders.length;
+  const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
+  
+  document.getElementById('kpi-sales').textContent = 'R$ ' + totalSales.toLocaleString('pt-BR', {minimumFractionDigits:2});
+  document.getElementById('kpi-orders').textContent = totalOrders;
+  document.getElementById('kpi-ticket').textContent = 'R$ ' + avgTicket.toLocaleString('pt-BR', {minimumFractionDigits:2});
+
+  let vals = [820, 1240, 680, 1590, 990, 2100, 1000];
+  const max = Math.max(...vals, 1);
   document.getElementById('sales-chart').innerHTML = vals.map((v,i) =>
     `<div class="chart-bar" style="height:${(v/max)*100}%" data-val="R$ ${v.toLocaleString('pt-BR')}"></div>`
   ).join('');
@@ -1857,7 +1865,6 @@ function renderDashboard() {
     </div>`;
   }).join('') || '<p style="font-size:0.75rem;color:var(--gray-400);text-align:center;padding:1rem">✅ Nenhum crítico</p>';
 
-  // Recent orders
   document.getElementById('recent-orders').innerHTML = orders.slice(0,5).map(o => {
     const source = o.source || 'Loja';
     const sourceText = source === 'Shopee' 
@@ -2174,7 +2181,46 @@ function filterStatus(v) {
   }).join('');
 }
 function selectAll(cb) { document.querySelectorAll('.row-check').forEach(c => c.checked = cb.checked); }
-function changeOrderStatus(id) { toast('Status atualizado! Notificação WhatsApp enviada.', 'success'); }
+function changeOrderStatus(id) { 
+  const orderIndex = orders.findIndex(o => o.id === id);
+  if (orderIndex === -1) return;
+  const order = orders[orderIndex];
+  
+  const novoStatus = prompt(`Atualizar status do Pedido ${order.id}\\nOpções: Aguardando, Processando, Enviado, Entregue, Cancelado`, order.status);
+  if (!novoStatus || novoStatus === order.status) return;
+  
+  const statusesValidos = ['Aguardando', 'Processando', 'Enviado', 'Entregue', 'Cancelado'];
+  const statusFormatado = novoStatus.charAt(0).toUpperCase() + novoStatus.slice(1).toLowerCase();
+  
+  if (!statusesValidos.includes(statusFormatado)) {
+    toast('Status inválido.', 'error');
+    return;
+  }
+  
+  order.status = statusFormatado;
+  renderOrders();
+  renderDashboard();
+  
+  if (statusFormatado === 'Enviado') {
+    if (confirm(`O pedido ${order.id} foi marcado como ENVIADO.\\nDeseja enviar uma notificação automática no WhatsApp para ${order.customer}?`)) {
+      const wppNum = prompt("Confirme o WhatsApp do cliente (Ex: 5548999999999)", "5511999999999");
+      if (wppNum && window.whatsappAPI) {
+        const msg = `Olá, ${order.customer}! 📦\\nÓtimas notícias: o seu pedido *${order.id}* acabou de ser *Enviado*! 🎉\\n\\nAgradecemos a preferência pela Sophia Store!`;
+        window.whatsappAPI.sendCampaign([{ phone: wppNum, name: order.customer }], msg, 'sophia_wpp_instance')
+          .then(res => {
+            if(res.success) toast('Notificação enviada com sucesso pelo WhatsApp!', 'success');
+            else toast('Erro ao disparar WhatsApp: ' + res.error, 'error');
+          });
+      } else {
+        toast('Notificação não enviada. API offline ou cancelado.', 'warning');
+      }
+    } else {
+      toast('Status atualizado. Notificação ignorada.', 'info');
+    }
+  } else {
+    toast('Status do pedido atualizado!', 'success');
+  }
+}
 
 // ── GOOGLE SHEETS INTEGRATION (via Apps Script) ──────────────
 async function syncToSheets(product) {
