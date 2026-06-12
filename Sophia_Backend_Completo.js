@@ -314,7 +314,7 @@ function pushProductToBling(product) {
     "formato": "S"
   };
   
-  let url = "https://www.bling.com.br/Api/v3/produtos";
+  var url = "https://api.bling.com.br/v3/produtos";
   let method = "POST";
   
   // Se já tiver o ID do Bling salvo na planilha, é atualização
