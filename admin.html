@@ -2093,9 +2093,9 @@ async function syncStockToSheets(id, stock) {
   } catch (_) {}
 }
 
-async function loadFromSheets() {
+async function loadFromSheets(silent = false) {
   if (!config.sheetsConnected || !config.appsScriptUrl) return;
-  toast('🔄 Carregando dados do Google Sheets...', 'info');
+  if (!silent) toast('🔄 Carregando dados do Google Sheets...', 'info');
   try {
     const res  = await fetch(config.appsScriptUrl + '?action=list&t=' + new Date().getTime());
     const data = await res.json();
@@ -2132,12 +2132,12 @@ async function loadFromSheets() {
       }
       
       renderDashboard();
-      toast('✅ Dados sincronizados com o Sheets!', 'success');
+      if (!silent) toast('✅ Dados sincronizados com o Sheets!', 'success');
     } else {
-      toast('Sheets vazio. Mostrando dados locais.', 'info');
+      if (!silent) toast('Sheets vazio. Mostrando dados locais.', 'info');
     }
   } catch (e) {
-    toast('Erro ao carregar Sheets: ' + e.message, 'error');
+    if (!silent) toast('Erro ao carregar Sheets: ' + e.message, 'error');
   }
 }
 
