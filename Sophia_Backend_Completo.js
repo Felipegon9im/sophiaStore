@@ -40,6 +40,12 @@ function doGet(e) {
       }
     }
     
+    let rawGet = "";
+    if (e.parameter) rawGet = JSON.stringify(e.parameter);
+    if (!rawGet.includes('"action":"list"')) {
+      registrarLog("DEBUG GET", `Requisição GET recebida: ${rawGet}`);
+    }
+
     // 2. Listar Produtos para o Site
     const action = e.parameter.action;
     if (action === 'list') {
