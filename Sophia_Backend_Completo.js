@@ -170,7 +170,15 @@ function doPost(e) {
         
         registrarLog("Webhook Pedido", `Pedido ${pNum} (${pOrigem}) de ${pCliente} processado.`);
         return jsonResponse({ success: true, msg: "Webhook de pedido processado" });
+      } else {
+        // Fallback: Se chegou um webhook mas não é nem estoque nem pedido no formato esperado
+        registrarLog("Webhook Recebido", `Formato desconhecido: ${JSON.stringify(requestData)}`);
+        return jsonResponse({ success: true, msg: "Webhook recebido mas formato desconhecido" });
       }
+    } else if (requestData && Object.keys(requestData).length > 0 && !requestData.action) {
+      // Outro formato de webhook que não tem 'data' (talvez Bling V2)
+      registrarLog("Webhook Bruto", `Payload: ${JSON.stringify(requestData)}`);
+      return jsonResponse({ success: true, msg: "Webhook genérico logado" });
     }
     
     // =====================================
