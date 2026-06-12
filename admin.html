@@ -769,6 +769,12 @@
       <span class="nav-text">Pedidos</span>
       <span class="nav-badge">12</span>
     </div>
+
+    <div class="nav-section-label">Marketing</div>
+    <div class="nav-item" onclick="showPage('campaigns', this)">
+      <span class="nav-icon" style="color:#25D366">💬</span>
+      <span class="nav-text">Campanhas (Wpp)</span>
+    </div>
     <div class="nav-item" onclick="showPage('customers', this)">
       <span class="nav-icon">👥</span>
       <span class="nav-text">Clientes</span>
@@ -994,17 +1000,92 @@
       </div>
     </div>
 
-    <!-- ORDERS PAGE -->
-    <div class="page-section" id="page-orders">
-      <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark);margin-bottom:1.5rem">Pedidos</h1>
+    <!-- TELA DE PEDIDOS -->
+    <div id="page-orders" class="page-section" style="display:none;">
       <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Pedidos</h2>
+          <div class="panel-actions">
+            <button class="btn btn-secondary btn-sm" onclick="loadFromSheets()"><span class="icon">🔄</span> Sincronizar Agora</button>
+            <button class="btn btn-primary btn-sm"><span class="icon">➕</span> Novo Pedido (PDV)</button>
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
-            <thead>
-              <tr><th>Pedido</th><th>Cliente</th><th>Produtos</th><th>Total</th><th>Pagamento</th><th>Status</th><th>Data</th><th>Ações</th></tr>
-            </thead>
+            <thead><tr><th>Pedido</th><th>Cliente</th><th>Produtos</th><th>Total</th><th>Pagamento</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- TELA DE CAMPANHAS WHATSAPP -->
+    <div id="page-campaigns" class="page-section" style="display:none;">
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Disparo de Campanhas (WhatsApp)</h2>
+          <div class="panel-actions">
+            <button id="wp-logout-btn" class="btn btn-secondary btn-sm" style="display:none;" onclick="whatsappLogout()"><span class="icon">🚪</span> Desconectar</button>
+          </div>
+        </div>
+        
+        <div class="panel-body" style="padding: 2rem;">
+          <!-- ESTADO 1: DESCONECTADO (QR CODE) -->
+          <div id="wp-disconnected-view" style="text-align: center;">
+            <div style="max-width: 400px; margin: 0 auto; background: var(--gray-100); padding: 2rem; border-radius: 12px; border: 1px dashed var(--gray-200);">
+              <h3 style="margin-bottom: 1rem; color: var(--dark);">Conecte seu WhatsApp</h3>
+              <p style="font-size: 0.8rem; color: var(--gray-600); margin-bottom: 1.5rem;">Leia o QR Code abaixo com o seu WhatsApp para liberar os disparos em massa diretamente do painel.</p>
+              
+              <div id="qr-container" style="min-height: 256px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                <p id="qr-loading-text" style="color: var(--gray-400); font-size: 0.8rem;">Iniciando serviço do WhatsApp...</p>
+                <img id="wp-qr-img" src="" style="display: none; max-width: 256px; border-radius: 8px;" />
+              </div>
+              
+              <button class="btn btn-primary" style="margin: 0 auto;" onclick="startWhatsappSession()"><span class="icon">🔄</span> Gerar Novo QR Code</button>
+            </div>
+          </div>
+
+          <!-- ESTADO 2: CONECTADO (DASHBOARD) -->
+          <div id="wp-connected-view" style="display: none;">
+            <div class="config-grid">
+              <div class="config-card">
+                <h3>Nova Campanha</h3>
+                <p>Envie mensagens para múltiplos contatos automaticamente.</p>
+                
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label>Números de Telefone (um por linha)</label>
+                  <textarea id="wp-numbers" placeholder="Ex: 5511999999999&#10;5511888888888" style="min-height: 120px;"></textarea>
+                  <span style="font-size: 0.65rem; color: var(--gray-400);">Digite os números com DDD. O código 55 (Brasil) será adicionado se faltar.</span>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                  <label>Mensagem</label>
+                  <textarea id="wp-message" placeholder="Olá! Temos novidades na coleção..." style="min-height: 120px;"></textarea>
+                </div>
+                
+                <button id="wp-send-btn" class="btn btn-success" onclick="sendWhatsappCampaign()" style="width: 100%; justify-content: center; padding: 0.75rem;"><span class="icon">🚀</span> Iniciar Disparo</button>
+              </div>
+              
+              <div class="config-card">
+                <h3>Status do Disparo</h3>
+                <div style="background: var(--gray-100); border-radius: 8px; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem;">
+                  <div id="wp-status-text" style="font-size: 1.2rem; font-weight: 600; color: var(--dark); margin-bottom: 0.5rem;">Aguardando...</div>
+                  <div class="stock-bar" style="height: 12px; background: var(--gray-200); border-radius: 6px;">
+                    <div id="wp-progress-fill" class="stock-fill" style="width: 0%; background: var(--success); border-radius: 6px;"></div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.75rem; color: var(--gray-600);">
+                    <span id="wp-progress-sent">0 enviados</span>
+                    <span id="wp-progress-total">0 total</span>
+                  </div>
+                </div>
+
+                <div class="status-dot connected" style="display: inline-block; width: 12px; height: 12px; margin-right: 0.5rem;"></div>
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--success);">WhatsApp Autenticado e Pronto</span>
+                <p style="font-size: 0.75rem; color: var(--gray-600); margin-top: 0.5rem;">O disparo possui um delay aleatório de 2 a 4 segundos entre as mensagens para evitar bloqueios do WhatsApp.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -3315,6 +3396,88 @@ function deleteSupplier(id) {
   toast('Fornecedor excluído.', 'info');
 }
 
+// ── WHATSAPP HEADLESS ──
+function startWhatsappSession() {
+  document.getElementById('qr-loading-text').style.display = 'block';
+  document.getElementById('qr-loading-text').innerText = 'Iniciando serviço do WhatsApp...';
+  document.getElementById('wp-qr-img').style.display = 'none';
+  if (window.whatsappAPI) window.whatsappAPI.startSession();
+}
+
+function whatsappLogout() {
+  if (confirm('Tem certeza que deseja desconectar o WhatsApp?')) {
+    if (window.whatsappAPI) window.whatsappAPI.logout();
+    document.getElementById('wp-connected-view').style.display = 'none';
+    document.getElementById('wp-disconnected-view').style.display = 'block';
+    document.getElementById('wp-logout-btn').style.display = 'none';
+    startWhatsappSession();
+  }
+}
+
+function sendWhatsappCampaign() {
+  const numbers = document.getElementById('wp-numbers').value.split('\n').map(n => n.trim()).filter(n => n);
+  const message = document.getElementById('wp-message').value.trim();
+  
+  if (numbers.length === 0) { toast('Adicione pelo menos um número.', 'error'); return; }
+  if (!message) { toast('Digite uma mensagem.', 'error'); return; }
+  
+  if (window.whatsappAPI) {
+    document.getElementById('wp-send-btn').disabled = true;
+    document.getElementById('wp-send-btn').innerHTML = '<span class="icon">⏳</span> Enviando...';
+    document.getElementById('wp-status-text').innerText = 'Disparando...';
+    document.getElementById('wp-progress-fill').style.width = '0%';
+    document.getElementById('wp-progress-sent').innerText = '0 enviados';
+    document.getElementById('wp-progress-total').innerText = numbers.length + ' total';
+    
+    window.whatsappAPI.sendCampaign({ numbers, message });
+  } else {
+    toast('Serviço WhatsApp não encontrado no Electron.', 'error');
+  }
+}
+
+if (window.whatsappAPI) {
+  window.whatsappAPI.onQrCode((event, qrDataUrl) => {
+    document.getElementById('qr-loading-text').style.display = 'none';
+    document.getElementById('wp-qr-img').style.display = 'block';
+    document.getElementById('wp-qr-img').src = qrDataUrl;
+  });
+
+  window.whatsappAPI.onReady(() => {});
+
+  window.whatsappAPI.onAuthenticated(() => {
+    document.getElementById('wp-disconnected-view').style.display = 'none';
+    document.getElementById('wp-connected-view').style.display = 'block';
+    document.getElementById('wp-logout-btn').style.display = 'inline-flex';
+    toast('WhatsApp Conectado com Sucesso!', 'success');
+  });
+
+  window.whatsappAPI.onDisconnected((event, reason) => {
+    document.getElementById('wp-connected-view').style.display = 'none';
+    document.getElementById('wp-disconnected-view').style.display = 'block';
+    document.getElementById('wp-logout-btn').style.display = 'none';
+    toast('WhatsApp Desconectado.', 'info');
+    startWhatsappSession();
+  });
+  
+  window.whatsappAPI.onAuthFailure((event, msg) => {
+    toast('Falha na autenticação do WhatsApp', 'error');
+  });
+
+  window.whatsappAPI.onProgress((event, progress) => {
+    const { current, total, success } = progress;
+    const percent = Math.round((current / total) * 100);
+    document.getElementById('wp-progress-fill').style.width = percent + '%';
+    document.getElementById('wp-progress-sent').innerText = current + ' processados (' + success + ' enviados)';
+    
+    if (current === total) {
+      document.getElementById('wp-status-text').innerText = 'Disparo Concluído!';
+      document.getElementById('wp-send-btn').disabled = false;
+      document.getElementById('wp-send-btn').innerHTML = '<span class="icon">🚀</span> Iniciar Disparo';
+      toast(`Campanha finalizada! ${success} mensagens enviadas.`, 'success');
+    }
+  });
+}
+
 // ── INIT ──
 (function init() {
   // 1. Carregar produtos e pedidos do localStorage (persistência entre reloads)
@@ -3329,6 +3492,11 @@ function deleteSupplier(id) {
   // 4. Se Sheets já estava conectado, sincronizar automaticamente em background
   if (config.sheetsConnected && config.appsScriptUrl) {
     loadFromSheets();
+  }
+  
+  // 5. Iniciar WhatsApp
+  if (window.whatsappAPI) {
+    startWhatsappSession();
   }
 })();
 </script>
