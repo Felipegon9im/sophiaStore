@@ -2097,7 +2097,7 @@ async function loadFromSheets() {
   if (!config.sheetsConnected || !config.appsScriptUrl) return;
   toast('🔄 Carregando dados do Google Sheets...', 'info');
   try {
-    const res  = await fetch(config.appsScriptUrl + '?action=list');
+    const res  = await fetch(config.appsScriptUrl + '?action=list&t=' + new Date().getTime());
     const data = await res.json();
     if (data.success) {
       if (data.products && data.products.length > 0) {
@@ -2348,7 +2348,7 @@ async function testSheets() {
   }
   toast('🧪 Testando conexão...', 'info');
   try {
-    const res  = await fetch(config.appsScriptUrl + '?action=list');
+    const res  = await fetch(config.appsScriptUrl + '?action=list&t=' + new Date().getTime());
     const data = await res.json();
     if (data.success) toast('✅ Conexão OK! Planilha acessível. ' + (data.products?.length || 0) + ' produtos encontrados.', 'success');
     else toast('❌ Erro: ' + (data.error || 'resposta inesperada'), 'error');
