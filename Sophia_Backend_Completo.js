@@ -15,6 +15,14 @@ const BLING_CLIENT_SECRET = "d5cbcbddb92b8ab45b273cd0262672ac3aab9d4e055a0f30f8f
 const SHEET_PRODUTOS = "Produtos";
 const SHEET_CATEGORIAS = "Categorias";
 const SHEET_CONFIG = "Config";
+const SHEET_PEDIDOS = "Pedidos";
+const SHEET_LOGS = "Logs";
+
+function registrarLog(acao, mensagem) {
+  const sheet = getOrCreateSheet(SHEET_LOGS, ["Data", "Ação", "Mensagem"]);
+  sheet.insertRowBefore(2);
+  sheet.getRange(2, 1, 1, 3).setValues([[new Date(), acao, String(mensagem)]]);
+}
 
 // ==========================================
 // MÉTODOS HTTP (GET e POST)
@@ -62,7 +70,38 @@ function doGet(e) {
           imgUrl: row[3] || '', cloudId: row[4] || '', order: parseInt(row[5]) || 0
         });
       }
-      return jsonResponse({ success: true, products: products, categories: categories });
+
+      // 3. Listar Pedidos para o Site/Painel
+      const oSheet = getOrCreateSheet(SHEET_PEDIDOS, ["ID", "Número", "Cliente", "Total", "Status", "Origem", "Itens", "Data"]);
+      const oData = oSheet.getDataRange().getValues();
+      const orders = [];
+      for (let i = 1; i < oData.length; i++) {
+        const row = oData[i];
+        if (!row[0]) continue;
+        
+        let itemsStr = "Itens na Nuvem";
+        try {
+           let itArr = JSON.parse(row[6]);
+           if (Array.isArray(itArr) && itArr.length > 0) {
+              itemsStr = itArr.map(it => (it.quantidade||1) + "x " + (it.descricao||"Item")).join(", ");
+           }
+        } catch(e) {}
+        
+        let dateStr = row[7] ? new Date(row[7]).toLocaleDateString('pt-BR') : "";
+        
+        orders.push({
+          id: row[1] || row[0], 
+          customer: row[2] || "Desconhecido", 
+          products: itemsStr,
+          total: parseFloat(row[3]) || 0,
+          payment: "Nuvem",
+          status: row[4] || "Aberto", 
+          source: row[5] || "Bling ERP", 
+          date: dateStr
+        });
+      }
+
+      return jsonResponse({ success: true, products: products, categories: categories, orders: orders });
     }
     
     return jsonResponse({ success: false, error: "Ação GET não encontrada." });
@@ -83,23 +122,55 @@ function doPost(e) {
     }
     
     // =====================================
-    // 1. RECEBER WEBHOOKS DO BLING (Estoque)
+    // 1. RECEBER WEBHOOKS DO BLING (Estoque e Pedidos)
     // =====================================
-    // O Bling manda { "data": { "idProduto": 12345, "saldoVirtual": 10 } } em webhooks
-    if (requestData && requestData.data && requestData.data.idProduto) {
-      const idBling = requestData.data.idProduto;
-      const novoEstoque = requestData.data.saldoVirtual || requestData.data.saldoFisico || 0;
-      
-      const sheet = getOrCreateSheet(SHEET_PRODUTOS, []);
-      const data = sheet.getDataRange().getValues();
-      for (let i = 1; i < data.length; i++) {
-        if (String(data[i][12]) === String(idBling)) { // Coluna M (índice 12) é o Bling ID
-          let currentStock = parseJSON(data[i][7], {pp:0, p:0, m:novoEstoque, g:0, gg:0});
-          sheet.getRange(i + 1, 8).setValue(JSON.stringify(currentStock));
-          break;
+    if (requestData && requestData.data) {
+      // Se for Estoque
+      if (requestData.data.idProduto) {
+        const idBling = requestData.data.idProduto;
+        const novoEstoque = requestData.data.saldoVirtual || requestData.data.saldoFisico || 0;
+        
+        const sheet = getOrCreateSheet(SHEET_PRODUTOS, []);
+        const data = sheet.getDataRange().getValues();
+        for (let i = 1; i < data.length; i++) {
+          if (String(data[i][12]) === String(idBling)) { 
+            let currentStock = parseJSON(data[i][7], {pp:0, p:0, m:novoEstoque, g:0, gg:0});
+            sheet.getRange(i + 1, 8).setValue(JSON.stringify(currentStock));
+            break;
+          }
         }
+        registrarLog("Webhook Estoque", `Estoque do BlingID ${idBling} alterado para ${novoEstoque}`);
+        return jsonResponse({ success: true, msg: "Webhook de estoque processado" });
       }
-      return jsonResponse({ success: true, msg: "Webhook processado" });
+      
+      // Se for Pedido
+      else if (requestData.data.numero || requestData.data.situacao) {
+        const d = requestData.data;
+        const pId = d.id;
+        const pNum = d.numero;
+        const pCliente = (d.contato && d.contato.nome) ? d.contato.nome : "Desconhecido";
+        const pTotal = d.total || 0;
+        const pStatus = (d.situacao && d.situacao.id) ? "Bling Status " + d.situacao.id : "Aberto";
+        
+        let pOrigem = "Bling ERP"; 
+        if (d.loja && d.loja.id) pOrigem = "Loja " + d.loja.id;
+        
+        const oSheet = getOrCreateSheet(SHEET_PEDIDOS, ["ID", "Número", "Cliente", "Total", "Status", "Origem", "Itens", "Data"]);
+        const oData = oSheet.getDataRange().getValues();
+        let found = false;
+        let rIndex = -1;
+        
+        for (let i = 1; i < oData.length; i++) {
+          if (String(oData[i][0]) === String(pId)) { rIndex = i + 1; found = true; break; }
+        }
+        
+        const rowData = [pId, pNum, pCliente, pTotal, pStatus, pOrigem, JSON.stringify(d.itens || []), new Date()];
+        if (found) oSheet.getRange(rIndex, 1, 1, rowData.length).setValues([rowData]);
+        else oSheet.appendRow(rowData);
+        
+        registrarLog("Webhook Pedido", `Pedido ${pNum} (${pOrigem}) de ${pCliente} processado.`);
+        return jsonResponse({ success: true, msg: "Webhook de pedido processado" });
+      }
     }
     
     // =====================================
@@ -125,6 +196,9 @@ function doPost(e) {
       const blingRes = pushProductToBling(p);
       if (blingRes && blingRes.id) {
         p.blingId = blingRes.id; // Atualiza com o ID retornado do Bling
+        registrarLog("Sucesso Bling", `Produto '${p.name}' enviado com sucesso (ID: ${p.blingId})`);
+      } else if (blingRes && !blingRes.id) {
+        registrarLog("Erro Bling", `Falha ao enviar produto '${p.name}': ${JSON.stringify(blingRes)}`);
       }
 
       const rowData = [
