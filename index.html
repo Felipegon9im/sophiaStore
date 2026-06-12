@@ -1382,7 +1382,7 @@ async function loadProductsFromSheets() {
   } catch(_) {}
 
   // Tentar carregar do Apps Script diretamente
-  const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbxZaWp8f9nxwqSWtdONbEIZdbzfd3kKne3U5g7JSLvramnmz6o3E9OCHyI4fbIdwWJMBQ/exec';
+  const appsScriptUrl = 'https://script.google.com/macros/s/AKfycby_3vN924_YSD9f-VKoWQi21O4v0rsRcdkuLqvP_ML_reft_yR6r0snYz9n46fgyaYSVA/exec';
   if (appsScriptUrl) {
     try {
       const res  = await fetch(appsScriptUrl + '?action=list&t=' + Date.now());
@@ -1584,7 +1584,7 @@ function checkoutBling() {
   btn.style.opacity = '0.7';
   btn.style.pointerEvents = 'none';
 
-  const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbxZaWp8f9nxwqSWtdONbEIZdbzfd3kKne3U5g7JSLvramnmz6o3E9OCHyI4fbIdwWJMBQ/exec';
+  const appsScriptUrl = 'https://script.google.com/macros/s/AKfycby_3vN924_YSD9f-VKoWQi21O4v0rsRcdkuLqvP_ML_reft_yR6r0snYz9n46fgyaYSVA/exec';
   if (!appsScriptUrl) {
     showToast("Ops! O sistema não encontrou a conexão segura. Redirecionando...", 'error');
     checkoutWhatsApp();
