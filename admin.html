@@ -1874,13 +1874,18 @@ function generateBlingPaymentLink(orderId) {
 function renderOrders() {
   document.getElementById('orders-table').innerHTML = orders.map(o => {
     const source = o.source || 'Loja';
-    const sourceBadge = source === 'Shopee' 
-      ? '<span class="badge badge-shopee" style="font-size:0.55rem;padding:0.1rem 0.3rem">Shopee</span>' 
-      : source === 'TikTok Shop' 
-      ? '<span class="badge badge-tiktok" style="font-size:0.55rem;padding:0.1rem 0.3rem">TikTok</span>' 
-      : source === 'Caixa'
-      ? '<span class="badge badge-success" style="font-size:0.55rem;padding:0.1rem 0.3rem">🏪 Caixa</span>'
-      : '<span class="badge badge-info" style="font-size:0.55rem;padding:0.1rem 0.3rem">Site</span>';
+    let sourceBadge = '';
+    if (source === 'Shopee' || source === 'Loja 206104156') {
+      sourceBadge = '<span class="badge badge-shopee" style="font-size:0.55rem;padding:0.1rem 0.3rem">Shopee</span>';
+    } else if (source === 'TikTok Shop') {
+      sourceBadge = '<span class="badge badge-tiktok" style="font-size:0.55rem;padding:0.1rem 0.3rem">TikTok</span>';
+    } else if (source === 'Caixa') {
+      sourceBadge = '<span class="badge badge-success" style="font-size:0.55rem;padding:0.1rem 0.3rem">🏪 Caixa</span>';
+    } else if (source === 'Site' || source === 'Bling ERP') {
+      sourceBadge = '<span class="badge badge-info" style="font-size:0.55rem;padding:0.1rem 0.3rem">Site</span>';
+    } else {
+      sourceBadge = `<span class="badge badge-info" style="font-size:0.55rem;padding:0.1rem 0.3rem">${source}</span>`;
+    }
     return `
     <tr>
       <td>

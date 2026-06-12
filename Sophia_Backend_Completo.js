@@ -176,7 +176,14 @@ function doPost(e) {
         const pStatus = (d.situacao && d.situacao.id) ? "Bling Status " + d.situacao.id : "Aberto";
         
         let pOrigem = "Bling ERP"; 
-        if (d.loja && d.loja.id) pOrigem = "Loja " + d.loja.id;
+        if (d.loja && d.loja.id) {
+          const lojaId = String(d.loja.id);
+          if (lojaId === "206104156") {
+            pOrigem = "Shopee";
+          } else {
+            pOrigem = "Loja " + lojaId;
+          }
+        }
         
         const oSheet = getOrCreateSheet(SHEET_PEDIDOS, ["ID", "Número", "Cliente", "Total", "Status", "Origem", "Itens", "Data"]);
         const oData = oSheet.getDataRange().getValues();
