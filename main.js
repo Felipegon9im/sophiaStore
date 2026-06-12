@@ -107,10 +107,16 @@ function setupWhatsAppIPC() {
     let successCount = 0;
     
     for (let i = 0; i < numbers.length; i++) {
-      const number = numbers[i];
-      let cleanNumber = number.replace(/\D/g, '');
-      if (!cleanNumber.startsWith('55')) cleanNumber = '55' + cleanNumber;
-      const chatId = cleanNumber + '@c.us';
+      const number = numbers[i].trim();
+      let chatId = number;
+      
+      // Se não for um ID explícito de grupo ou contato, assumimos que é telefone
+      if (!number.endsWith('@g.us') && !number.endsWith('@c.us')) {
+        let cleanNumber = number.replace(/\D/g, '');
+        if (!cleanNumber.startsWith('55')) cleanNumber = '55' + cleanNumber;
+        chatId = cleanNumber + '@c.us';
+      }
+      
       
       try {
         await whatsappClient.sendMessage(chatId, message);
@@ -123,6 +129,21 @@ function setupWhatsAppIPC() {
       
       // Delay between 2 to 4 seconds
       await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000));
+    }
+  });
+
+  ipcMain.handle('whatsapp-get-groups', async () => {
+    if (!whatsappClient) return [];
+    try {
+      const chats = await whatsappClient.getChats();
+      const groups = chats.filter(c => c.isGroup).map(g => ({
+        id: g.id._serialized,
+        name: g.name
+      }));
+      return groups;
+    } catch (err) {
+      console.error(err);
+      return [];
     }
   });
 }
