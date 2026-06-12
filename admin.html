@@ -1001,7 +1001,7 @@
     </div>
 
     <!-- TELA DE PEDIDOS -->
-    <div id="page-orders" class="page-section" style="display:none;">
+    <div id="page-orders" class="page-section">
       <div class="panel">
         <div class="panel-header">
           <h2 class="panel-title">Pedidos</h2>
@@ -1021,7 +1021,7 @@
     </div>
 
     <!-- TELA DE CAMPANHAS WHATSAPP -->
-    <div id="page-campaigns" class="page-section" style="display:none;">
+    <div id="page-campaigns" class="page-section">
       <div class="panel">
         <div class="panel-header">
           <h2 class="panel-title">Disparo de Campanhas (WhatsApp)</h2>
@@ -1756,7 +1756,7 @@ function showPage(name, el) {
   document.getElementById('breadcrumb').textContent = {
     dashboard:'Dashboard', products:'Produtos', inventory:'Estoque',
     orders:'Pedidos', customers:'Clientes', suppliers:'Fornecedores', reports:'Relatórios', config:'Configurações',
-    integrations:'Integrações', caixa:'Frente de Caixa'
+    integrations:'Integrações', caixa:'Frente de Caixa', campaigns:'Campanhas WhatsApp'
   }[name] || name;
   renderPage(name);
 }
