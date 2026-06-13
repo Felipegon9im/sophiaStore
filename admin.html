@@ -726,6 +726,34 @@
     }
   }
 
+  @media print {
+    body.carne-print-mode * { visibility: hidden; }
+    body.carne-print-mode #print-carne-area, body.carne-print-mode #print-carne-area * {
+      visibility: visible;
+    }
+    body.carne-print-mode #print-carne-area {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+    }
+    .carne-parcel-print {
+      width: 100%; max-width: 800px;
+      margin: 0 auto 20px auto;
+      border: 1px dashed #333;
+      display: flex;
+      font-family: monospace;
+      page-break-inside: avoid;
+    }
+    .carne-stub {
+      width: 30%; border-right: 1px dashed #333; padding: 15px; font-size: 10px;
+    }
+    .carne-body {
+      width: 70%; padding: 15px; font-size: 12px;
+    }
+    .carne-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+  }
+
   /* ── RESPONSIVE ── */
   @media(max-width:1100px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } }
   @media(max-width:768px) { #sidebar { transform: translateX(-100%); } #main { margin-left: 0; } }
@@ -1319,18 +1347,26 @@
             <span style="font-size:2rem">🏪</span>
             <h3>Informações da Loja</h3>
           </div>
-          <p>Dados que aparecem no frontend da loja e nos e-mails.</p>
+          <p>Dados que aparecem no frontend da loja, e-mails e carnês.</p>
           <div class="form-group" style="margin-bottom:1rem">
             <label>Nome da Loja</label>
-            <input type="text" value="Sophia Elegance Store">
+            <input type="text" id="store-name" value="Sophia Elegance Store">
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Endereço Completo da Loja</label>
+            <input type="text" id="store-address" placeholder="Ex: Rua das Flores, 123 - Centro, Florianópolis">
           </div>
           <div class="form-group" style="margin-bottom:1rem">
             <label>E-mail</label>
-            <input type="email" placeholder="contato@sophiaelegance.com.br">
+            <input type="email" id="store-email" placeholder="contato@sophiaelegance.com.br">
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Instagram</label>
+            <input type="text" id="store-instagram" placeholder="@sophiaelegancestore">
           </div>
           <div class="form-group" style="margin-bottom:1.25rem">
-            <label>Instagram</label>
-            <input type="text" placeholder="@sophiaelegancestore">
+            <label>Chave PIX (Para Recebimentos)</label>
+            <input type="text" id="store-pix" placeholder="CNPJ, E-mail, Celular ou Aleatória">
           </div>
           <button class="btn btn-primary" onclick="saveStoreInfo()">💾 Salvar Configurações</button>
         </div>
@@ -1594,6 +1630,9 @@
   </div>
 </div>
 
+<!-- Print area for Carne -->
+<div id="print-carne-area" style="display:none;"></div>
+
 <!-- Modal Cliente -->
 <div id="cust-modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center">
   <div class="modal" style="width:500px;background:#fff;border-radius:12px;padding:1.5rem;position:relative">
@@ -1616,6 +1655,37 @@
     <div style="display:flex;justify-content:flex-end;gap:1rem;margin-top:1.5rem">
       <button class="btn btn-secondary" onclick="closeCustModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveCustomer()">Salvar Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Carnê (Pendências) -->
+<div id="carne-modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center">
+  <div class="modal" style="width:600px;background:#fff;border-radius:12px;padding:1.5rem;position:relative">
+    <button onclick="closeCarneModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer">&times;</button>
+    <h2 style="font-size:1.2rem;margin-bottom:1rem;color:var(--dark)">Carnês / Pendências: <span id="carne-customer-name"></span></h2>
+    
+    <div style="display:flex;justify-content:space-between;margin-bottom:1rem">
+      <div style="font-size:0.85rem;color:var(--gray-600)">Gerencie as parcelas geradas via PDV.</div>
+      <button class="btn btn-info btn-sm" onclick="printCarne()"><span class="icon">🖨️</span> Imprimir Todos</button>
+    </div>
+
+    <div class="table-wrap" style="max-height:300px;overflow-y:auto;border:1px solid var(--gray-100);border-radius:6px">
+      <table style="width:100%">
+        <thead>
+          <tr>
+            <th style="padding:0.5rem;background:var(--gray-50);font-size:0.75rem;border-bottom:1px solid var(--gray-100)">Pedido</th>
+            <th style="padding:0.5rem;background:var(--gray-50);font-size:0.75rem;border-bottom:1px solid var(--gray-100)">Parcela</th>
+            <th style="padding:0.5rem;background:var(--gray-50);font-size:0.75rem;border-bottom:1px solid var(--gray-100)">Vencimento</th>
+            <th style="padding:0.5rem;background:var(--gray-50);font-size:0.75rem;border-bottom:1px solid var(--gray-100)">Valor</th>
+            <th style="padding:0.5rem;background:var(--gray-50);font-size:0.75rem;border-bottom:1px solid var(--gray-100)">Status</th>
+            <th style="padding:0.5rem;background:var(--gray-50);font-size:0.75rem;border-bottom:1px solid var(--gray-100)">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="carne-installments-table">
+          <!-- Dinamico -->
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -1872,7 +1942,10 @@ function renderPage(name) {
   if (name === 'orders')       renderOrders();
   if (name === 'customers')    renderCustomers();
   if (name === 'categories')   renderCategories();
-  if (name === 'config')       loadConfigForm();
+  if (name === 'config') {
+    loadConfigForm();
+    loadStoreInfoUI();
+  }
   if (name === 'integrations') loadIntegrationsPage();
   if (name === 'caixa')        loadPosPage();
 }
@@ -2154,10 +2227,130 @@ function renderCustomers() {
       <td><strong style="color:var(--pink)">R$ ${c.total.toFixed(2).replace('.',',')}</strong></td>
       <td style="color:var(--gray-400)">${c.last}</td>
       <td>
-        <a href="https://wa.me/${c.whatsapp.replace(/\D/g,'')}" target="_blank" class="action-btn" title="Chamar no WhatsApp">💬</a>
+        <div style="display:flex;gap:4px;">
+          <a href="https://wa.me/${c.whatsapp.replace(/\D/g,'')}" target="_blank" class="action-btn" title="Chamar no WhatsApp">💬</a>
+          <button class="action-btn" title="Gerenciar Carnês" onclick="openCarneModal('${c.name.replace(/'/g, "\\'")}')">📘</button>
+        </div>
       </td>
     </tr>
   `).join('');
+}
+
+let currentCarneCustomer = null;
+
+function openCarneModal(customerName) {
+  currentCarneCustomer = customers.find(c => c.name === customerName);
+  if(!currentCarneCustomer) return;
+  document.getElementById('carne-customer-name').textContent = customerName;
+  renderCarneModalInstallments();
+  document.getElementById('carne-modal-overlay').style.display = 'flex';
+}
+
+function closeCarneModal() {
+  document.getElementById('carne-modal-overlay').style.display = 'none';
+  currentCarneCustomer = null;
+}
+
+function renderCarneModalInstallments() {
+  if(!currentCarneCustomer || !currentCarneCustomer.carnes) {
+    document.getElementById('carne-installments-table').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--gray-400)">Nenhum carnê encontrado.</td></tr>';
+    return;
+  }
+  
+  let html = '';
+  currentCarneCustomer.carnes.forEach((carne, cIndex) => {
+    carne.installments.forEach((inst, iIndex) => {
+      const isPaid = inst.status === 'Pago';
+      const statusBadge = isPaid ? '<span class="badge badge-success">Pago</span>' : '<span class="badge badge-warning">Pendente</span>';
+      const actionBtn = isPaid 
+        ? `<button class="btn btn-sm btn-secondary" disabled>✅ Pago</button>`
+        : `<button class="btn btn-sm btn-success" onclick="payParcel(${cIndex}, ${iIndex})">💳 Pagar</button>`;
+        
+      html += `
+        <tr>
+          <td>${carne.orderId}</td>
+          <td>${inst.parcel}/${carne.installments.length}</td>
+          <td>${inst.dueDate}</td>
+          <td>R$ ${inst.value.toFixed(2).replace('.',',')}</td>
+          <td>${statusBadge}</td>
+          <td>${actionBtn}</td>
+        </tr>
+      `;
+    });
+  });
+  
+  if(!html) {
+    html = '<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--gray-400)">Nenhuma parcela encontrada.</td></tr>';
+  }
+  
+  document.getElementById('carne-installments-table').innerHTML = html;
+}
+
+function payParcel(carneIndex, instIndex) {
+  if(!currentCarneCustomer) return;
+  currentCarneCustomer.carnes[carneIndex].installments[instIndex].status = 'Pago';
+  saveCustomersLocal();
+  renderCarneModalInstallments();
+  toast('Parcela marcada como paga!', 'success');
+}
+
+function printCarne() {
+  if(!currentCarneCustomer || !currentCarneCustomer.carnes || currentCarneCustomer.carnes.length === 0) {
+    toast('Este cliente não possui carnês para imprimir.', 'error');
+    return;
+  }
+  
+  let html = '';
+  currentCarneCustomer.carnes.forEach(carne => {
+    carne.installments.forEach(inst => {
+      if(inst.status !== 'Pago') {
+        html += `
+          <div class="carne-parcel-print">
+            <div class="carne-stub">
+              <div class="carne-title">RECIBO DA LOJA</div>
+              Pedido: ${carne.orderId}<br>
+              Parcela: ${inst.parcel}/${carne.installments.length}<br>
+              Vencimento: ${inst.dueDate}<br>
+              Valor: R$ ${inst.value.toFixed(2).replace('.',',')}<br>
+              Cliente: ${currentCarneCustomer.name.substring(0, 15)}...
+            </div>
+            <div class="carne-body">
+              <div class="carne-title">CARNÊ DE PAGAMENTO - ${storeInfo.name}</div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <div>
+                  <b>Cliente:</b> ${currentCarneCustomer.name}<br>
+                  <b>WhatsApp:</b> ${currentCarneCustomer.whatsapp || 'Não informado'}<br>
+                  <b>Pedido:</b> ${carne.orderId} (Total: R$ ${carne.total.toFixed(2).replace('.',',')})
+                </div>
+                <div style="text-align:right;">
+                  <b>Vencimento:</b> <span style="font-size:16px; color:#333; font-weight:bold">${inst.dueDate}</span><br>
+                  <b>Valor da Parcela:</b> <span style="font-size:16px;">R$ ${inst.value.toFixed(2).replace('.',',')}</span><br>
+                  <b>Parcela:</b> ${inst.parcel} de ${carne.installments.length}
+                </div>
+              </div>
+              <div style="border-top:1px solid #ccc; padding-top:10px; font-size:11px;">
+                <b>Endereço:</b> ${storeInfo.address || 'Não informado'}<br>
+                <b>Chave PIX:</b> ${storeInfo.pix || 'Não informada'} | <b>Instagram:</b> ${storeInfo.instagram || 'Não informado'}<br>
+                <em>Após o pagamento via PIX, favor enviar o comprovante no nosso WhatsApp.</em>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    });
+  });
+  
+  if(!html) {
+    toast('Todas as parcelas já estão pagas.', 'info');
+    return;
+  }
+  
+  document.getElementById('print-carne-area').innerHTML = html;
+  document.body.classList.add('carne-print-mode');
+  window.print();
+  setTimeout(() => {
+    document.body.classList.remove('carne-print-mode');
+  }, 1000); // Remove class after print dialog is closed (or at least delayed)
 }
 
 // ── STATUS ──
@@ -2647,7 +2840,32 @@ function connectCloudinary() {
 }
 
 function saveWhatsApp() { toast('✅ WhatsApp configurado!', 'success'); }
-function saveStoreInfo() { toast('✅ Informações da loja salvas!', 'success'); }
+let storeInfo = JSON.parse(localStorage.getItem('sophiaStoreInfo')) || {
+  name: 'Sophia Elegance Store', address: '', email: '', instagram: '', pix: ''
+};
+
+function saveStoreInfo() {
+  const name = document.getElementById('store-name').value.trim();
+  const address = document.getElementById('store-address').value.trim();
+  const email = document.getElementById('store-email').value.trim();
+  const instagram = document.getElementById('store-instagram').value.trim();
+  const pix = document.getElementById('store-pix').value.trim();
+  
+  storeInfo = { name, address, email, instagram, pix };
+  localStorage.setItem('sophiaStoreInfo', JSON.stringify(storeInfo));
+  toast('✅ Informações da loja salvas!', 'success');
+}
+
+function loadStoreInfoUI() {
+  const n = document.getElementById('store-name');
+  if(n) {
+    n.value = storeInfo.name || '';
+    document.getElementById('store-address').value = storeInfo.address || '';
+    document.getElementById('store-email').value = storeInfo.email || '';
+    document.getElementById('store-instagram').value = storeInfo.instagram || '';
+    document.getElementById('store-pix').value = storeInfo.pix || '';
+  }
+}
 
 function loadConfigForm() {
   const url = localStorage.getItem('appsScriptUrl');
@@ -3228,23 +3446,50 @@ function finalizePosSale() {
   const dateStr = new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const dateOnlyStr = new Date().toLocaleDateString('pt-BR');
   
-  // -- Atualizar ou Criar Cliente --
+  // -- Atualizar ou Criar Cliente e Carnê --
   if (clientName && clientName.toLowerCase() !== 'cliente de balcão') {
-    const existing = customers.find(c => c.name.toLowerCase() === clientName.toLowerCase());
-    if (existing) {
-      existing.orders += 1;
-      existing.total += total;
-      existing.last = dateOnlyStr;
+    let targetCustomer = customers.find(c => c.name.toLowerCase() === clientName.toLowerCase());
+    if (targetCustomer) {
+      targetCustomer.orders += 1;
+      targetCustomer.total += total;
+      targetCustomer.last = dateOnlyStr;
     } else {
-      customers.push({
+      targetCustomer = {
         name: clientName,
         email: '',
         whatsapp: '',
         orders: 1,
         total: total,
-        last: dateOnlyStr
-      });
+        last: dateOnlyStr,
+        carnes: []
+      };
+      customers.push(targetCustomer);
     }
+    
+    // Gerar Carnê
+    if (paymentMethod === 'Carnê') {
+      targetCustomer.carnes = targetCustomer.carnes || [];
+      const installments = parseInt(document.getElementById('pos-carne-installments')?.value) || 1;
+      const parcelVal = total / installments;
+      const newCarne = {
+        orderId: orderId,
+        total: total,
+        date: dateOnlyStr,
+        installments: []
+      };
+      for(let i=1; i<=installments; i++) {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + (30 * i));
+        newCarne.installments.push({
+          parcel: i,
+          value: parcelVal,
+          dueDate: dueDate.toLocaleDateString('pt-BR'),
+          status: 'Pendente'
+        });
+      }
+      targetCustomer.carnes.push(newCarne);
+    }
+    
     saveCustomersLocal();
     renderCustomers();
   }
@@ -3971,6 +4216,7 @@ function timerCheckScheduledCampaigns() {
   loadProductsLocal();
   loadOrdersLocal();
   loadSuppliersLocal();
+  loadStoreInfoUI();
   // 2. Atualizar selects de categoria com as categorias salvas
   updateCategorySelects();
   // 3. Renderizar dashboard inicial
