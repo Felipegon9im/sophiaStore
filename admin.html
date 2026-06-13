@@ -653,12 +653,15 @@
   }
 
   @media print {
-    /* Hide everything on the page */
-    body *, #sidebar, #main, #topbar, #page, #toast-container, .modal, #modal-overlay {
+    /* Hide all direct children of body by default */
+    body > * {
       display: none !important;
     }
-    /* Only show the print receipt element */
-    body {
+    
+    /* -------------------------------------------
+       1. THERMAL RECEIPT (Default print mode) 
+       ------------------------------------------- */
+    body:not(.carne-print-mode) {
       background: white !important;
       color: black !important;
       font-family: 'Courier New', Courier, monospace !important;
@@ -668,7 +671,7 @@
       width: 80mm !important;
       display: block !important;
     }
-    #receipt-thermal-template {
+    body:not(.carne-print-mode) > #receipt-thermal-template {
       display: block !important;
       width: 80mm !important;
       padding: 2mm !important;
@@ -727,12 +730,12 @@
   }
 
   @media print {
+    /* -------------------------------------------
+       2. CARNE PRINT (carne-print-mode) 
+       ------------------------------------------- */
     body.carne-print-mode { background: #fff !important; }
-    body.carne-print-mode * { visibility: hidden; }
-    body.carne-print-mode #print-carne-area, body.carne-print-mode #print-carne-area * {
-      visibility: visible;
-    }
-    body.carne-print-mode #print-carne-area {
+    
+    body.carne-print-mode > #print-carne-area {
       position: absolute; left: 0; top: 0; width: 100%;
       display: flex !important; flex-direction: column; align-items: center; gap: 20px;
       padding: 20px 0;
