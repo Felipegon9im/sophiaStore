@@ -1018,7 +1018,6 @@
         </div>
       </div>
     </div>
-    </div>
 
     <!-- TELA DE CAMPANHAS WHATSAPP -->
     <div id="page-campaigns" class="page-section">
@@ -1166,7 +1165,7 @@
       <div class="panel">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Cliente</th><th>WhatsApp</th><th>Compras</th><th>Total Gasto</th><th>Última</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Cliente</th><th>E-mail</th><th>WhatsApp</th><th>Compras</th><th>Total Gasto</th><th>Última Compra</th><th>Ações</th></tr></thead>
             <tbody id="customers-table"></tbody>
           </table>
         </div>
@@ -2084,6 +2083,9 @@ function renderCustomers() {
       <td><span class="badge badge-info">${c.orders} pedidos</span></td>
       <td><strong style="color:var(--pink)">R$ ${c.total.toFixed(2).replace('.',',')}</strong></td>
       <td style="color:var(--gray-400)">${c.last}</td>
+      <td>
+        <a href="https://wa.me/${c.whatsapp.replace(/\D/g,'')}" target="_blank" class="action-btn" title="Chamar no WhatsApp">💬</a>
+      </td>
     </tr>
   `).join('');
 }
