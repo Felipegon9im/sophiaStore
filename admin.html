@@ -1161,7 +1161,15 @@
 
     <!-- CUSTOMERS PAGE -->
     <div class="page-section" id="page-customers">
-      <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark);margin-bottom:1.5rem">Clientes</h1>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Clientes</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Gerencie a base de clientes da sua loja</p>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-primary" onclick="openCustModal()">➕ Novo Cliente</button>
+        </div>
+      </div>
       <div class="panel">
         <div class="table-wrap">
           <table>
@@ -1476,7 +1484,8 @@
             <div class="pos-calc-title">💰 Caixa & Troco</div>
             <div class="form-group" style="gap: 0.25rem;">
               <label style="color:var(--gray-400);font-size:0.6rem">Cliente da Venda</label>
-              <input type="text" id="pos-client-name" placeholder="Cliente de Balcão" class="pos-calc-input" style="font-family:'Inter'">
+              <input type="text" id="pos-client-name" list="pos-customers-list" placeholder="Ex: Cliente de Balcão" class="pos-calc-input" style="font-family:'Inter'">
+              <datalist id="pos-customers-list"></datalist>
             </div>
             
             <div class="pos-calc-row">
@@ -1582,6 +1591,32 @@
     Obrigado pela preferência! 🌸<br>
     Seu brilho é a nossa moda.<br>
     www.sophiaelegancestore.com.br
+  </div>
+</div>
+
+<!-- Modal Cliente -->
+<div id="cust-modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center">
+  <div class="modal" style="width:500px;background:#fff;border-radius:12px;padding:1.5rem;position:relative">
+    <button onclick="closeCustModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer">&times;</button>
+    <h2 style="font-size:1.2rem;margin-bottom:1rem;color:var(--dark)">Cadastro de Cliente</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Nome Completo *</label>
+        <input type="text" id="cust-name" placeholder="Ex: Ana Carolina Silva">
+      </div>
+      <div class="form-group">
+        <label>WhatsApp</label>
+        <input type="text" id="cust-whatsapp" placeholder="(00) 00000-0000">
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="cust-email" placeholder="contato@email.com">
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:1rem;margin-top:1.5rem">
+      <button class="btn btn-secondary" onclick="closeCustModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCustomer()">Salvar Cliente</button>
+    </div>
   </div>
 </div>
 
@@ -1803,7 +1838,7 @@ let orders = [
   { id:'#TTK-901', customer:'Gabriela Nogueira', products:'Conjunto Cropped', total:159, payment:'TikTok Pay via Bling', status:'Processando', date:'25/05/2026', source:'Bling ERP' }
 ];
 
-let customers = [
+let customers = JSON.parse(localStorage.getItem('sophiaStoreCustomers')) || [
   { name:'Ana Carolina Silva', email:'ana@email.com', whatsapp:'(48) 99999-0001', orders:3, total:867, last:'01/04/2025' },
   { name:'Mariana Fontes', email:'mari@email.com', whatsapp:'(48) 99999-0002', orders:2, total:616, last:'02/04/2025' },
   { name:'Juliana Melo', email:'ju@email.com', whatsapp:'(48) 99999-0003', orders:1, total:489, last:'03/04/2025' },
@@ -2069,6 +2104,41 @@ function renderOrders() {
 }
 
 // ── CUSTOMERS ──
+function saveCustomersLocal() {
+  localStorage.setItem('sophiaStoreCustomers', JSON.stringify(customers));
+}
+
+function openCustModal() {
+  document.getElementById('cust-name').value = '';
+  document.getElementById('cust-whatsapp').value = '';
+  document.getElementById('cust-email').value = '';
+  document.getElementById('cust-modal-overlay').style.display = 'flex';
+}
+
+function closeCustModal() {
+  document.getElementById('cust-modal-overlay').style.display = 'none';
+}
+
+function saveCustomer() {
+  const name = document.getElementById('cust-name').value.trim();
+  const whatsapp = document.getElementById('cust-whatsapp').value.trim();
+  const email = document.getElementById('cust-email').value.trim();
+  
+  if (!name) {
+    toast('O nome do cliente é obrigatório!', 'error');
+    return;
+  }
+  
+  customers.push({
+    name, email, whatsapp, orders: 0, total: 0, last: '-'
+  });
+  
+  saveCustomersLocal();
+  renderCustomers();
+  closeCustModal();
+  toast('Cliente cadastrado com sucesso!', 'success');
+}
+
 function renderCustomers() {
   document.getElementById('customers-table').innerHTML = customers.map(c => `
     <tr>
@@ -2830,6 +2900,12 @@ function loadPosPage() {
       names.map(n => `<option>${n}</option>`).join('');
   }
   
+  // Populate customers datalist
+  const posCustList = document.getElementById('pos-customers-list');
+  if (posCustList) {
+    posCustList.innerHTML = customers.map(c => `<option value="${c.name}"></option>`).join('');
+  }
+  
   // Render POS catalog
   filterPosProducts('');
   
@@ -3151,6 +3227,27 @@ function finalizePosSale() {
   const itemsText = posCart.map(item => `${item.name} (${item.size.toUpperCase()}) x${item.qty}`).join(' + ');
   const dateStr = new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const dateOnlyStr = new Date().toLocaleDateString('pt-BR');
+  
+  // -- Atualizar ou Criar Cliente --
+  if (clientName && clientName.toLowerCase() !== 'cliente de balcão') {
+    const existing = customers.find(c => c.name.toLowerCase() === clientName.toLowerCase());
+    if (existing) {
+      existing.orders += 1;
+      existing.total += total;
+      existing.last = dateOnlyStr;
+    } else {
+      customers.push({
+        name: clientName,
+        email: '',
+        whatsapp: '',
+        orders: 1,
+        total: total,
+        last: dateOnlyStr
+      });
+    }
+    saveCustomersLocal();
+    renderCustomers();
+  }
   
   const newOrder = {
     id: orderId,
