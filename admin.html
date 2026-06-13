@@ -1093,13 +1093,19 @@
                   <label>Conteúdo da Mensagem</label>
                   <textarea id="wp-message" placeholder="Escreva a mensagem que deseja enviar..." style="min-height: 120px;"></textarea>
                 </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                  <label>Anexar Imagem (Opcional)</label>
+                  <input type="file" id="wp-image" accept="image/*" style="font-size: 0.8rem; padding: 0.4rem;" />
+                  <span style="font-size: 0.65rem; color: var(--gray-400);">Extensões aceitas: JPG, PNG.</span>
+                </div>
                 
                 <button id="wp-send-btn" class="btn btn-success" onclick="handleWpSubmit()" style="width: 100%; justify-content: center; padding: 0.75rem;"><span class="icon">🚀</span> Iniciar Disparo / Salvar</button>
               </div>
               
               <div class="config-card">
                 <h3>Status do Disparo</h3>
-                <div style="background: var(--gray-100); border-radius: 8px; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem;">
+                <div style="background: var(--gray-100); border-radius: 8px; padding: 1.5rem; text-align: center; margin-bottom: 1rem;">
                   <div id="wp-status-text" style="font-size: 1.2rem; font-weight: 600; color: var(--dark); margin-bottom: 0.5rem;">Aguardando...</div>
                   <div class="stock-bar" style="height: 12px; background: var(--gray-200); border-radius: 6px;">
                     <div id="wp-progress-fill" class="stock-fill" style="width: 0%; background: var(--success); border-radius: 6px;"></div>
@@ -1108,6 +1114,10 @@
                     <span id="wp-progress-sent">0 enviados</span>
                     <span id="wp-progress-total">0 total</span>
                   </div>
+                </div>
+
+                <div style="background: #1e1e1e; color: #00ff00; font-family: monospace; font-size: 0.75rem; padding: 0.75rem; border-radius: 6px; height: 180px; overflow-y: auto; margin-bottom: 1rem;" id="wp-console-log">
+                  > Aguardando ação...<br>
                 </div>
 
                 <div class="status-dot connected" style="display: inline-block; width: 12px; height: 12px; margin-right: 0.5rem;"></div>
@@ -3502,6 +3512,65 @@ function deleteSupplier(id) {
   toast('Fornecedor excluído.', 'info');
 }
 
+// WHATSAPP API EVENTS
+if (window.whatsappAPI) {
+  window.whatsappAPI.onQrCode((e, qr) => {
+    document.getElementById('wp-disconnected-view').style.display = 'block';
+    document.getElementById('wp-connected-view').style.display = 'none';
+    document.getElementById('wp-logout-btn').style.display = 'none';
+    document.getElementById('wp-groups-btn').style.display = 'none';
+    
+    document.getElementById('qr-loading-text').style.display = 'none';
+    const qrImg = document.getElementById('wp-qr-img');
+    qrImg.src = qr;
+    qrImg.style.display = 'block';
+  });
+
+  window.whatsappAPI.onReady(() => {
+    document.getElementById('wp-disconnected-view').style.display = 'none';
+    document.getElementById('wp-connected-view').style.display = 'block';
+    document.getElementById('wp-logout-btn').style.display = 'block';
+    document.getElementById('wp-groups-btn').style.display = 'block';
+    toast('WhatsApp Autenticado com Sucesso!', 'success');
+    renderScheduledCampaigns();
+    appendWpLog('> WhatsApp conectado e sincronizado.');
+  });
+
+  window.whatsappAPI.onDisconnected(() => {
+    document.getElementById('wp-disconnected-view').style.display = 'block';
+    document.getElementById('wp-connected-view').style.display = 'none';
+    document.getElementById('wp-logout-btn').style.display = 'none';
+    document.getElementById('wp-groups-btn').style.display = 'none';
+    toast('WhatsApp desconectado', 'warning');
+    appendWpLog('> WhatsApp foi desconectado.', 'red');
+  });
+
+  window.whatsappAPI.onProgress((e, data) => {
+    if(data.target) {
+      appendWpLog(`Enviando para ${data.target}... [${data.status === 'ok' ? 'SUCESSO' : 'ERRO'}]`, data.status === 'error' ? 'red' : '#00ff00');
+    }
+    document.getElementById('wp-progress-sent').textContent = data.current + ' processados';
+    document.getElementById('wp-progress-total').textContent = data.total + ' total';
+    const pct = Math.round((data.current / data.total) * 100);
+    document.getElementById('wp-progress-fill').style.width = pct + '%';
+    
+    if (data.current === data.total) {
+      document.getElementById('wp-status-text').textContent = 'Disparo Concluído!';
+      document.getElementById('wp-status-text').style.color = 'var(--success)';
+      appendWpLog('> Disparo concluído.', '#00ff00');
+    }
+  });
+}
+
+function appendWpLog(msg, color = '#00ff00') {
+  const logBox = document.getElementById('wp-console-log');
+  if (logBox) {
+    const time = new Date().toLocaleTimeString('pt-BR');
+    logBox.innerHTML += `<span style="color:${color}">[${time}] ${msg}</span><br>`;
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+}
+
 // ── WHATSAPP HEADLESS & AGENDADOR ──
 let scheduledCampaigns = JSON.parse(localStorage.getItem('scheduledCampaigns')) || [];
 
@@ -3539,26 +3608,32 @@ function updateWpButtonState() {
 
 function handleWpSubmit() {
   const type = document.getElementById('wp-schedule-type').value;
+  const fileInput = document.getElementById('wp-image');
+  let imagePath = null;
+  if (fileInput && fileInput.files.length > 0) {
+    imagePath = fileInput.files[0].path;
+  }
   
   if (type === 'recurring') {
     const val = parseInt(document.getElementById('wp-recur-value').value);
     const unit = document.getElementById('wp-recur-unit').value;
-    scheduleWhatsappCampaign(null, { value: val, unit: unit });
+    scheduleWhatsappCampaign(null, { value: val, unit: unit }, imagePath);
   } else {
     const time = document.getElementById('wp-schedule-time').value;
     if (time) {
-      scheduleWhatsappCampaign(time, null);
+      scheduleWhatsappCampaign(time, null, imagePath);
     } else {
       // Disparo Imediato, mas vamos registrar no histórico como "Concluído"
       const numbers = document.getElementById('wp-numbers').value.split('\n').map(n => n.trim()).filter(n => n);
       const message = document.getElementById('wp-message').value.trim();
-      if (numbers.length === 0 || !message) { toast('Preencha os campos', 'error'); return; }
+      if (numbers.length === 0) { toast('Adicione destinatários', 'error'); return; }
+      if (!message && !imagePath) { toast('Preencha mensagem ou imagem', 'error'); return; }
       
-      sendWhatsappCampaign();
+      sendWhatsappCampaign(numbers, message, imagePath);
       
       const newCamp = {
         id: Date.now(), type: 'once', time: Date.now(), numbers, message, status: 'Concluído',
-        lastRun: Date.now()
+        lastRun: Date.now(), imagePath: imagePath
       };
       scheduledCampaigns.push(newCamp);
       saveScheduledCampaigns();
@@ -3567,12 +3642,12 @@ function handleWpSubmit() {
   }
 }
 
-function scheduleWhatsappCampaign(timeStr, recurRules) {
+function scheduleWhatsappCampaign(timeStr, recurRules, imagePath = null) {
   const numbers = document.getElementById('wp-numbers').value.split('\n').map(n => n.trim()).filter(n => n);
   const message = document.getElementById('wp-message').value.trim();
   
   if (numbers.length === 0) { toast('Adicione pelo menos um número/ID.', 'error'); return; }
-  if (!message) { toast('Digite uma mensagem.', 'error'); return; }
+  if (!message && !imagePath) { toast('Digite uma mensagem ou anexe uma imagem.', 'error'); return; }
   
   const type = document.getElementById('wp-schedule-type').value;
   
@@ -3592,11 +3667,12 @@ function scheduleWhatsappCampaign(timeStr, recurRules) {
     id: Date.now(),
     type: type, // 'once' ou 'recurring'
     time: scheduleTime, // proximo envio
-    recurRules: recurRules, // { value: 1, unit: 'hours' }
+    recurRules: recurRules,
     lastRun: null,
     numbers,
     message,
-    status: 'Ativo' // 'Ativo', 'Concluído', 'Pausado'
+    imagePath,
+    status: 'Ativo'
   };
   
   scheduledCampaigns.push(newCamp);
@@ -3748,13 +3824,7 @@ function whatsappLogout() {
   }
 }
 
-function sendWhatsappCampaign() {
-  const numbers = document.getElementById('wp-numbers').value.split('\n').map(n => n.trim()).filter(n => n);
-  const message = document.getElementById('wp-message').value.trim();
-  
-  if (numbers.length === 0) { toast('Adicione pelo menos um número.', 'error'); return; }
-  if (!message) { toast('Digite uma mensagem.', 'error'); return; }
-  
+function sendWhatsappCampaign(numbers, message, imagePath) {
   if (window.whatsappAPI) {
     document.getElementById('wp-send-btn').disabled = true;
     document.getElementById('wp-send-btn').innerHTML = '<span class="icon">⏳</span> Enviando...';
@@ -3762,54 +3832,38 @@ function sendWhatsappCampaign() {
     document.getElementById('wp-progress-fill').style.width = '0%';
     document.getElementById('wp-progress-sent').innerText = '0 enviados';
     document.getElementById('wp-progress-total').innerText = numbers.length + ' total';
+    appendWpLog('> Iniciando disparo manual...');
     
-    window.whatsappAPI.sendCampaign({ numbers, message });
+    window.whatsappAPI.sendCampaign({ numbers, message, imagePath });
   } else {
     toast('Serviço WhatsApp não encontrado no Electron.', 'error');
   }
 }
 
-if (window.whatsappAPI) {
-  window.whatsappAPI.onQrCode((event, qrDataUrl) => {
-    document.getElementById('qr-loading-text').style.display = 'none';
-    document.getElementById('wp-qr-img').style.display = 'block';
-    document.getElementById('wp-qr-img').src = qrDataUrl;
-  });
-
-  window.whatsappAPI.onReady(() => {});
-
-  window.whatsappAPI.onAuthenticated(() => {
-    document.getElementById('wp-disconnected-view').style.display = 'none';
-    document.getElementById('wp-connected-view').style.display = 'block';
-    document.getElementById('wp-logout-btn').style.display = 'inline-flex';
-    toast('WhatsApp Conectado com Sucesso!', 'success');
-  });
-
-  window.whatsappAPI.onDisconnected((event, reason) => {
-    document.getElementById('wp-connected-view').style.display = 'none';
-    document.getElementById('wp-disconnected-view').style.display = 'block';
-    document.getElementById('wp-logout-btn').style.display = 'none';
-    toast('WhatsApp Desconectado.', 'info');
-    startWhatsappSession();
-  });
-  
-  window.whatsappAPI.onAuthFailure((event, msg) => {
-    toast('Falha na autenticação do WhatsApp', 'error');
-  });
-
-  window.whatsappAPI.onProgress((event, progress) => {
-    const { current, total, success } = progress;
-    const percent = Math.round((current / total) * 100);
-    document.getElementById('wp-progress-fill').style.width = percent + '%';
-    document.getElementById('wp-progress-sent').innerText = current + ' processados (' + success + ' enviados)';
-    
-    if (current === total) {
-      document.getElementById('wp-status-text').innerText = 'Disparo Concluído!';
-      document.getElementById('wp-send-btn').disabled = false;
-      document.getElementById('wp-send-btn').innerHTML = '<span class="icon">🚀</span> Iniciar Disparo';
-      toast(`Campanha finalizada! ${success} mensagens enviadas.`, 'success');
+function timerCheckScheduledCampaigns() {
+  const now = Date.now();
+  let changed = false;
+  scheduledCampaigns.forEach(camp => {
+    if (camp.status === 'Ativo' && camp.time <= now) {
+      if (window.whatsappAPI) {
+        window.whatsappAPI.sendCampaign({ numbers: camp.numbers, message: camp.message, imagePath: camp.imagePath });
+        toast('Disparo Automático Iniciado!', 'info');
+        appendWpLog('> Iniciando disparo automático (' + camp.numbers.length + ' contatos)...');
+      }
+      
+      camp.lastRun = now;
+      if (camp.type === 'once') {
+        camp.status = 'Concluído';
+      } else if (camp.type === 'recurring') {
+        camp.time = calculateNextRun(now, camp.recurRules);
+      }
+      changed = true;
     }
   });
+  if (changed) {
+    saveScheduledCampaigns();
+    renderScheduledCampaigns();
+  }
 }
 
 // ── INIT ──

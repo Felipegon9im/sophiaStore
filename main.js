@@ -1,6 +1,6 @@
 const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 
 let mainWindow;
@@ -103,31 +103,49 @@ function setupWhatsAppIPC() {
 
   ipcMain.on('whatsapp-send-campaign', async (event, data) => {
     if (!whatsappClient) return;
-    const { numbers, message } = data;
+    const { numbers, message, imagePath } = data;
     let successCount = 0;
+    
+    let media = null;
+    if (imagePath) {
+      try {
+        media = MessageMedia.fromFilePath(imagePath);
+      } catch (e) {
+        console.error("Erro ao ler imagem", e);
+      }
+    }
     
     for (let i = 0; i < numbers.length; i++) {
       const number = numbers[i].trim();
       let chatId = number;
       
-      // Se não for um ID explícito de grupo ou contato, assumimos que é telefone
       if (!number.endsWith('@g.us') && !number.endsWith('@c.us')) {
         let cleanNumber = number.replace(/\D/g, '');
         if (!cleanNumber.startsWith('55')) cleanNumber = '55' + cleanNumber;
         chatId = cleanNumber + '@c.us';
       }
       
-      
+      let statusStr = 'error';
       try {
-        await whatsappClient.sendMessage(chatId, message);
+        if (media) {
+          await whatsappClient.sendMessage(chatId, media, { caption: message });
+        } else {
+          await whatsappClient.sendMessage(chatId, message);
+        }
         successCount++;
+        statusStr = 'ok';
       } catch (err) {}
       
       if (mainWindow) {
-        mainWindow.webContents.send('whatsapp-progress', { current: i + 1, total: numbers.length, success: successCount });
+        mainWindow.webContents.send('whatsapp-progress', { 
+          current: i + 1, 
+          total: numbers.length, 
+          success: successCount,
+          target: chatId,
+          status: statusStr
+        });
       }
       
-      // Delay between 2 to 4 seconds
       await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000));
     }
   });
