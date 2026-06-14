@@ -107,7 +107,14 @@ function setupWhatsAppIPC() {
     let successCount = 0;
     
     let media = null;
-    if (imagePath) {
+    if (data.fileBase64 && data.fileName) {
+      try {
+        const base64data = data.fileBase64.split(',')[1] || data.fileBase64;
+        media = new MessageMedia('application/pdf', base64data, data.fileName);
+      } catch (e) {
+        console.error("Erro ao ler PDF base64", e);
+      }
+    } else if (imagePath) {
       try {
         media = MessageMedia.fromFilePath(imagePath);
       } catch (e) {
