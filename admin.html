@@ -2410,6 +2410,10 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
   }
   
   let pdfSent = false;
+  
+  // Exibir elemento e aplicar modo de impressão para evitar falhas do html2canvas/window.print
+  printArea.style.display = 'flex';
+  
   if (customer.whatsapp && typeof html2pdf !== 'undefined' && window.whatsappAPI) {
     try {
       toast('Gerando e enviando PDF pelo WhatsApp da Loja...', 'info');
@@ -2450,6 +2454,8 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
 
   // Finalização: Pergunta sobre imprimir via física
   const finishUI = () => {
+    printArea.style.display = 'none';
+    document.body.classList.remove('carne-print-mode');
     if (isFromPos) {
       clearPosSale();
       filterPosProducts('');
@@ -2459,22 +2465,24 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
   if (pdfSent) {
     if (confirm('O carnê em PDF foi enviado via WhatsApp. Deseja imprimir a via física (papel)?')) {
       document.body.classList.add('carne-print-mode');
+      
+      // Delay extra para renderização em impressoras
+      await new Promise(r => setTimeout(r, 300));
       window.print();
-      setTimeout(() => {
-        document.body.classList.remove('carne-print-mode');
-        finishUI();
-      }, 500);
+      
+      setTimeout(() => finishUI(), 500);
     } else {
       finishUI();
     }
   } else {
     // Imprime papel direto se não enviou pdf
     document.body.classList.add('carne-print-mode');
+    
+    // Delay extra para renderização em impressoras
+    await new Promise(r => setTimeout(r, 300));
     window.print();
-    setTimeout(() => {
-      document.body.classList.remove('carne-print-mode');
-      finishUI();
-    }, 500);
+    
+    setTimeout(() => finishUI(), 500);
   }
 }
 
