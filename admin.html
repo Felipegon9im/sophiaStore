@@ -2383,9 +2383,21 @@ function getCarneHtml(customer, carnes) {
   return html;
 }
 
-async function processCarnePrint(customer, html, isFromPos = false) {
+async function processCarnePrint(customer, html, isFromPos = false, carnesList = null) {
   const printArea = document.getElementById('print-carne-area');
   printArea.innerHTML = html;
+  
+  let agendaText = '';
+  if (carnesList && carnesList.length > 0) {
+    agendaText = `*Carnê de Pagamento - ${storeInfo.name}*\\n\\n`;
+    carnesList.forEach(c => {
+      agendaText += `*Pedido:* ${c.orderId}\\n`;
+      c.installments.forEach(i => {
+        agendaText += `Parcela ${i.parcel}/${c.installments.length} - Venc: ${i.dueDate} - Valor: R$ ${i.value.toFixed(2).replace('.',',')} - Status: ${i.status}\\n`;
+      });
+      agendaText += `\\n`;
+    });
+  }
   
   let pdfSent = false;
   if (customer.whatsapp && config.n8nWebhookUrl && typeof html2pdf !== 'undefined') {
@@ -2409,7 +2421,8 @@ async function processCarnePrint(customer, html, isFromPos = false) {
         event: 'carne_created',
         customerName: customer.name,
         whatsapp: customer.whatsapp,
-        pdfBase64: pdfBase64
+        pdfBase64: pdfBase64,
+        agendaText: agendaText
       });
       pdfSent = true;
       toast('PDF gerado e enviado com sucesso!', 'success');
@@ -2462,7 +2475,7 @@ async function printCarne() {
     return;
   }
   
-  await processCarnePrint(currentCarneCustomer, html, false);
+  await processCarnePrint(currentCarneCustomer, html, false, currentCarneCustomer.carnes);
 }
 
 // ── STATUS ──
@@ -3767,7 +3780,7 @@ async function finalizePosSale(carneSchedule = null) {
   if (paymentMethod === 'Carnê' && carneSchedule) {
     const html = getCarneHtml(targetCustomer, [newCarne]);
     if(html) {
-      await processCarnePrint(targetCustomer, html, true);
+      await processCarnePrint(targetCustomer, html, true, [newCarne]);
     } else {
       clearPosSale();
       filterPosProducts('');
