@@ -729,32 +729,33 @@
     }
   }
 
-  @media print {
-    /* -------------------------------------------
-       2. CARNE PRINT (carne-print-mode) 
-       ------------------------------------------- */
-    body.carne-print-mode { background: #fff !important; }
-    
-    body.carne-print-mode > #print-carne-area {
-      position: absolute; left: 0; top: 0; width: 100%;
-      display: flex !important; flex-direction: column; align-items: center; gap: 20px;
-      padding: 20px 0;
-    }
-    .carne-parcel-print {
-      width: 100%; max-width: 750px;
-      border: 1px dashed #666; border-radius: 8px;
-      display: flex; font-family: 'Courier New', Courier, monospace;
-      page-break-inside: avoid; background: #fff;
-    }
-    .carne-stub {
-      width: 30%; border-right: 1px dashed #666; padding: 15px; font-size: 11px;
-      display: flex; flex-direction: column; justify-content: center;
-    }
-    .carne-body {
-      width: 70%; padding: 15px; font-size: 13px; position: relative;
-    }
-    .carne-title { font-weight: bold; font-size: 15px; margin-bottom: 8px; text-transform: uppercase; }
   }
+
+  /* -------------------------------------------
+     2. CARNE PRINT E PDF (carne-print-mode) 
+     ------------------------------------------- */
+  body.carne-print-mode { background: #fff !important; }
+  
+  body.carne-print-mode > #print-carne-area {
+    position: absolute; left: 0; top: 0; width: 100%;
+    display: flex !important; flex-direction: column; align-items: center; gap: 20px;
+    padding: 20px 0;
+    z-index: 9999;
+  }
+  .carne-parcel-print {
+    width: 100%; max-width: 750px;
+    border: 1px dashed #666; border-radius: 8px;
+    display: flex; font-family: 'Courier New', Courier, monospace;
+    page-break-inside: avoid; background: #fff;
+  }
+  .carne-stub {
+    width: 30%; border-right: 1px dashed #666; padding: 15px; font-size: 11px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .carne-body {
+    width: 70%; padding: 15px; font-size: 13px; position: relative;
+  }
+  .carne-title { font-weight: bold; font-size: 15px; margin-bottom: 8px; text-transform: uppercase; }
 
   /* ── RESPONSIVE ── */
   @media(max-width:1100px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } }
@@ -2339,14 +2340,9 @@ function payParcel(carneIndex, instIndex) {
   toast('Parcela marcada como paga!', 'success');
 }
 
-function printCarne() {
-  if(!currentCarneCustomer || !currentCarneCustomer.carnes || currentCarneCustomer.carnes.length === 0) {
-    toast('Este cliente não possui carnês para imprimir.', 'error');
-    return;
-  }
-  
+function getCarneHtml(customer, carnes) {
   let html = '';
-  currentCarneCustomer.carnes.forEach(carne => {
+  carnes.forEach(carne => {
     carne.installments.forEach(inst => {
       if(inst.status !== 'Pago') {
         html += `
@@ -2357,14 +2353,14 @@ function printCarne() {
               Parcela: ${inst.parcel}/${carne.installments.length}<br>
               Vencimento: ${inst.dueDate}<br>
               Valor: R$ ${inst.value.toFixed(2).replace('.',',')}<br>
-              Cliente: ${currentCarneCustomer.name.substring(0, 15)}...
+              Cliente: ${customer.name.substring(0, 15)}...
             </div>
             <div class="carne-body">
-              <div class="carne-title">CARNÊ DE PAGAMENTO - ${storeInfo.name}</div>
+              <div class="carne-title">CARNÊ DE PAGAMENTO - ${storeInfo.name || 'Loja'}</div>
               <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                 <div>
-                  <b>Cliente:</b> ${currentCarneCustomer.name}<br>
-                  <b>WhatsApp:</b> ${currentCarneCustomer.whatsapp || 'Não informado'}<br>
+                  <b>Cliente:</b> ${customer.name}<br>
+                  <b>WhatsApp:</b> ${customer.whatsapp || 'Não informado'}<br>
                   <b>Pedido:</b> ${carne.orderId} (Total: R$ ${carne.total.toFixed(2).replace('.',',')})
                 </div>
                 <div style="text-align:right;">
@@ -2384,18 +2380,89 @@ function printCarne() {
       }
     });
   });
+  return html;
+}
+
+async function processCarnePrint(customer, html, isFromPos = false) {
+  const printArea = document.getElementById('print-carne-area');
+  printArea.innerHTML = html;
   
+  let pdfSent = false;
+  if (customer.whatsapp && config.n8nWebhookUrl && typeof html2pdf !== 'undefined') {
+    try {
+      toast('Gerando e enviando PDF via WhatsApp...', 'info');
+      // Força modo de impressão temporário invisível ao usuário para tirar o PDF
+      document.body.classList.add('carne-print-mode');
+      
+      const opt = {
+        margin: 0,
+        filename: `Carne-${customer.name.replace(/\\s+/g,'-')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      const pdfBase64 = await html2pdf().set(opt).from(printArea).outputPdf('datauristring');
+      document.body.classList.remove('carne-print-mode'); // retorna ao normal
+      
+      await triggerN8N({
+        event: 'carne_created',
+        customerName: customer.name,
+        whatsapp: customer.whatsapp,
+        pdfBase64: pdfBase64
+      });
+      pdfSent = true;
+      toast('PDF gerado e enviado com sucesso!', 'success');
+    } catch(e) {
+      console.error(e);
+      document.body.classList.remove('carne-print-mode');
+      toast('Erro ao gerar/enviar PDF via WhatsApp', 'error');
+    }
+  }
+
+  // Finalização: Pergunta sobre imprimir via física
+  const finishUI = () => {
+    if (isFromPos) {
+      clearPosSale();
+      filterPosProducts('');
+    }
+  };
+
+  if (pdfSent) {
+    if (confirm('O carnê em PDF foi enviado via WhatsApp. Deseja imprimir a via física (papel)?')) {
+      document.body.classList.add('carne-print-mode');
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove('carne-print-mode');
+        finishUI();
+      }, 500);
+    } else {
+      finishUI();
+    }
+  } else {
+    // Imprime papel direto se não enviou pdf
+    document.body.classList.add('carne-print-mode');
+    window.print();
+    setTimeout(() => {
+      document.body.classList.remove('carne-print-mode');
+      finishUI();
+    }, 500);
+  }
+}
+
+async function printCarne() {
+  if(!currentCarneCustomer || !currentCarneCustomer.carnes || currentCarneCustomer.carnes.length === 0) {
+    toast('Este cliente não possui carnês para imprimir.', 'error');
+    return;
+  }
+  
+  const html = getCarneHtml(currentCarneCustomer, currentCarneCustomer.carnes);
   if(!html) {
     toast('Todas as parcelas já estão pagas.', 'info');
     return;
   }
   
-  document.getElementById('print-carne-area').innerHTML = html;
-  document.body.classList.add('carne-print-mode');
-  window.print();
-  setTimeout(() => {
-    document.body.classList.remove('carne-print-mode');
-  }, 1000); // Remove class after print dialog is closed (or at least delayed)
+  await processCarnePrint(currentCarneCustomer, html, false);
 }
 
 // ── STATUS ──
@@ -3531,7 +3598,7 @@ function clearPosSale() {
   renderPosCart();
 }
 
-function finalizePosSale(carneSchedule = null) {
+async function finalizePosSale(carneSchedule = null) {
   if (posCart.length === 0) {
     toast('⚠️ Adicione pelo menos um produto para finalizar a venda!', 'warning');
     return;
@@ -3696,12 +3763,22 @@ function finalizePosSale(carneSchedule = null) {
   
   toast('🏪 Venda do Caixa realizada com sucesso!', 'success');
   
-  // 5. Trigger thermal receipt printing native shell window
-  setTimeout(() => {
-    window.print();
-    clearPosSale();
-    filterPosProducts('');
-  }, 300);
+  // 5. Trigger thermal receipt printing native shell window ou Carne PDF
+  if (paymentMethod === 'Carnê' && carneSchedule) {
+    const html = getCarneHtml(targetCustomer, [newCarne]);
+    if(html) {
+      await processCarnePrint(targetCustomer, html, true);
+    } else {
+      clearPosSale();
+      filterPosProducts('');
+    }
+  } else {
+    setTimeout(() => {
+      window.print();
+      clearPosSale();
+      filterPosProducts('');
+    }, 300);
+  }
 }
 
 
@@ -4419,5 +4496,6 @@ function timerCheckScheduledCampaigns() {
 
 })();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </body>
 </html>
