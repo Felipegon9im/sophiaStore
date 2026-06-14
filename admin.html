@@ -2409,8 +2409,9 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
     });
   }
   
-  // Exibir elemento e aplicar modo de impressão para evitar falhas do html2canvas/window.print
-  printArea.style.display = 'flex';
+  // Prepara o HTML na DOM de impressão física (para o window.print depois)
+  const printArea = document.getElementById('print-carne-area');
+  printArea.innerHTML = html;
   
   let pdfSent = false;
   if (customer.whatsapp && typeof html2pdf !== 'undefined' && window.whatsappAPI) {
@@ -2418,39 +2419,50 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
       try {
         toast('Gerando e enviando PDF pelo WhatsApp da Loja...', 'info');
         
-        // Força modo de impressão temporário para html2canvas
-        document.body.classList.add('carne-print-mode');
+        // Cria um container off-screen dedicado para o html2canvas ler a estrutura com perfeição
+        const pdfWrapper = document.createElement('div');
+        pdfWrapper.style.position = 'absolute';
+        pdfWrapper.style.top = '0';
+        pdfWrapper.style.left = '0';
+        pdfWrapper.style.width = '800px';
+        pdfWrapper.style.backgroundColor = '#ffffff';
+        pdfWrapper.style.zIndex = '-9999';
+        pdfWrapper.style.display = 'flex';
+        pdfWrapper.style.flexDirection = 'column';
+        pdfWrapper.style.alignItems = 'center';
+        pdfWrapper.style.gap = '20px';
+        pdfWrapper.style.padding = '20px 0';
+        pdfWrapper.innerHTML = html;
+        document.body.appendChild(pdfWrapper);
         
-        // Aguarda o navegador renderizar
         await new Promise(r => setTimeout(r, 500));
-      
-      const opt = {
-        margin: 0,
-        filename: `Carne-${customer.name.replace(/\s+/g,'-')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-      
-      const pdfBase64 = await html2pdf().set(opt).from(printArea).outputPdf('datauristring');
-      
-      document.body.classList.remove('carne-print-mode');
-      
-      window.whatsappAPI.sendCampaign({
-        numbers: [customer.whatsapp],
-        message: agendaText || `Aqui está o seu carnê de pagamento, ${customer.name}!`,
-        fileBase64: pdfBase64,
-        fileName: opt.filename
-      });
+        
+        const opt = {
+          margin: 0,
+          filename: `Carne-${customer.name.replace(/\s+/g,'-')}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        const pdfBase64 = await html2pdf().set(opt).from(pdfWrapper).outputPdf('datauristring');
+        
+        document.body.removeChild(pdfWrapper);
+        
+        window.whatsappAPI.sendCampaign({
+          numbers: [customer.whatsapp],
+          message: agendaText || `Aqui está o seu carnê de pagamento, ${customer.name}!`,
+          fileBase64: pdfBase64,
+          fileName: opt.filename
+        });
       
       pdfSent = true;
       toast('PDF gerado e enviado para o WhatsApp com sucesso!', 'success');
     } catch(e) {
       console.error(e);
-      document.body.classList.remove('carne-print-mode');
-        toast('Erro ao gerar/enviar PDF via WhatsApp', 'error');
-      }
+      toast('Erro ao gerar/enviar PDF via WhatsApp', 'error');
     }
+  }
   }
 
   // Finalização: Pergunta sobre imprimir via física
