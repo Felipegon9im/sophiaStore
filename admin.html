@@ -737,10 +737,20 @@
   body.carne-print-mode { background: #fff !important; }
   
   body.carne-print-mode > #print-carne-area {
-    position: absolute; left: 0; top: 0; width: 100%;
+    position: absolute; left: 0; top: 0; width: 800px; /* Largura fixa para PDF/Print */
     display: flex !important; flex-direction: column; align-items: center; gap: 20px;
     padding: 20px 0;
-    z-index: 9999;
+    z-index: 9999; background: #fff;
+  }
+  
+  @media print {
+    body.carne-print-mode > *:not(#print-carne-area) {
+      display: none !important;
+    }
+    body.carne-print-mode > #print-carne-area {
+      position: static !important;
+      width: 100% !important;
+    }
   }
   .carne-parcel-print {
     width: 100%; max-width: 750px;
@@ -2404,17 +2414,8 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
     try {
       toast('Gerando e enviando PDF pelo WhatsApp da Loja...', 'info');
       
-      // Força o display para renderização correta do html2canvas (off-screen para não piscar)
-      printArea.style.display = 'flex';
-      printArea.style.flexDirection = 'column';
-      printArea.style.width = '800px';
-      printArea.style.position = 'fixed';
-      printArea.style.top = '0';
-      printArea.style.left = '-9999px';
-      printArea.style.backgroundColor = '#ffffff';
-      printArea.style.padding = '20px 0';
-      printArea.style.alignItems = 'center';
-      printArea.style.gap = '20px';
+      // Força modo de impressão temporário para html2canvas
+      document.body.classList.add('carne-print-mode');
       
       // Aguarda o navegador renderizar
       await new Promise(r => setTimeout(r, 500));
@@ -2429,7 +2430,7 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
       
       const pdfBase64 = await html2pdf().set(opt).from(printArea).outputPdf('datauristring');
       
-      printArea.style.display = 'none';
+      document.body.classList.remove('carne-print-mode');
       
       window.whatsappAPI.sendCampaign({
         numbers: [customer.whatsapp],
