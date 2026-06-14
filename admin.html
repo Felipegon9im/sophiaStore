@@ -2409,20 +2409,20 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
     });
   }
   
-  let pdfSent = false;
-  
   // Exibir elemento e aplicar modo de impressão para evitar falhas do html2canvas/window.print
   printArea.style.display = 'flex';
   
+  let pdfSent = false;
   if (customer.whatsapp && typeof html2pdf !== 'undefined' && window.whatsappAPI) {
-    try {
-      toast('Gerando e enviando PDF pelo WhatsApp da Loja...', 'info');
-      
-      // Força modo de impressão temporário para html2canvas
-      document.body.classList.add('carne-print-mode');
-      
-      // Aguarda o navegador renderizar
-      await new Promise(r => setTimeout(r, 500));
+    if (confirm('Deseja enviar o carnê em PDF via WhatsApp para o cliente?')) {
+      try {
+        toast('Gerando e enviando PDF pelo WhatsApp da Loja...', 'info');
+        
+        // Força modo de impressão temporário para html2canvas
+        document.body.classList.add('carne-print-mode');
+        
+        // Aguarda o navegador renderizar
+        await new Promise(r => setTimeout(r, 500));
       
       const opt = {
         margin: 0,
@@ -2448,7 +2448,8 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
     } catch(e) {
       console.error(e);
       document.body.classList.remove('carne-print-mode');
-      toast('Erro ao gerar/enviar PDF via WhatsApp', 'error');
+        toast('Erro ao gerar/enviar PDF via WhatsApp', 'error');
+      }
     }
   }
 
@@ -2462,20 +2463,7 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
     }
   };
 
-  if (pdfSent) {
-    if (confirm('O carnê em PDF foi enviado via WhatsApp. Deseja imprimir a via física (papel)?')) {
-      document.body.classList.add('carne-print-mode');
-      
-      // Delay extra para renderização em impressoras
-      await new Promise(r => setTimeout(r, 300));
-      window.print();
-      
-      setTimeout(() => finishUI(), 500);
-    } else {
-      finishUI();
-    }
-  } else {
-    // Imprime papel direto se não enviou pdf
+  if (confirm('Deseja imprimir a via física (papel) do carnê?')) {
     document.body.classList.add('carne-print-mode');
     
     // Delay extra para renderização em impressoras
@@ -2483,6 +2471,8 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
     window.print();
     
     setTimeout(() => finishUI(), 500);
+  } else {
+    finishUI();
   }
 }
 
