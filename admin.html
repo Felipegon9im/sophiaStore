@@ -2409,10 +2409,6 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
     });
   }
   
-  // Prepara o HTML na DOM de impressão física (para o window.print depois)
-  const printArea = document.getElementById('print-carne-area');
-  printArea.innerHTML = html;
-  
   let pdfSent = false;
   if (customer.whatsapp && typeof html2pdf !== 'undefined' && window.whatsappAPI) {
     if (confirm('Deseja enviar o carnê em PDF via WhatsApp para o cliente?')) {
@@ -2436,9 +2432,8 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
         pdfWrapper.innerHTML = html;
         document.body.appendChild(pdfWrapper);
         
-        try {
-          await new Promise(r => setTimeout(r, 500));
-        
+        await new Promise(r => setTimeout(r, 500));
+      
         const opt = {
           margin: 0,
           filename: `Carne-${customer.name.replace(/\s+/g,'-')}.pdf`,
@@ -2458,17 +2453,20 @@ async function processCarnePrint(customer, html, isFromPos = false, carnesList =
         
         pdfSent = true;
         toast('PDF gerado e enviado para o WhatsApp com sucesso!', 'success');
-      } finally {
-          if (pdfWrapper && pdfWrapper.parentNode) {
-            pdfWrapper.parentNode.removeChild(pdfWrapper);
-          }
+        
+        // Limpeza síncrona
+        if (pdfWrapper && pdfWrapper.parentNode) {
+          pdfWrapper.parentNode.removeChild(pdfWrapper);
         }
       } catch(e) {
         console.error(e);
         toast('Erro ao gerar/enviar PDF via WhatsApp', 'error');
+        
+        // Se falhou, também tenta limpar!
+        const wrappers = document.querySelectorAll('div[style*="z-index: -9999"]');
+        wrappers.forEach(w => w.remove());
       }
     }
-  }
   }
 
   // Finalização: Pergunta sobre imprimir via física
