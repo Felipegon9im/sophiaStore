@@ -1343,6 +1343,21 @@
           </div>
           <button class="btn btn-success" onclick="saveWhatsApp()">💾 Salvar</button>
         </div>
+        
+        <!-- N8N Webhook -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+            <span style="font-size:2rem">⚡</span>
+            <h3>Integração N8N</h3>
+          </div>
+          <p>Dispare ações automáticas (ex: enviar Carnê em PDF via WhatsApp).</p>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>URL do Webhook (N8N)</label>
+            <input type="text" id="n8n-webhook-url" placeholder="https://seu-n8n.com/webhook/1234">
+            <span style="font-size:0.65rem;color:var(--gray-400);margin-top:4px">Deixe em branco para desativar os disparos ao N8N</span>
+          </div>
+          <button class="btn btn-primary" onclick="saveN8nConfig()">💾 Salvar</button>
+        </div>
 
         <!-- Loja Info -->
         <div class="config-card">
@@ -1932,6 +1947,7 @@ const config = {
   cloudinaryConnected:localStorage.getItem('cloudinaryConnected')=== 'true',
   blingToken:         localStorage.getItem('blingToken')         || '',
   blingConnected:     localStorage.getItem('blingConnected')     === 'true',
+  n8nWebhookUrl:      localStorage.getItem('n8nWebhookUrl')      || '',
 };
 
 // ── PRODUCTS DATA ──
@@ -3062,6 +3078,28 @@ function connectCloudinary() {
   document.getElementById('cloudinary-dot').classList.replace('disconnected','connected');
   document.getElementById('cloudinary-status-text').textContent = 'Conectado ✓';
   toast('☁️ Cloudinary conectado!', 'success');
+}
+
+function saveN8nConfig() {
+  const url = document.getElementById('n8n-webhook-url').value.trim();
+  localStorage.setItem('n8nWebhookUrl', url);
+  config.n8nWebhookUrl = url;
+  toast('⚡ Integração N8N salva com sucesso!', 'success');
+}
+
+async function triggerN8N(payload) {
+  if (!config.n8nWebhookUrl) return false;
+  try {
+    const res = await fetch(config.n8nWebhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.ok;
+  } catch (error) {
+    console.error('N8N Trigger Error:', error);
+    return false;
+  }
 }
 
 function saveWhatsApp() { toast('✅ WhatsApp configurado!', 'success'); }
