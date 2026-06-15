@@ -13,3 +13,11 @@ contextBridge.exposeInMainWorld('whatsappAPI', {
   sendCampaign: (data) => ipcRenderer.send('whatsapp-send-campaign', data),
   getGroups: () => ipcRenderer.invoke('whatsapp-get-groups')
 });
+
+contextBridge.exposeInMainWorld('systemAPI', {
+  downloadUpdate: (url) => ipcRenderer.send('system-download-update', { url }),
+  installUpdate: (filePath) => ipcRenderer.send('system-install-update', { filePath }),
+  onUpdateProgress: (callback) => ipcRenderer.on('system-update-progress', (event, data) => callback(data)),
+  onUpdateReady: (callback) => ipcRenderer.on('system-update-ready', (event, data) => callback(data)),
+  onUpdateError: (callback) => ipcRenderer.on('system-update-error', (event, data) => callback(data))
+});

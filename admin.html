@@ -1387,6 +1387,45 @@
           </div>
           <button class="btn btn-primary" onclick="saveStoreInfo()">💾 Salvar Configurações</button>
         </div>
+
+        <!-- System Update -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+            <span style="font-size:2rem">🔄</span>
+            <h3>Atualização do Sistema</h3>
+          </div>
+          <p>Verifique se há novas versões do painel administrativo e atualize o sistema com um clique.</p>
+          <div class="config-status" id="update-status-wrapper" style="margin-bottom:1rem">
+            <span style="font-size:0.75rem;color:var(--gray-400)">Versão Atual:</span>
+            <strong style="font-size:0.85rem;color:var(--pink)" id="current-version-text">v1.0.0</strong>
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>URL de Busca de Versões</label>
+            <input type="text" id="update-url-config" placeholder="https://raw.githubusercontent.com/.../version.json">
+          </div>
+          
+          <div id="update-info-area" style="display:none; margin-bottom:1.25rem; padding:0.75rem; background:var(--gray-50); border:1px solid var(--gray-100); border-radius:8px;">
+            <div style="font-size:0.8rem; font-weight:600; color:var(--dark); margin-bottom:0.25rem;">Nova versão disponível: <span id="new-version-val" style="color:var(--success)"></span></div>
+            <div style="font-size:0.7rem; color:var(--gray-600); margin-bottom:0.75rem;" id="new-version-notes"></div>
+            <button class="btn btn-success" id="btn-start-download" onclick="startUpdateDownload()" style="width:100%; justify-content:center;">📥 Baixar e Instalar</button>
+          </div>
+
+          <div id="update-progress-area" style="display:none; margin-bottom:1.25rem;">
+            <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--gray-400); margin-bottom:0.25rem;">
+              <span id="update-progress-label">Baixando atualização...</span>
+              <span id="update-progress-pct">0%</span>
+            </div>
+            <div style="width:100%; height:8px; background:var(--gray-100); border-radius:4px; overflow:hidden;">
+              <div id="update-progress-bar" style="width:0%; height:100%; background:var(--pink); transition:width 0.2s;"></div>
+            </div>
+          </div>
+          
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-primary" onclick="checkSystemUpdate()">🔍 Buscar Atualização</button>
+            <button class="btn btn-secondary" onclick="restoreUpdateDefaultUrl()">🔄 Padrão</button>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -3151,6 +3190,12 @@ function loadConfigForm() {
   const up = localStorage.getItem('uploadPreset');
   if (up) document.getElementById('cl-upload-preset').value = up;
   
+  const updateUrl = localStorage.getItem('sophia_update_url') || 'https://raw.githubusercontent.com/Felipegon9im/sophiaStore/main/version.json';
+  const elUpdateUrl = document.getElementById('update-url-config');
+  if (elUpdateUrl) elUpdateUrl.value = updateUrl;
+  const elVer = document.getElementById('current-version-text');
+  if (elVer) elVer.textContent = 'v1.0.0';
+  
   if (localStorage.getItem('sheetsConnected') === 'true') {
     document.getElementById('sheets-dot').classList.replace('disconnected','connected');
     document.getElementById('sheets-status-text').textContent = 'Conectado ✓';
@@ -4245,6 +4290,117 @@ function deleteSupplier(id) {
   saveSuppliersLocal();
   renderSuppliers();
   toast('Fornecedor excluído.', 'info');
+}
+
+// ── SYSTEM UPDATE LOGIC ──
+function checkSystemUpdate() {
+  const url = document.getElementById('update-url-config').value.trim();
+  if (!url) {
+    toast('❌ Digite a URL de busca de versões!', 'error');
+    return;
+  }
+  localStorage.setItem('sophia_update_url', url);
+  
+  toast('🔍 Buscando atualizações...', 'info');
+  
+  fetch(url + '?t=' + new Date().getTime())
+    .then(res => {
+      if (!res.ok) throw new Error('Erro HTTP ' + res.status);
+      return res.json();
+    })
+    .then(data => {
+      const currentVersion = '1.0.0';
+      if (!data.version || !data.url) {
+        toast('❌ Arquivo de versão inválido!', 'error');
+        return;
+      }
+      
+      const updateInfoArea = document.getElementById('update-info-area');
+      const newVersionVal = document.getElementById('new-version-val');
+      const newVersionNotes = document.getElementById('new-version-notes');
+      
+      if (data.version !== currentVersion) {
+        newVersionVal.textContent = 'v' + data.version;
+        newVersionNotes.textContent = data.notes || 'Nenhuma nota de versão fornecida.';
+        updateInfoArea.style.display = 'block';
+        toast(`🎉 Nova versão v${data.version} disponível!`, 'success');
+      } else {
+        newVersionVal.textContent = 'v' + data.version + ' (Versão Atual)';
+        newVersionNotes.textContent = 'Seu painel já está na versão mais recente.';
+        updateInfoArea.style.display = 'block';
+        toast('✅ O sistema já está atualizado!', 'success');
+      }
+      
+      window.latestDownloadUrl = data.url;
+    })
+    .catch(err => {
+      toast('❌ Falha ao buscar atualizações: ' + err.message, 'error');
+    });
+}
+
+function restoreUpdateDefaultUrl() {
+  const defaultUrl = 'https://raw.githubusercontent.com/Felipegon9im/sophiaStore/main/version.json';
+  document.getElementById('update-url-config').value = defaultUrl;
+  localStorage.setItem('sophia_update_url', defaultUrl);
+  toast('🔄 URL de atualização restaurada para o padrão!', 'success');
+}
+
+function startUpdateDownload() {
+  const downloadUrl = window.latestDownloadUrl;
+  if (!downloadUrl) {
+    toast('❌ Link do instalador não encontrado. Busque novamente.', 'error');
+    return;
+  }
+  
+  document.getElementById('update-info-area').style.display = 'none';
+  const progressArea = document.getElementById('update-progress-area');
+  const progressBar = document.getElementById('update-progress-bar');
+  const progressPct = document.getElementById('update-progress-pct');
+  const progressLabel = document.getElementById('update-progress-label');
+  
+  progressArea.style.display = 'block';
+  progressBar.style.width = '0%';
+  progressPct.textContent = '0%';
+  progressLabel.textContent = 'Iniciando download...';
+  
+  toast('📥 Iniciando download do instalador...', 'info');
+  
+  if (window.systemAPI) {
+    window.systemAPI.downloadUpdate(downloadUrl);
+  } else {
+    toast('❌ API do sistema indisponível no navegador comum (apenas no app desktop).', 'error');
+  }
+}
+
+// SYSTEM UPDATE API EVENTS
+if (window.systemAPI) {
+  window.systemAPI.onUpdateProgress((data) => {
+    const progressBar = document.getElementById('update-progress-bar');
+    const progressPct = document.getElementById('update-progress-pct');
+    const progressLabel = document.getElementById('update-progress-label');
+    
+    if (progressBar) progressBar.style.width = data.percent + '%';
+    if (progressPct) progressPct.textContent = data.percent + '%';
+    if (progressLabel) progressLabel.textContent = `Baixando atualização... (${data.percent}%)`;
+  });
+
+  window.systemAPI.onUpdateReady((data) => {
+    toast('✅ Download concluído! O instalador será executado e o aplicativo será reiniciado.', 'success');
+    
+    setTimeout(() => {
+      const progressArea = document.getElementById('update-progress-area');
+      if (progressArea) progressArea.style.display = 'none';
+      window.systemAPI.installUpdate(data.filePath);
+    }, 2000);
+  });
+
+  window.systemAPI.onUpdateError((msg) => {
+    const progressArea = document.getElementById('update-progress-area');
+    const infoArea = document.getElementById('update-info-area');
+    if (progressArea) progressArea.style.display = 'none';
+    if (infoArea) infoArea.style.display = 'block';
+    toast('❌ Erro ao baixar atualização: ' + msg, 'error');
+  });
 }
 
 // WHATSAPP API EVENTS

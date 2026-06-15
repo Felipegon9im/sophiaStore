@@ -2,6 +2,11 @@ const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
+const fs = require('fs');
+const https = require('https');
+const http = require('http');
+const os = require('os');
+const { exec } = require('child_process');
 
 let mainWindow;
 
@@ -49,6 +54,7 @@ app.on('ready', () => {
   });
   
   setupWhatsAppIPC();
+  setupUpdaterIPC();
 });
 
 let whatsappClient;
@@ -170,6 +176,94 @@ function setupWhatsAppIPC() {
       console.error(err);
       return [];
     }
+  });
+}
+
+function downloadFile(url, dest, onProgress, onSuccess, onError) {
+  const protocol = url.startsWith('https') ? https : http;
+  const options = {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+  };
+
+  protocol.get(url, options, (response) => {
+    if (response.statusCode === 301 || response.statusCode === 302) {
+      downloadFile(response.headers.location, dest, onProgress, onSuccess, onError);
+      return;
+    }
+    if (response.statusCode !== 200) {
+      onError(new Error(`Erro ao baixar: Status ${response.statusCode}`));
+      return;
+    }
+
+    const totalBytes = parseInt(response.headers['content-length'], 10) || 0;
+    let downloadedBytes = 0;
+    const fileStream = fs.createWriteStream(dest);
+
+    response.on('data', (chunk) => {
+      downloadedBytes += chunk.length;
+      fileStream.write(chunk);
+      if (totalBytes > 0) {
+        onProgress(downloadedBytes, totalBytes);
+      }
+    });
+
+    response.on('end', () => {
+      fileStream.end();
+      onSuccess();
+    });
+
+    response.on('error', (err) => {
+      fileStream.destroy();
+      fs.unlink(dest, () => {});
+      onError(err);
+    });
+  }).on('error', (err) => {
+    fs.unlink(dest, () => {});
+    onError(err);
+  });
+}
+
+function setupUpdaterIPC() {
+  ipcMain.on('system-download-update', (event, { url }) => {
+    const tempPath = path.join(os.tmpdir(), 'SophiaStoreSetup.exe');
+    if (fs.existsSync(tempPath)) {
+      try {
+        fs.unlinkSync(tempPath);
+      } catch (e) {}
+    }
+
+    downloadFile(
+      url,
+      tempPath,
+      (downloaded, total) => {
+        const percent = Math.round((downloaded / total) * 100);
+        if (mainWindow) {
+          mainWindow.webContents.send('system-update-progress', { percent });
+        }
+      },
+      () => {
+        if (mainWindow) {
+          mainWindow.webContents.send('system-update-ready', { filePath: tempPath });
+        }
+      },
+      (err) => {
+        if (mainWindow) {
+          mainWindow.webContents.send('system-update-error', err.message);
+        }
+      }
+    );
+  });
+
+  ipcMain.on('system-install-update', (event, { filePath }) => {
+    const child = exec(`"${filePath}"`, (err) => {
+      if (err) {
+        console.error('Falha ao rodar instalador:', err);
+      }
+    });
+    child.unref();
+    app.quit();
   });
 }
 
