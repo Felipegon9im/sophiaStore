@@ -59,16 +59,40 @@ app.on('ready', () => {
 
 let whatsappClient;
 
+function getExecutablePath() {
+  if (process.platform === 'win32') {
+    const paths = [
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      path.join(process.env.LOCALAPPDATA || '', 'Google\\Chrome\\Application\\chrome.exe'),
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
+    ];
+    for (const p of paths) {
+      if (fs.existsSync(p)) {
+        return p;
+      }
+    }
+  }
+  return undefined;
+}
+
 function setupWhatsAppIPC() {
   ipcMain.on('whatsapp-start', () => {
     if (whatsappClient) return;
 
+    const chromePath = getExecutablePath();
+    const puppeteerOpts = {
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-extensions']
+    };
+    if (chromePath) {
+      puppeteerOpts.executablePath = chromePath;
+    }
+
     whatsappClient = new Client({
       authStrategy: new LocalAuth({ dataPath: path.join(app.getPath('userData'), 'whatsapp-session') }),
-      puppeteer: { 
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-extensions']
-      }
+      puppeteer: puppeteerOpts
     });
 
     whatsappClient.on('qr', async (qr) => {
@@ -96,7 +120,10 @@ function setupWhatsAppIPC() {
       if (mainWindow) mainWindow.webContents.send('whatsapp-auth-failure', msg);
     });
 
-    whatsappClient.initialize();
+    whatsappClient.initialize().catch(err => {
+      console.error("Erro ao inicializar Whatsapp:", err);
+      if (mainWindow) mainWindow.webContents.send('whatsapp-disconnected', err.message || 'Erro de inicializacao');
+    });
   });
 
   ipcMain.on('whatsapp-logout', async () => {
