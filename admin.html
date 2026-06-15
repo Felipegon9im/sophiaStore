@@ -1363,7 +1363,16 @@
           </div>
           <div class="form-group" style="margin-bottom:1.25rem">
             <label>URL do Apps Script (Web App)</label>
-            <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec">
+            <div class="input-lock-wrapper" style="position: relative; display: flex; align-items: center; width: 100%;">
+              <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec" readonly style="padding-right: 2.75rem; background: var(--gray-100); color: var(--gray-600); cursor: not-allowed; width: 100%; border: 1px solid var(--gray-300); border-radius: 6px; height: 38px; font-size: 0.85rem; transition: all 0.2s;">
+              <button type="button" id="sheets-url-lock-btn" onclick="toggleUrlLock()" style="position: absolute; right: 0.25rem; background: none; border: none; cursor: pointer; color: var(--gray-500); display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 4px; transition: all 0.2s;" title="Desbloquear para edição" onmouseover="this.style.background='var(--gray-200)'" onmouseout="this.style.background='none'">
+                <!-- Closed Lock SVG -->
+                <svg id="lock-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </button>
+            </div>
           </div>
           <div style="display:flex;gap:0.75rem">
             <button class="btn btn-primary" onclick="connectSheets()">🔗 Conectar</button>
@@ -3330,6 +3339,52 @@ function connectSheets() {
   document.getElementById('sheets-dot').classList.replace('disconnected','connected');
   document.getElementById('sheets-status-text').textContent = 'Conectado ✓';
   toast('✅ Google Sheets conectado via Apps Script!', 'success');
+  
+  // Auto-lock the field after connecting
+  const input = document.getElementById('sheets-url');
+  if (!input.hasAttribute('readonly')) {
+    toggleUrlLock();
+  }
+}
+
+function toggleUrlLock() {
+  const input = document.getElementById('sheets-url');
+  const btn = document.getElementById('sheets-url-lock-btn');
+  const svg = document.getElementById('lock-icon-svg');
+  
+  if (input.hasAttribute('readonly')) {
+    // UNLOCKING
+    input.removeAttribute('readonly');
+    input.style.background = 'white';
+    input.style.color = '#1f2937'; // gray-800
+    input.style.cursor = 'text';
+    input.style.borderColor = 'var(--pink)';
+    btn.style.color = 'var(--pink)';
+    btn.title = 'Bloquear campo';
+    
+    // Change SVG to open lock
+    svg.innerHTML = `
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+      <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+    `;
+    toast('🔓 Campo desbloqueado para edição!', 'info');
+  } else {
+    // LOCKING
+    input.setAttribute('readonly', 'true');
+    input.style.background = 'var(--gray-100)';
+    input.style.color = 'var(--gray-600)';
+    input.style.cursor = 'not-allowed';
+    input.style.borderColor = 'var(--gray-300)';
+    btn.style.color = 'var(--gray-500)';
+    btn.title = 'Desbloquear para edição';
+    
+    // Change SVG to closed lock
+    svg.innerHTML = `
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+    `;
+    toast('🔒 Campo bloqueado para evitar alterações acidentais!', 'success');
+  }
 }
 async function testSheets() {
   if (!config.sheetsConnected || !config.appsScriptUrl) {
