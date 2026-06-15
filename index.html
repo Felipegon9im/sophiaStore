@@ -18,6 +18,15 @@
     --dark: #1a0a12;
     --gray: #6B7280;
     --gray-light: #F9FAFB;
+    
+    /* Design Tokens */
+    --shadow-sm: 0 2px 8px rgba(26, 10, 18, 0.04);
+    --shadow-md: 0 8px 30px rgba(26, 10, 18, 0.08);
+    --shadow-lg: 0 20px 50px rgba(26, 10, 18, 0.12);
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -79,13 +88,14 @@
     padding: 0 4rem;
     display: flex; align-items: center; justify-content: space-between;
     height: 80px;
-    transition: all 0.4s ease;
+    transition: var(--transition);
   }
   header.scrolled {
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(20px);
-    box-shadow: 0 1px 0 rgba(233,30,140,0.1);
-    height: 65px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    box-shadow: 0 10px 30px rgba(10, 10, 10, 0.03), 0 1px 0 rgba(233, 30, 140, 0.05);
+    height: 70px;
   }
   .logo {
     font-family: 'Cormorant Garamond', serif;
@@ -126,6 +136,10 @@
     background: none; border: none; 
     color: rgba(255,255,255,0.85); font-size: 1.1rem;
     transition: color 0.3s; position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   header.scrolled .icon-btn { color: var(--gray); }
   .icon-btn:hover { color: var(--gold); }
@@ -137,6 +151,75 @@
     font-size: 0.55rem; display: flex; align-items: center; justify-content: center;
     font-weight: 600;
   }
+
+  /* Hamburger Menu Button */
+  .mobile-menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 22px;
+    height: 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 1100;
+    padding: 0;
+  }
+  .mobile-menu-toggle .bar {
+    width: 100%;
+    height: 2px;
+    background-color: var(--white);
+    transition: var(--transition);
+    border-radius: 2px;
+  }
+  header.scrolled .mobile-menu-toggle .bar {
+    background-color: var(--dark);
+  }
+
+  /* ── MOBILE NAV DRAWER ── */
+  #mobile-menu-overlay {
+    position: fixed; inset: 0; background: rgba(10,0,7,0.4);
+    z-index: 9000; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  #mobile-menu-overlay.open { opacity: 1; pointer-events: all; }
+  #mobile-menu-drawer {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 300px;
+    background: white; z-index: 9001;
+    transform: translateX(-100%); transition: transform 0.4s cubic-bezier(.165,.84,.44,1);
+    display: flex; flex-direction: column;
+    box-shadow: 10px 0 40px rgba(0,0,0,0.15);
+  }
+  #mobile-menu-overlay.open #mobile-menu-drawer { transform: translateX(0); }
+  .menu-drawer-header {
+    padding: 2rem; border-bottom: 1px solid #f3f4f6;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .menu-drawer-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 400;
+    color: var(--dark);
+  }
+  .menu-drawer-close {
+    background: none; border: none; font-size: 1.2rem; color: var(--gray);
+    cursor: pointer; transition: color 0.2s;
+  }
+  .menu-drawer-close:hover { color: var(--pink); }
+  .mobile-nav-links {
+    display: flex; flex-direction: column; gap: 1.5rem; padding: 2.5rem 2rem;
+  }
+  .mobile-nav-links a {
+    font-size: 0.9rem; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--dark); text-decoration: none; font-weight: 500;
+    transition: color 0.2s;
+  }
+  .mobile-nav-links a:hover { color: var(--pink); }
+  .menu-drawer-footer {
+    margin-top: auto; padding: 2rem; border-top: 1px solid #f3f4f6;
+    font-size: 0.75rem; color: var(--gray);
+  }
+  .menu-drawer-footer p { font-weight: 600; color: var(--dark); margin-bottom: 0.25rem; }
 
   /* ── HERO ── */
   #hero {
@@ -352,21 +435,35 @@
   }
   .filter-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.5rem; }
   .filter-tab {
-    padding: 0.5rem 1.25rem;
+    padding: 0.6rem 1.5rem;
     border: 1px solid #e5e7eb;
     background: none; 
     font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase;
     color: var(--gray); font-family: 'Montserrat', sans-serif;
-    transition: all 0.3s;
+    transition: var(--transition);
+    border-radius: 20px;
+    cursor: pointer;
   }
   .filter-tab.active, .filter-tab:hover {
     background: var(--pink); border-color: var(--pink); color: white;
+    box-shadow: 0 4px 12px rgba(233, 30, 140, 0.15);
   }
   .products-grid {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem;
   }
   .product-card {
-    position: relative; 
+    position: relative;
+    background: var(--white);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.03);
+  }
+  .product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-md);
   }
   .product-img {
     position: relative; overflow: hidden;
@@ -374,31 +471,41 @@
   }
   .product-img img {
     width: 100%; height: 100%; object-fit: cover;
-    transition: transform 0.5s cubic-bezier(.25,.46,.45,.94);
+    transition: transform 0.6s cubic-bezier(.165,.84,.44,1);
   }
-  .product-card:hover .product-img img { transform: scale(1.06); }
+  .product-card:hover .product-img img { transform: scale(1.08); }
   .product-badge {
     position: absolute; top: 1rem; left: 1rem;
-    padding: 0.3rem 0.75rem;
-    font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 0.35rem 0.8rem;
+    font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase;
     font-weight: 600;
+    border-radius: 20px;
+    z-index: 2;
   }
-  .badge-new { background: var(--pink); color: white; }
-  .badge-sale { background: var(--gold); color: var(--dark); }
+  .badge-new { background: var(--pink); color: white; box-shadow: 0 4px 10px rgba(233,30,140,0.2); }
+  .badge-sale { background: var(--gold); color: var(--dark); box-shadow: 0 4px 10px rgba(212,175,106,0.2); }
+  
   .product-actions {
     position: absolute; bottom: 1rem; left: 1rem; right: 1rem;
     display: flex; gap: 0.5rem;
-    transform: translateY(20px); opacity: 0;
-    transition: all 0.3s;
+    transform: translateY(15px); opacity: 0;
+    transition: all 0.35s cubic-bezier(.165,.84,.44,1);
+    z-index: 3;
   }
   .product-card:hover .product-actions { transform: translateY(0); opacity: 1; }
   .action-btn {
     flex: 1; padding: 0.75rem;
-    background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+    background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: none; 
+    border-radius: 8px;
     font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
-    font-family: 'Montserrat', sans-serif; font-weight: 500;
+    font-family: 'Montserrat', sans-serif; font-weight: 600;
     transition: all 0.2s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .action-btn.main { background: var(--pink); color: white; flex: 2; }
   .action-btn:hover { background: var(--dark); color: white; }
@@ -406,22 +513,24 @@
   .wishlist-btn {
     width: 42px; padding: 0;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1rem;
+    font-size: 0.9rem;
   }
-  .product-info { padding: 1rem 0 0; }
+  .product-info { padding: 1.25rem; }
   .product-name {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 1.1rem; font-weight: 400; color: var(--dark);
+    font-size: 1.15rem; font-weight: 500; color: var(--dark);
+    line-height: 1.3;
   }
   .product-cat {
-    font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
-    color: var(--gray); margin-top: 0.25rem;
+    font-size: 0.55rem; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--gray); margin-bottom: 0.35rem;
+    font-weight: 600;
   }
   .product-price {
     margin-top: 0.5rem; display: flex; align-items: baseline; gap: 0.75rem;
   }
   .price-current {
-    font-size: 1rem; font-weight: 500; color: var(--pink);
+    font-size: 1.05rem; font-weight: 600; color: var(--pink);
   }
   .price-old {
     font-size: 0.8rem; color: var(--gray);
@@ -434,10 +543,52 @@
   }
   .color-dot:hover, .color-dot.active { border-color: var(--dark); }
 
+  .size-preview-badge {
+    font-size: 0.52rem;
+    font-weight: 600;
+    color: var(--gray);
+    padding: 0.15rem 0.35rem;
+    background: var(--gray-light);
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    text-transform: uppercase;
+    margin-right: 3px;
+  }
+
   /* ── E-COMMERCE UTILS ── */
-  .header-search { display: flex; align-items: center; background: rgba(255,255,255,0.15); border-radius: 20px; padding: 0.3rem 1rem; border: 1px solid rgba(255,255,255,0.1); }
-  header.scrolled .header-search { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
-  .header-search input { background: transparent; border: none; outline: none; color: white; font-family: 'Montserrat', sans-serif; font-size: 0.7rem; width: 120px; transition: width 0.3s; }
+  .header-search { 
+    display: flex; 
+    align-items: center; 
+    background: rgba(255,255,255,0.08); 
+    border-radius: 30px; 
+    padding: 0.4rem 1rem; 
+    border: 1px solid rgba(255,255,255,0.15);
+    transition: var(--transition);
+  }
+  header.scrolled .header-search { 
+    background: rgba(0,0,0,0.03); 
+    border-color: rgba(0,0,0,0.08); 
+  }
+  .header-search:focus-within {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.4);
+    box-shadow: 0 0 15px rgba(255,255,255,0.1);
+  }
+  header.scrolled .header-search:focus-within {
+    background: rgba(0,0,0,0.05);
+    border-color: rgba(0,0,0,0.2);
+    box-shadow: 0 0 15px rgba(0,0,0,0.02);
+  }
+  .header-search input { 
+    background: transparent; 
+    border: none; 
+    outline: none; 
+    color: white; 
+    font-family: 'Montserrat', sans-serif; 
+    font-size: 0.7rem; 
+    width: 120px; 
+    transition: var(--transition); 
+  }
   header.scrolled .header-search input { color: var(--dark); }
   .header-search input::placeholder { color: rgba(255,255,255,0.6); }
   header.scrolled .header-search input::placeholder { color: var(--gray); }
@@ -618,16 +769,19 @@
 
   /* ── CART SIDEBAR ── */
   #cart-overlay {
-    position: fixed; inset: 0; background: rgba(10,0,7,0.5);
+    position: fixed; inset: 0; background: rgba(10,0,7,0.4);
     z-index: 5000; opacity: 0; pointer-events: none;
     transition: opacity 0.3s;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
   #cart-overlay.open { opacity: 1; pointer-events: all; }
   #cart-sidebar {
     position: fixed; right: 0; top: 0; bottom: 0; width: 420px;
     background: white; z-index: 5001;
-    transform: translateX(100%); transition: transform 0.4s cubic-bezier(.25,.46,.45,.94);
+    transform: translateX(100%); transition: transform 0.4s cubic-bezier(.165,.84,.44,1);
     display: flex; flex-direction: column;
+    box-shadow: -10px 0 40px rgba(0,0,0,0.15);
   }
   #cart-overlay.open #cart-sidebar { transform: translateX(0); }
   .cart-header {
@@ -640,28 +794,89 @@
   .cart-close {
     background: none; border: none;  font-size: 1.2rem; color: var(--gray);
     transition: color 0.2s;
+    cursor: pointer;
   }
   .cart-close:hover { color: var(--pink); }
   .cart-items { flex: 1; overflow-y: auto; padding: 1.5rem; }
   .cart-empty {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    height: 100%; gap: 1rem; color: var(--gray);
+    height: 100%; gap: 1.5rem; color: var(--gray);
+    padding: 3rem 1.5rem;
+    text-align: center;
   }
-  .cart-empty-icon { font-size: 3rem; opacity: 0.3; }
-  .cart-footer { padding: 2rem; border-top: 1px solid #f3f4f6; }
+  .cart-empty-icon { font-size: 4rem; opacity: 0.15; animation: fadeInUp 0.8s ease; }
+  .cart-footer { padding: 2rem; border-top: 1px solid #f3f4f6; background: var(--gray-light); }
   .cart-total {
     display: flex; justify-content: space-between; align-items: center;
-    font-size: 0.9rem; font-weight: 600; margin-bottom: 1.5rem;
+    font-size: 0.95rem; font-weight: 600; margin-bottom: 1.5rem;
+    color: var(--dark);
   }
-  .cart-checkout {
-    width: 100%; padding: 1rem;
-    background: linear-gradient(135deg, var(--pink), var(--pink-deep));
-    color: white; border: none; 
+  
+  .cart-checkout-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .cart-checkout-btn {
+    width: 100%;
+    padding: 0.95rem;
+    border: none;
+    border-radius: 8px;
     font-family: 'Montserrat', sans-serif;
-    font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase;
-    font-weight: 500; transition: opacity 0.3s;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
   }
-  .cart-checkout:hover { opacity: 0.9; }
+  .btn-checkout-bling {
+    background: linear-gradient(135deg, var(--pink), var(--pink-deep));
+    color: white;
+    box-shadow: 0 4px 15px rgba(233, 30, 140, 0.2);
+  }
+  .btn-checkout-bling:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(233, 30, 140, 0.35);
+  }
+  .btn-checkout-wa {
+    background: #25D366;
+    color: white;
+    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2);
+  }
+  .btn-checkout-wa:hover {
+    background: #20ba56;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
+  }
+  .checkout-secure-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-size: 0.65rem;
+    color: var(--gray);
+    margin-top: 0.5rem;
+  }
+  .checkout-secure-badge svg {
+    color: #10b981;
+  }
+  .btn-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 0.8s linear infinite;
+    margin-left: 10px;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 
   /* ── WHATSAPP FLOAT ── */
   #whatsapp-wrap {
@@ -743,6 +958,92 @@
     to   { opacity:1; transform: scale(1) translateY(0); }
   }
 
+  /* ── MODAL OVERLAYS (GENERAL) ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(10,0,7,0.4);
+    z-index: 6000; display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-content {
+    background: var(--white);
+    box-shadow: var(--shadow-lg);
+    transform: scale(0.95) translateY(20px);
+    transition: var(--transition);
+  }
+  .modal-overlay.open .modal-content {
+    transform: scale(1) translateY(0);
+  }
+
+  .success-modal-box {
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    padding: 3rem 2rem;
+    border-radius: var(--radius-md);
+    position: relative;
+  }
+  .success-icon-wrap {
+    width: 70px;
+    height: 70px;
+    background: var(--pink-pale);
+    color: var(--pink);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+  }
+  .success-modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    color: var(--dark);
+    font-weight: 500;
+  }
+  .success-modal-desc {
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--gray);
+    margin-bottom: 2rem;
+  }
+  .success-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .success-btn {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .success-btn.btn-checkout {
+    background: var(--dark);
+    color: white;
+    border: none;
+  }
+  .success-btn.btn-checkout:hover {
+    background: var(--pink);
+    box-shadow: 0 4px 12px rgba(233, 30, 140, 0.2);
+  }
+  .success-btn.btn-continue {
+    background: white;
+    color: var(--dark);
+    border: 1px solid #e5e7eb;
+  }
+  .success-btn.btn-continue:hover {
+    border-color: var(--dark);
+  }
+
   /* ── PRODUCT DETAIL MODAL ── */
   #product-detail-modal-overlay {
     position: fixed; inset: 0; background: rgba(10,0,7,0.6);
@@ -802,40 +1103,98 @@
   }
   .size-selector-wrap { display: flex; gap: 0.5rem; }
   .size-selector-btn {
-    width: 38px; height: 38px; border: 1px solid #e5e7eb; background: none;
-    font-size: 0.7rem; font-family: 'Montserrat', sans-serif; font-weight: 500;
-     display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
+    width: 44px; height: 44px; border: 1.5px solid #e5e7eb; background: white;
+    font-size: 0.75rem; font-family: 'Montserrat', sans-serif; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    transition: var(--transition);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--dark);
   }
-  .size-selector-btn:hover, .size-selector-btn.active {
-    border-color: var(--pink); background: var(--pink); color: white;
+  .size-selector-btn:hover {
+    border-color: var(--pink);
+    color: var(--pink);
+  }
+  .size-selector-btn.active {
+    border-color: var(--pink);
+    background: var(--pink);
+    color: white;
+    box-shadow: 0 4px 12px rgba(233, 30, 140, 0.2);
   }
   .size-selector-btn.disabled {
-    opacity: 0.25; pointer-events: none; text-decoration: line-through;
+    opacity: 0.25;
+    pointer-events: none;
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    text-decoration: line-through;
+    color: var(--gray);
   }
   
   .detail-checkout-channels {
-    display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
   }
   
   .checkout-channel-btn {
-    width: 100%; padding: 0.85rem 1.5rem; border: none; 
-    font-family: 'Montserrat', sans-serif; font-size: 0.65rem;
-    letter-spacing: 0.25em; text-transform: uppercase; font-weight: 600;
-    display: flex; align-items: center; justify-content: center; gap: 0.75rem;
-    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    width: 100%;
+    padding: 0.95rem 1.5rem;
+    border: none; 
+    border-radius: 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transition: var(--transition);
     text-decoration: none;
+    cursor: pointer;
   }
-  .checkout-channel-btn:hover { transform: translateY(-1px); }
+  .checkout-channel-btn:hover {
+    transform: translateY(-2px);
+  }
   
-  .btn-channel-cart { background: var(--dark); color: white; }
-  .btn-channel-cart:hover { background: #333; }
-  .btn-channel-wa { background: #25D366; color: white; box-shadow: 0 4px 15px rgba(37,211,102,0.25); }
-  .btn-channel-wa:hover { background: #20ba56; }
-  .btn-channel-shopee { background: #ff5722; color: white; box-shadow: 0 4px 15px rgba(255,87,34,0.25); }
-  .btn-channel-shopee:hover { background: #e64a19; }
-  .btn-channel-tiktok { background: #000000; color: white; border: 1px solid rgba(0,242,254,0.4); box-shadow: 0 4px 15px rgba(0,0,0,0.25); }
-  .btn-channel-tiktok:hover { background: #111; }
+  .btn-channel-cart {
+    background: linear-gradient(135deg, var(--dark), #2d1020);
+    color: white;
+    box-shadow: 0 4px 15px rgba(26, 10, 18, 0.15);
+  }
+  .btn-channel-cart:hover {
+    box-shadow: 0 6px 20px rgba(26, 10, 18, 0.3);
+  }
+  .btn-channel-wa {
+    background: #25D366;
+    color: white;
+    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2);
+  }
+  .btn-channel-wa:hover {
+    background: #20ba56;
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
+  }
+  .btn-channel-shopee {
+    background: #ff5722;
+    color: white;
+    box-shadow: 0 4px 15px rgba(255,87,34,0.2);
+  }
+  .btn-channel-shopee:hover {
+    background: #e64a19;
+    box-shadow: 0 6px 20px rgba(255,87,34,0.35);
+  }
+  .btn-channel-tiktok {
+    background: #000000;
+    color: white;
+    border: 1px solid rgba(0,242,254,0.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  .btn-channel-tiktok:hover {
+    background: #111;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  }
 
   /* ── RESPONSIVE ── */
   @media (max-width: 1024px) {
@@ -850,6 +1209,7 @@
   @media (max-width: 768px) {
     header { padding: 0 1.5rem; }
     nav { display: none; }
+    .mobile-menu-toggle { display: flex; }
     .hero-content { padding: 0 1.5rem; }
     .hero-visual { display: none; }
     section { padding: 4rem 1.5rem; }
@@ -857,6 +1217,20 @@
     .newsletter-form { flex-direction: column; }
     .footer-grid { grid-template-columns: 1fr; }
     #cart-sidebar { width: 100%; }
+    
+    /* Responsive modal detail */
+    .detail-modal {
+      grid-template-columns: 1fr;
+      max-height: 95vh;
+      width: 95vw;
+    }
+    .detail-img-side {
+      min-height: 250px;
+      height: 250px;
+    }
+    .detail-info-side {
+      padding: 1.5rem;
+    }
   }
   /* ── TOAST NOTIFICATION ── */
   #toast-container {
@@ -906,6 +1280,11 @@
 
 <!-- Header -->
 <header id="header">
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Abrir Menu">
+    <span class="bar" style="margin-bottom:4px"></span>
+    <span class="bar" style="margin-bottom:4px"></span>
+    <span class="bar"></span>
+  </button>
   <a href="#" class="logo">
     Sophia
     <span>Elegance Store</span>
@@ -919,17 +1298,44 @@
   </nav>
   <div class="header-actions">
     <div class="header-search">
-      <input type="text" placeholder="Buscar peças...">
-      <span style=" opacity:0.7">🔍</span>
+      <input type="text" id="search-input" placeholder="Buscar peças..." onkeyup="filterSearch(this.value)">
+      <span style="opacity:0.7; display: flex; align-items: center; cursor: pointer;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      </span>
     </div>
-    <button class="icon-btn" title="Minha Conta" onclick="showToast('Área do cliente em breve!', 'info')">👤</button>
-    <button class="icon-btn" title="Lista de desejos">♡</button>
+    <button class="icon-btn" title="Minha Conta" onclick="showToast('Área do cliente em breve!', 'info')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    </button>
+    <button class="icon-btn" title="Lista de desejos" onclick="showToast('Lista de desejos em breve!', 'info')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+    </button>
     <button class="icon-btn" id="cart-btn" title="Carrinho" style="position:relative">
-      🛒
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
       <span class="cart-count" id="cart-count">0</span>
     </button>
   </div>
 </header>
+
+<!-- Mobile Navigation Drawer -->
+<div id="mobile-menu-overlay" class="menu-overlay">
+  <div id="mobile-menu-drawer">
+    <div class="menu-drawer-header">
+      <span class="menu-drawer-title">Menu</span>
+      <button class="menu-drawer-close" id="mobile-menu-close">✕</button>
+    </div>
+    <nav class="mobile-nav-links">
+      <a href="#categories" onclick="closeMobileMenu()">Categorias</a>
+      <a href="#products" onclick="closeMobileMenu()">Coleções</a>
+      <a href="#featured" onclick="closeMobileMenu()">Destaque</a>
+      <a href="#testimonials" onclick="closeMobileMenu()">Clientes</a>
+      <a href="#newsletter" onclick="closeMobileMenu()">Contato</a>
+    </nav>
+    <div class="menu-drawer-footer">
+      <p>Sophia Elegance Store</p>
+      <span>Elegância que transforma.</span>
+    </div>
+  </div>
+</div>
 
 <!-- Hero -->
 <section id="hero">
@@ -1195,21 +1601,37 @@
         <span>Total</span>
         <span id="cart-total">R$ 0,00</span>
       </div>
-      <button class="cart-checkout" onclick="checkoutWhatsApp()" style="background:#25D366; color:white; font-size: 1.1rem; padding: 1rem; border-radius: 8px;">💬 Finalizar via WhatsApp</button>
+      <div class="cart-checkout-actions">
+        <button class="cart-checkout-btn btn-checkout-bling" onclick="checkoutBling()" id="cart-checkout-bling-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <span class="btn-text">Pagar Online (Cartão/Pix)</span>
+          <span class="btn-spinner" style="display:none;"></span>
+        </button>
+        <button class="cart-checkout-btn btn-checkout-wa" onclick="checkoutWhatsApp()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+          Finalizar por WhatsApp
+        </button>
+      </div>
+      <div class="checkout-secure-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Ambiente de pagamento 100% seguro</span>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- Cart Success Modal -->
 <div id="cart-success-modal" class="modal-overlay" onclick="if(event.target===this) closeCartSuccess()">
-  <div class="modal-content" style="max-width: 400px; text-align: center; padding: 2.5rem 2rem; border-radius: 16px;">
+  <div class="modal-content success-modal-box">
     <button class="detail-close-btn" onclick="closeCartSuccess()" style="top: 1rem; right: 1rem;">✕</button>
-    <div style="font-size: 3.5rem; margin-bottom: 1rem;">🛍️</div>
-    <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 2rem; margin-bottom: 0.5rem; color: var(--dark);">Adicionado!</h3>
-    <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 2rem;">Sua peça foi colocada no carrinho com sucesso.</p>
-    <div style="display: flex; flex-direction: column; gap: 0.85rem;">
-      <button onclick="closeCartSuccess(); openCart()" style="background: var(--dark); color: white; padding: 1.1rem; border: none; border-radius: 8px; font-family: 'Montserrat', sans-serif; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--pink)'" onmouseout="this.style.background='var(--dark)'">Finalizar Compra</button>
-      <button onclick="closeCartSuccess()" style="background: white; color: var(--dark); border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.1rem; font-family: 'Montserrat', sans-serif; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: border-color 0.2s;" onmouseover="this.style.borderColor='var(--dark)'" onmouseout="this.style.borderColor='#e5e7eb'">Continuar Comprando</button>
+    <div class="success-icon-wrap">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    </div>
+    <h3 class="success-modal-title">Adicionado à Sacola!</h3>
+    <p class="success-modal-desc">Sua peça foi colocada no carrinho com sucesso e está pronta para finalização.</p>
+    <div class="success-modal-actions">
+      <button onclick="closeCartSuccess(); openCart()" class="success-btn btn-checkout">Finalizar Compra</button>
+      <button onclick="closeCartSuccess()" class="success-btn btn-continue">Continuar Comprando</button>
     </div>
   </div>
 </div>
@@ -1244,19 +1666,23 @@
         <span class="detail-label">Comprar Por Onde Preferir</span>
         <!-- WhatsApp Buy -->
         <button class="checkout-channel-btn btn-channel-wa" id="detail-btn-wa" onclick="checkoutSingleWhatsApp()">
-          💬 Finalizar via WhatsApp
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+          Comprar via WhatsApp
         </button>
         <!-- Shopee Buy -->
         <a class="checkout-channel-btn btn-channel-shopee" id="detail-btn-shopee" target="_blank" href="#">
-          🧡 Comprar na Shopee
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          Comprar na Shopee
         </a>
         <!-- TikTok Buy -->
         <a class="checkout-channel-btn btn-channel-tiktok" id="detail-btn-tiktok" target="_blank" href="#">
-          🎵 Comprar no TikTok Shop
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
+          TikTok Shop
         </a>
         <!-- Add to cart -->
         <button class="checkout-channel-btn btn-channel-cart" id="detail-btn-cart" onclick="addCurrentToCart()">
-          🛍️ Adicionar ao Carrinho local
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          Adicionar ao Carrinho
         </button>
       </div>
     </div>
@@ -1418,27 +1844,50 @@ async function loadProductsFromSheets() {
   renderProducts();
 }
 
-function renderProducts(filter = 'Todos') {
+function renderProducts(filter = 'Todos', query = '') {
   const grid = document.getElementById('products-grid');
-  const items = filter === 'Todos' ? productsData : productsData.filter(p => p.cat === filter);
+  let items = filter === 'Todos' ? productsData : productsData.filter(p => p.cat === filter);
+
+  if (query) {
+    const q = query.toLowerCase().trim();
+    items = items.filter(p => 
+      p.name.toLowerCase().includes(q) || 
+      p.cat.toLowerCase().includes(q) || 
+      (p.desc && p.desc.toLowerCase().includes(q))
+    );
+  }
 
   if (items.length === 0) {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:4rem;color:var(--gray)">
       <div style="font-size:3rem;margin-bottom:1rem">🛍</div>
-      <p style="font-size:0.9rem">Nenhum produto nesta categoria ainda.</p>
+      <p style="font-size:0.9rem">Nenhum produto encontrado.</p>
     </div>`;
     return;
   }
 
-  const renderCard = (p) => `
+  const renderCard = (p) => {
+    // Generate dynamic sizes preview based on actual stock
+    const inStockSizes = Object.keys(p.stock || {}).filter(sz => p.stock[sz] > 0);
+    const sizesHtml = inStockSizes.length > 0 
+      ? inStockSizes.map(sz => `<span class="size-preview-badge">${sz.toUpperCase()}</span>`).join('')
+      : `<span class="size-preview-badge" style="color:var(--pink); background:var(--pink-pale); border-color:rgba(233,30,140,0.15)">Esgotado</span>`;
+
+    return `
     <div class="product-card" data-id="${p.id}" onclick="openProductDetail(${p.id}, event)" style="">
       <div class="product-img">
         <img src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&q=80'">
         ${p.badge ? `<div class="product-badge ${p.badge==='new'?'badge-new':'badge-sale'}">${p.badge==='new'?'Novo':'Sale'}</div>` : ''}
         <div class="product-actions">
-          <button class="action-btn main" onclick="openProductDetail(${p.id}, event)">🛍 Adicionar à Sacola</button>
-          <button class="action-btn wishlist-btn" onclick="shareProduct(${p.id}, event)" title="Compartilhar" style="margin-right: 0.2rem;">📤</button>
-          <button class="action-btn wishlist-btn" onclick="openProductDetail(${p.id}, event)" title="Espiar">👁</button>
+          <button class="action-btn main" onclick="openProductDetail(${p.id}, event)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+            Adicionar
+          </button>
+          <button class="action-btn wishlist-btn" onclick="shareProduct(${p.id}, event)" title="Compartilhar" style="margin-right: 0.2rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          </button>
+          <button class="action-btn wishlist-btn" onclick="openProductDetail(${p.id}, event)" title="Espiar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
         </div>
       </div>
       <div class="product-info">
@@ -1449,14 +1898,12 @@ function renderProducts(filter = 'Todos') {
           <span class="price-current">R$ ${p.price.toFixed(2).replace('.',',')}</span>
           ${p.oldPrice ? `<span class="price-old">R$ ${p.oldPrice.toFixed(2).replace('.',',')}</span>` : ''}
         </div>
-        <div class="product-sizes-preview">
-          <div class="size-preview-btn">P</div>
-          <div class="size-preview-btn">M</div>
-          <div class="size-preview-btn">G</div>
+        <div class="product-sizes-preview" style="margin-top: 0.75rem;">
+          ${sizesHtml}
         </div>
       </div>
     </div>
-  `;
+  `;};
 
   if (filter === 'Todos') {
     const categories = [...new Set(items.map(p => p.cat))];
@@ -1578,17 +2025,24 @@ function checkoutWhatsApp() {
 
 function checkoutBling() {
   if (cartItems.length === 0) return;
-  const btn = document.querySelector('.cart-checkout[onclick="checkoutBling()"]');
-  const originalText = btn.innerHTML;
-  btn.innerHTML = 'Gerando link seguro...';
+  const btn = document.getElementById('cart-checkout-bling-btn');
+  if (!btn) return;
+  
+  const textEl = btn.querySelector('.btn-text');
+  const spinnerEl = btn.querySelector('.btn-spinner');
+  
+  const originalText = textEl.textContent;
+  textEl.textContent = 'Gerando link seguro...';
+  spinnerEl.style.display = 'inline-block';
   btn.style.opacity = '0.7';
   btn.style.pointerEvents = 'none';
 
   const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbzRlUIqKpsNLeFqoAd1N8PDHMRbTI-HibsuVRDKUw8CFRQWgJREc7MoiB4_ADmmvZPhTg/exec';
   if (!appsScriptUrl) {
-    showToast("Ops! O sistema não encontrou a conexão segura. Redirecionando...", 'error');
+    showToast("Ops! O sistema não encontrou a conexão segura. Redirecionando para WhatsApp...", 'error');
     checkoutWhatsApp();
-    btn.innerHTML = originalText;
+    textEl.textContent = originalText;
+    spinnerEl.style.display = 'none';
     btn.style.opacity = '1';
     btn.style.pointerEvents = 'auto';
     return;
@@ -1617,8 +2071,9 @@ function checkoutBling() {
     }
   })
   .catch(err => {
-    showToast("Erro ao processar pagamento. Redirecionando...", 'error');
-    btn.innerHTML = originalText;
+    showToast("Erro ao processar pagamento. Redirecionando para WhatsApp...", 'error');
+    textEl.textContent = originalText;
+    spinnerEl.style.display = 'none';
     btn.style.opacity = '1';
     btn.style.pointerEvents = 'auto';
     checkoutWhatsApp();
@@ -1812,6 +2267,22 @@ function closeCartSuccess() {
 document.getElementById('product-detail-modal-overlay').addEventListener('click', e => { 
   if (e.target === e.currentTarget) closeProductDetail(); 
 });
+
+// ── MOBILE MENU ──
+function openMobileMenu() {
+  document.getElementById('mobile-menu-overlay').classList.add('open');
+}
+function closeMobileMenu() {
+  document.getElementById('mobile-menu-overlay').classList.remove('open');
+}
+document.getElementById('mobile-menu-toggle').addEventListener('click', openMobileMenu);
+document.getElementById('mobile-menu-close').addEventListener('click', closeMobileMenu);
+document.getElementById('mobile-menu-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeMobileMenu(); });
+
+// ── SEARCH FILTER ──
+function filterSearch(val) {
+  renderProducts(activeFilter, val);
+}
 </script>
 </body>
 </html>
