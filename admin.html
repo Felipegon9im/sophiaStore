@@ -3870,6 +3870,7 @@ async function finalizePosSale(carneSchedule = null) {
   const dateOnlyStr = new Date().toLocaleDateString('pt-BR');
   
   let targetCustomer = null;
+  let newCarne = null;
   // -- Atualizar ou Criar Cliente e Carnê --
   if (clientName && clientName.toLowerCase() !== 'cliente de balcão') {
     targetCustomer = customers.find(c => c.name.toLowerCase() === clientName.toLowerCase());
@@ -3897,7 +3898,7 @@ async function finalizePosSale(carneSchedule = null) {
     // Gerar Carnê
     if (paymentMethod === 'Carnê' && carneSchedule) {
       targetCustomer.carnes = targetCustomer.carnes || [];
-      const newCarne = {
+      newCarne = {
         orderId: orderId,
         total: total,
         date: dateOnlyStr,
@@ -4007,15 +4008,20 @@ async function finalizePosSale(carneSchedule = null) {
       filterPosProducts('');
     }
   } else {
-    setTimeout(() => {
-      window.print();
-      // Atrasa a limpeza do PDV para garantir que o spooler de impressão do SO 
-      // já capturou o estado atual do DOM do cupom térmico.
+    if (confirm('Deseja imprimir o cupom de venda?')) {
       setTimeout(() => {
-        clearPosSale();
-        filterPosProducts('');
-      }, 1000);
-    }, 300);
+        window.print();
+        // Atrasa a limpeza do PDV para garantir que o spooler de impressão do SO 
+        // já capturou o estado atual do DOM do cupom térmico.
+        setTimeout(() => {
+          clearPosSale();
+          filterPosProducts('');
+        }, 1000);
+      }, 300);
+    } else {
+      clearPosSale();
+      filterPosProducts('');
+    }
   }
 }
 
