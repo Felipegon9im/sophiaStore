@@ -794,7 +794,7 @@
     <div class="nav-item" onclick="showPage('products', this)">
       <span class="nav-icon">👗</span>
       <span class="nav-text">Produtos</span>
-      <span class="nav-badge">87</span>
+      <span class="nav-badge" id="badge-products">0</span>
     </div>
     <div class="nav-item" onclick="showPage('categories', this)">
       <span class="nav-icon">🏷️</span>
@@ -803,12 +803,12 @@
     <div class="nav-item" onclick="showPage('inventory', this)">
       <span class="nav-icon">📦</span>
       <span class="nav-text">Estoque</span>
-      <span class="nav-badge" style="background:var(--warning)">3</span>
+      <span class="nav-badge" id="badge-inventory" style="background:var(--warning)">0</span>
     </div>
     <div class="nav-item" onclick="showPage('orders', this)">
       <span class="nav-icon">🛍</span>
       <span class="nav-text">Pedidos</span>
-      <span class="nav-badge">12</span>
+      <span class="nav-badge" id="badge-orders">0</span>
     </div>
 
     <div class="nav-section-label">Marketing</div>
@@ -2165,6 +2165,7 @@ function renderProducts(filter='') {
       </td>
     </tr>`;
   }).join('');
+  updateSidebarBadges();
 }
 
 // ── INVENTORY ──
@@ -2285,6 +2286,7 @@ function renderOrders() {
       </td>
     </tr>`;
   }).join('');
+  updateSidebarBadges();
 }
 
 // ── CUSTOMERS ──
@@ -2655,6 +2657,25 @@ function deleteOrder(id) {
     renderOrders();
     renderDashboard();
     toast('Pedido removido com sucesso.', 'info');
+  }
+}
+function updateSidebarBadges() {
+  const elProds = document.getElementById('badge-products');
+  const elInv = document.getElementById('badge-inventory');
+  const elOrders = document.getElementById('badge-orders');
+  
+  if (elProds) {
+    elProds.textContent = products.length;
+  }
+  if (elInv) {
+    const lowStockCount = products.filter(p => {
+      const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+      return total < 5;
+    }).length;
+    elInv.textContent = lowStockCount;
+  }
+  if (elOrders) {
+    elOrders.textContent = orders.length;
   }
 }
 function duplicateProduct(id) {
@@ -4775,6 +4796,7 @@ function timerCheckScheduledCampaigns() {
   renderDashboard();
   renderSuppliers();
   renderScheduledCampaigns();
+  updateSidebarBadges();
   
   // 4. Se Sheets já estava conectado, sincronizar automaticamente em background
   if (config.sheetsConnected && config.appsScriptUrl) {
