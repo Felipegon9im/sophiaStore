@@ -2280,6 +2280,7 @@ function renderOrders() {
           <button class="btn btn-sm btn-info btn-icon" onclick="generateBlingPaymentLink('${o.id}')" title="Gerar Link Bling" style="background:#2b6cb0;color:white;border:none">🔗</button>
           <a href="https://wa.me/5548999999999?text=Olá!%20Pedido%20${o.id}%20atualizado" target="_blank" class="btn btn-sm btn-success btn-icon" title="WhatsApp">💬</a>
           <button class="btn btn-sm btn-secondary btn-icon" onclick="changeOrderStatus('${o.id}')">✏️</button>
+          <button class="btn btn-sm btn-secondary btn-icon" title="Excluir" onclick="deleteOrder('${o.id}')" style="color:var(--danger)">🗑</button>
         </div>
       </td>
     </tr>`;
@@ -2640,11 +2641,20 @@ async function saveProduct() {
 
 function deleteProduct(id) {
   if (confirm('Remover este produto?')) {
-    products = products.filter(p => p.id !== id);
+    products = products.filter(p => String(p.id) !== String(id));
     saveProductsLocal();
     renderProducts();
     toast('Produto removido', 'info');
     deleteFromSheets(id);
+  }
+}
+function deleteOrder(id) {
+  if (confirm('Deseja realmente excluir este pedido?')) {
+    orders = orders.filter(o => String(o.id) !== String(id));
+    saveOrdersLocal();
+    renderOrders();
+    renderDashboard();
+    toast('Pedido removido com sucesso.', 'info');
   }
 }
 function duplicateProduct(id) {
