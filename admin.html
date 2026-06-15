@@ -1704,7 +1704,7 @@
 <div id="cust-modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center">
   <div class="modal" style="width:500px;background:#fff;border-radius:12px;padding:1.5rem;position:relative">
     <button onclick="closeCustModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer">&times;</button>
-    <h2 style="font-size:1.2rem;margin-bottom:1rem;color:var(--dark)">Cadastro de Cliente</h2>
+    <h2 id="cust-modal-title" style="font-size:1.2rem;margin-bottom:1rem;color:var(--dark)">Cadastro de Cliente</h2>
     <div class="form-grid">
       <div class="form-group full">
         <label>Nome Completo *</label>
@@ -2306,11 +2306,25 @@ function saveCustomersLocal() {
   localStorage.setItem('sophiaStoreCustomers', JSON.stringify(customers));
 }
 
-function openCustModal() {
-  document.getElementById('cust-name').value = '';
-  document.getElementById('cust-whatsapp').value = '';
-  document.getElementById('cust-email').value = '';
-  document.getElementById('cust-modal-overlay').style.display = 'flex';
+function openCustModal(editIndex = null) {
+  const overlay = document.getElementById('cust-modal-overlay');
+  const title = document.getElementById('cust-modal-title');
+  
+  if (editIndex !== null) {
+    overlay.dataset.editIndex = editIndex;
+    if (title) title.textContent = 'Editar Cliente';
+    const c = customers[editIndex];
+    document.getElementById('cust-name').value = c.name || '';
+    document.getElementById('cust-whatsapp').value = c.whatsapp || '';
+    document.getElementById('cust-email').value = c.email || '';
+  } else {
+    delete overlay.dataset.editIndex;
+    if (title) title.textContent = 'Cadastro de Cliente';
+    document.getElementById('cust-name').value = '';
+    document.getElementById('cust-whatsapp').value = '';
+    document.getElementById('cust-email').value = '';
+  }
+  overlay.style.display = 'flex';
 }
 
 function closeCustModal() {
@@ -2327,34 +2341,85 @@ function saveCustomer() {
     return;
   }
   
-  customers.push({
-    name, email, whatsapp, orders: 0, total: 0, last: '-'
-  });
+  const overlay = document.getElementById('cust-modal-overlay');
+  const editIndex = overlay.dataset.editIndex;
+  
+  if (editIndex !== undefined && editIndex !== null && editIndex !== '') {
+    const idx = parseInt(editIndex);
+    if (idx >= 0 && idx < customers.length) {
+      const oldName = customers[idx].name;
+      customers[idx].name = name;
+      customers[idx].whatsapp = whatsapp;
+      customers[idx].email = email;
+      
+      if (oldName !== name) {
+        orders.forEach(o => {
+          if (o.customer === oldName) o.customer = name;
+        });
+        saveOrdersLocal();
+        renderOrders();
+      }
+      toast('Cliente atualizado com sucesso!', 'success');
+    }
+  } else {
+    customers.push({
+      name, email, whatsapp, orders: 0, total: 0, last: '-', carnes: []
+    });
+    toast('Cliente cadastrado com sucesso!', 'success');
+  }
   
   saveCustomersLocal();
   renderCustomers();
   closeCustModal();
-  toast('Cliente cadastrado com sucesso!', 'success');
+}
+
+function deleteCustomer(index) {
+  if (index >= 0 && index < customers.length) {
+    const c = customers[index];
+    if (confirm(`Tem certeza que deseja excluir o cliente "${c.name}"?`)) {
+      customers.splice(index, 1);
+      saveCustomersLocal();
+      renderCustomers();
+      toast('Cliente excluído com sucesso!', 'info');
+    }
+  }
 }
 
 function renderCustomers() {
-  document.getElementById('customers-table').innerHTML = customers.map(c => `
+  document.getElementById('customers-table').innerHTML = customers.map((c, index) => `
     <tr>
       <td>
         <div style="display:flex;align-items:center;gap:.75rem">
           <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink-deep));display:flex;align-items:center;justify-content:center;color:white;font-size:.8rem;font-weight:600;flex-shrink:0">${c.name[0]}</div>
-          <span style="font-weight:500">${c.name}</span>
+          <span style="font-weight:500">${escapeHTML(c.name)}</span>
         </div>
       </td>
-      <td style="color:var(--gray-600)">${c.email}</td>
-      <td><a href="https://wa.me/${c.whatsapp.replace(/\D/g,'')}" target="_blank" style="color:var(--success);text-decoration:none">${c.whatsapp}</a></td>
+      <td style="color:var(--gray-600)">${escapeHTML(c.email)}</td>
+      <td>
+        <a href="https://wa.me/${c.whatsapp.replace(/\D/g,'')}" target="_blank" style="color:var(--success);text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+          <svg style="width:14px;height:14px;fill:#25D366;flex-shrink:0" viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.66.986 3.292 1.48 4.968 1.48 5.345 0 9.735-4.307 9.738-9.595.002-2.561-.994-4.97-2.809-6.789-1.816-1.82-4.235-2.822-6.797-2.822-5.353 0-9.742 4.31-9.745 9.598-.001 1.761.485 3.396 1.411 4.966L2.247 20.4l4.4-.846zm9.52-5.748c-.285-.143-1.688-.832-1.948-.928-.26-.095-.45-.143-.64.143-.19.285-.735.928-.9 1.12-.165.19-.33.213-.615.072-2.064-1.03-3.08-1.554-4.285-3.62-.285-.49.285-.455.815-1.51.095-.19.048-.356-.024-.499-.071-.143-.64-1.543-.877-2.113-.23-.556-.465-.48-.64-.48-.164-.002-.353-.002-.542-.002-.19 0-.498.071-.76.356-.26.285-1 .978-1 2.387 0 1.409 1.026 2.77 1.168 2.96.143.19 2.018 3.081 4.89 4.317.684.294 1.218.469 1.635.6.69.219 1.319.188 1.817.114.556-.083 1.688-.69 1.925-1.357.237-.667.237-1.238.165-1.357-.07-.119-.26-.19-.545-.333z"/>
+          </svg>
+          ${escapeHTML(c.whatsapp)}
+        </a>
+      </td>
       <td><span class="badge badge-info">${c.orders} pedidos</span></td>
       <td><strong style="color:var(--pink)">R$ ${c.total.toFixed(2).replace('.',',')}</strong></td>
-      <td style="color:var(--gray-400)">${c.last}</td>
+      <td style="color:var(--gray-400)">${escapeHTML(c.last)}</td>
       <td>
-        <div style="display:flex;gap:4px;">
-          <a href="https://wa.me/${c.whatsapp.replace(/\D/g,'')}" target="_blank" class="action-btn" title="Chamar no WhatsApp">💬</a>
-          <button class="action-btn" title="Gerenciar Carnês" onclick="openCarneModal('${c.name.replace(/'/g, "\\'")}')">📘</button>
+        <div style="display:flex;gap:0.35rem;">
+          <a href="https://wa.me/${c.whatsapp.replace(/\D/g,'')}" target="_blank" class="btn btn-sm btn-secondary btn-icon" title="Chamar no WhatsApp" style="color:#25D366;text-decoration:none">
+            <svg style="width:14px;height:14px;fill:currentColor;margin-top:2px" viewBox="0 0 24 24">
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.66.986 3.292 1.48 4.968 1.48 5.345 0 9.735-4.307 9.738-9.595.002-2.561-.994-4.97-2.809-6.789-1.816-1.82-4.235-2.822-6.797-2.822-5.353 0-9.742 4.31-9.745 9.598-.001 1.761.485 3.396 1.411 4.966L2.247 20.4l4.4-.846zm9.52-5.748c-.285-.143-1.688-.832-1.948-.928-.26-.095-.45-.143-.64.143-.19.285-.735.928-.9 1.12-.165.19-.33.213-.615.072-2.064-1.03-3.08-1.554-4.285-3.62-.285-.49.285-.455.815-1.51.095-.19.048-.356-.024-.499-.071-.143-.64-1.543-.877-2.113-.23-.556-.465-.48-.64-.48-.164-.002-.353-.002-.542-.002-.19 0-.498.071-.76.356-.26.285-1 .978-1 2.387 0 1.409 1.026 2.77 1.168 2.96.143.19 2.018 3.081 4.89 4.317.684.294 1.218.469 1.635.6.69.219 1.319.188 1.817.114.556-.083 1.688-.69 1.925-1.357.237-.667.237-1.238.165-1.357-.07-.119-.26-.19-.545-.333z"/>
+            </svg>
+          </a>
+          <button class="btn btn-sm btn-secondary btn-icon" title="Gerenciar Carnês" onclick="openCarneModal('${c.name.replace(/'/g, "\\'")}')" style="color:var(--pink)">
+            <svg style="width:14px;height:14px;fill:currentColor" viewBox="0 0 24 24">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+            </svg>
+          </button>
+          <button class="btn btn-sm btn-secondary btn-icon" title="Editar Cliente" onclick="openCustModal(${index})">✏️</button>
+          <button class="btn btn-sm btn-secondary btn-icon" title="Excluir Cliente" onclick="deleteCustomer(${index})" style="color:var(--danger)">🗑</button>
         </div>
       </td>
     </tr>
