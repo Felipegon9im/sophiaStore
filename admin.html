@@ -807,7 +807,7 @@
     </div>
     <div class="nav-item" onclick="showPage('orders', this)">
       <span class="nav-icon">🛍</span>
-      <span class="nav-text">Pedidos</span>
+      <span class="nav-text">Vendas e Pedidos</span>
       <span class="nav-badge" id="badge-orders">0</span>
     </div>
 
@@ -1041,7 +1041,7 @@
     <div id="page-orders" class="page-section">
       <div class="panel">
         <div class="panel-header">
-          <h2 class="panel-title">Pedidos</h2>
+          <h2 class="panel-title">Vendas e Pedidos</h2>
           <div class="panel-actions">
             <button class="btn btn-secondary btn-sm" onclick="loadFromSheets()"><span class="icon">🔄</span> Sincronizar Agora</button>
             <button class="btn btn-primary btn-sm"><span class="icon">➕</span> Novo Pedido (PDV)</button>
@@ -2039,7 +2039,7 @@ function showPage(name, el) {
   if (el) el.classList.add('active');
   document.getElementById('breadcrumb').textContent = {
     dashboard:'Dashboard', products:'Produtos', inventory:'Estoque',
-    orders:'Pedidos', customers:'Clientes', suppliers:'Fornecedores', reports:'Relatórios', config:'Configurações',
+    orders:'Vendas e Pedidos', customers:'Clientes', suppliers:'Fornecedores', reports:'Relatórios', config:'Configurações',
     integrations:'Integrações', caixa:'Frente de Caixa', campaigns:'Campanhas WhatsApp'
   }[name] || name;
   renderPage(name);
@@ -3869,9 +3869,10 @@ async function finalizePosSale(carneSchedule = null) {
   const dateStr = new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const dateOnlyStr = new Date().toLocaleDateString('pt-BR');
   
+  let targetCustomer = null;
   // -- Atualizar ou Criar Cliente e Carnê --
   if (clientName && clientName.toLowerCase() !== 'cliente de balcão') {
-    let targetCustomer = customers.find(c => c.name.toLowerCase() === clientName.toLowerCase());
+    targetCustomer = customers.find(c => c.name.toLowerCase() === clientName.toLowerCase());
     if (targetCustomer) {
       targetCustomer.orders += 1;
       targetCustomer.total += total;
