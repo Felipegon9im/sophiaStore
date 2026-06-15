@@ -1381,6 +1381,10 @@
             <label>Chave PIX (Para Recebimentos)</label>
             <input type="text" id="store-pix" placeholder="CNPJ, E-mail, Celular ou Aleatória">
           </div>
+          <div class="form-group" style="margin-bottom:1.25rem">
+            <label>Taxa da Máquina (Cartão de Crédito) - %</label>
+            <input type="number" step="0.01" id="store-cc-fee" placeholder="Ex: 2.5">
+          </div>
           <button class="btn btn-primary" onclick="saveStoreInfo()">💾 Salvar Configurações</button>
         </div>
       </div>
@@ -1521,6 +1525,9 @@
             <div class="pos-kpi">
               <span>Desconto (R$ ou %)</span>
               <input type="text" id="pos-discount" placeholder="Ex: 10 ou 5%" oninput="calculatePosTotals()" style="width: 100px; padding: 0.25rem 0.5rem; text-align: right; font-size: 0.75rem;">
+            <div class="pos-kpi" id="pos-cc-fee-row" style="display:none">
+              <span>Taxa Cartão (<span id="pos-cc-fee-pct">0</span>%)</span>
+              <span class="pos-kpi-val" id="pos-cc-fee-val">R$ 0,00</span>
             </div>
             <div class="pos-kpi total">
               <span style="font-weight:600;color:var(--pink)">Total Geral</span>
@@ -1615,6 +1622,10 @@
     <tr>
       <td>Desconto:</td>
       <td style="text-align:right" id="r-discount">R$ 0,00</td>
+    </tr>
+    <tr id="r-cc-fee-row" style="display:none">
+      <td>Taxa Cartão:</td>
+      <td style="text-align:right" id="r-cc-fee">R$ 0,00</td>
     </tr>
     <tr style="font-weight:bold;font-size:11px">
       <td>TOTAL A PAGAR:</td>
@@ -3103,7 +3114,7 @@ function connectCloudinary() {
 
 function saveWhatsApp() { toast('✅ WhatsApp configurado!', 'success'); }
 let storeInfo = JSON.parse(localStorage.getItem('sophiaStoreInfo')) || {
-  name: 'Sophia Elegance Store', address: '', email: '', instagram: '', pix: ''
+  name: 'Sophia Elegance Store', address: '', email: '', instagram: '', pix: '', ccFee: ''
 };
 
 function saveStoreInfo() {
@@ -3112,8 +3123,9 @@ function saveStoreInfo() {
   const email = document.getElementById('store-email').value.trim();
   const instagram = document.getElementById('store-instagram').value.trim();
   const pix = document.getElementById('store-pix').value.trim();
+  const ccFee = document.getElementById('store-cc-fee').value.trim();
   
-  storeInfo = { name, address, email, instagram, pix };
+  storeInfo = { name, address, email, instagram, pix, ccFee };
   localStorage.setItem('sophiaStoreInfo', JSON.stringify(storeInfo));
   toast('✅ Informações da loja salvas!', 'success');
 }
@@ -3126,6 +3138,7 @@ function loadStoreInfoUI() {
     document.getElementById('store-email').value = storeInfo.email || '';
     document.getElementById('store-instagram').value = storeInfo.instagram || '';
     document.getElementById('store-pix').value = storeInfo.pix || '';
+    document.getElementById('store-cc-fee').value = storeInfo.ccFee || '';
   }
 }
 
@@ -3581,15 +3594,39 @@ function calculatePosTotals() {
     }
   }
   
-  const total = Math.max(0, subtotal - discountValue);
+  let total = Math.max(0, subtotal - discountValue);
+  
+  const paymentMethod = document.getElementById('pos-payment')?.value || 'Dinheiro';
+  let ccFeeValue = 0;
+  
+  if (paymentMethod === 'Cartão de Crédito' && storeInfo && storeInfo.ccFee) {
+    const feePct = parseFloat(storeInfo.ccFee) || 0;
+    if (feePct > 0) {
+      ccFeeValue = total * (feePct / 100);
+      total += ccFeeValue;
+    }
+  }
   
   const elSub = document.getElementById('pos-subtotal');
   const elTot = document.getElementById('pos-total');
+  const elCcFeeRow = document.getElementById('pos-cc-fee-row');
+  const elCcFeePct = document.getElementById('pos-cc-fee-pct');
+  const elCcFeeVal = document.getElementById('pos-cc-fee-val');
+  
   if (elSub) elSub.textContent = 'R$ ' + subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   if (elTot) elTot.textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   
+  if (elCcFeeRow) {
+    if (ccFeeValue > 0) {
+      elCcFeeRow.style.display = '';
+      elCcFeePct.textContent = storeInfo.ccFee;
+      elCcFeeVal.textContent = 'R$ ' + ccFeeValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    } else {
+      elCcFeeRow.style.display = 'none';
+    }
+  }
+  
   // Troco calculations
-  const paymentMethod = document.getElementById('pos-payment')?.value || 'Dinheiro';
   const elChange = document.getElementById('pos-change');
   
   if (paymentMethod === 'Dinheiro') {
@@ -3699,7 +3736,16 @@ async function finalizePosSale(carneSchedule = null) {
       discountValue = parseFloat(discountInput) || 0;
     }
   }
-  const total = Math.max(0, subtotal - discountValue);
+  let total = Math.max(0, subtotal - discountValue);
+  
+  let ccFeeValue = 0;
+  if (paymentMethod === 'Cartão de Crédito' && storeInfo && storeInfo.ccFee) {
+    const feePct = parseFloat(storeInfo.ccFee) || 0;
+    if (feePct > 0) {
+      ccFeeValue = total * (feePct / 100);
+      total += ccFeeValue;
+    }
+  }
   
   // -- Setup de Carnê --
   if (paymentMethod === 'Carnê' && !carneSchedule) {
@@ -3813,6 +3859,17 @@ async function finalizePosSale(carneSchedule = null) {
   document.getElementById('r-total').textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   document.getElementById('r-client').textContent = clientName;
   document.getElementById('r-payment').textContent = finalPaymentStr;
+  
+  const elReceiptCcFeeRow = document.getElementById('r-cc-fee-row');
+  const elReceiptCcFee = document.getElementById('r-cc-fee');
+  if (elReceiptCcFeeRow) {
+    if (ccFeeValue > 0) {
+      elReceiptCcFeeRow.style.display = '';
+      elReceiptCcFee.textContent = 'R$ ' + ccFeeValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    } else {
+      elReceiptCcFeeRow.style.display = 'none';
+    }
+  }
   
   const cashRow = document.getElementById('r-cash-row');
   const changeRow = document.getElementById('r-change-row');
