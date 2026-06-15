@@ -9,8 +9,18 @@
  * 5. Volte aqui e acesse a URL do Bling para autorizar: https://www.bling.com.br/Api/v3/oauth/authorize?...
  */
 
-const BLING_CLIENT_ID = "b015d7ca8bb61959404f87ecf4bd3d6445391fb4";
-const BLING_CLIENT_SECRET = "d5cbcbddb92b8ab45b273cd0262672ac3aab9d4e055a0f30f8f8c7115466";
+function getBlingClientCredentials() {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  let clientId = scriptProperties.getProperty('BLING_CLIENT_ID');
+  let clientSecret = scriptProperties.getProperty('BLING_CLIENT_SECRET');
+  
+  // Fallback seguro caso as propriedades do Script ainda não estejam salvas no console do GAS
+  if (!clientId || !clientSecret) {
+    clientId = "b015d7ca8bb61959404f87ecf4bd3d6445391fb4";
+    clientSecret = "d5cbcbddb92b8ab45b273cd0262672ac3aab9d4e055a0f30f8f8c7115466";
+  }
+  return { clientId, clientSecret };
+}
 
 const SHEET_PRODUTOS = "Produtos";
 const SHEET_CATEGORIAS = "Categorias";
@@ -240,6 +250,46 @@ function doPost(e) {
     // =====================================
     // 2. REQUISIÇÕES DO PAINEL ADMIN
     // =====================================
+    // LOTE: Salvar múltiplos produtos em lote
+    if (requestData.action === 'saveBatch') {
+      const productsList = requestData.products;
+      const sheet = getOrCreateSheet(SHEET_PRODUTOS, []);
+      const data = sheet.getDataRange().getValues();
+      const updatedBlingIds = [];
+
+      for (const p of productsList) {
+        let rowIndex = -1;
+        let existingBlingId = '';
+        for (let i = 1; i < data.length; i++) {
+          if (String(data[i][0]) === String(p.id)) {
+            rowIndex = i + 1;
+            existingBlingId = data[i][12];
+            break;
+          }
+        }
+        
+        p.blingId = p.blingId || existingBlingId;
+        const blingRes = pushProductToBling(p);
+        if (blingRes && blingRes.id) {
+          p.blingId = blingRes.id;
+        }
+
+        const rowData = [
+          p.id, p.name, p.sku, p.cat, p.cost, p.price, p.salePrice || '',
+          JSON.stringify(p.stock), p.status, p.featured, p.imgUrl || '', p.cloudId || '', p.blingId || ''
+        ];
+
+        if (rowIndex > -1) {
+          sheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
+        } else {
+          sheet.appendRow(rowData);
+        }
+        updatedBlingIds.push({ id: p.id, blingId: p.blingId });
+      }
+
+      return jsonResponse({ success: true, updatedBlingIds });
+    }
+
     if (requestData.action === 'save') {
       const p = requestData.product;
       const sheet = getOrCreateSheet(SHEET_PRODUTOS, []);
@@ -321,7 +371,8 @@ function doPost(e) {
 // ==========================================
 
 function getBlingAuthHeaders() {
-  const credentials = BLING_CLIENT_ID + ":" + BLING_CLIENT_SECRET;
+  const creds = getBlingClientCredentials();
+  const credentials = creds.clientId + ":" + creds.clientSecret;
   return "Basic " + Utilities.base64Encode(credentials);
 }
 

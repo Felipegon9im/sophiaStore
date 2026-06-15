@@ -1987,6 +1987,16 @@
 <div id="toast-container"></div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// Prevenção contra injeção de scripts (XSS)
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 // ── CONFIG STATE ──
 const config = {
   appsScriptUrl:      localStorage.getItem('appsScriptUrl')      || '',
@@ -2085,7 +2095,7 @@ function renderDashboard() {
     const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
     return `<div style="padding:0.75rem 0;border-bottom:1px solid var(--gray-100)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-size:0.78rem;font-weight:500">${p.name}</span>
+        <span style="font-size:0.78rem;font-weight:500">${escapeHTML(p.name)}</span>
         <span class="badge ${total===0?'badge-danger':'badge-warning'}">${total} un</span>
       </div>
       <div class="stock-bar"><div class="stock-fill" style="width:${Math.min(total/20*100,100)}%;background:${total===0?'var(--danger)':'var(--warning)'}"></div></div>
@@ -2105,16 +2115,16 @@ function renderDashboard() {
     <tr>
       <td>
         <div style="display:flex;flex-direction:column;gap:2px">
-          <span style="font-weight:600;color:var(--pink)">${o.id}</span>
+          <span style="font-weight:600;color:var(--pink)">${escapeHTML(o.id)}</span>
           ${sourceText}
         </div>
       </td>
-      <td>${o.customer}</td>
-      <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.products}</td>
+      <td>${escapeHTML(o.customer)}</td>
+      <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(o.products)}</td>
       <td><strong>R$ ${o.total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></td>
-      <td><span class="badge badge-gray">${o.payment}</span></td>
+      <td><span class="badge badge-gray">${escapeHTML(o.payment)}</span></td>
       <td>${statusBadge(o.status)}</td>
-      <td style="color:var(--gray-400)">${o.date}</td>
+      <td style="color:var(--gray-400)">${escapeHTML(o.date)}</td>
     </tr>`;
   }).join('');
 }
@@ -2851,34 +2861,47 @@ async function syncSheets() {
   if (!config.sheetsConnected || !config.appsScriptUrl) {
     toast('Configure o Apps Script em Configurações primeiro', 'error'); return;
   }
-  toast('🔄 Sincronizando tudo com a nuvem...', 'info');
-  let okP = 0, okC = 0;
+  toast('🔄 Sincronizando produtos em lote com a nuvem...', 'info');
   
-  // Sincroniza Produtos
-  for (const p of products) {
-    try {
-      const res  = await fetch(config.appsScriptUrl, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'save', product: p }),
-      });
-      const data = await res.json();
-      if (data.success) okP++;
-    } catch (_) {}
+  try {
+    // Sincroniza produtos em lote
+    const res = await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveBatch', products: products }),
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      // Atualiza os blingIds locais retornados da sincronização
+      if (data.updatedBlingIds && Array.isArray(data.updatedBlingIds)) {
+        data.updatedBlingIds.forEach(item => {
+          const p = products.find(x => x.id === item.id);
+          if (p) p.blingId = item.blingId;
+        });
+        saveProductsLocal();
+        renderProducts();
+      }
+      
+      // Sincroniza Categorias
+      let okC = 0;
+      for (const c of categories) {
+        try {
+          const resCat = await fetch(config.appsScriptUrl, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'saveCategory', category: c }),
+          });
+          const dataCat = await resCat.json();
+          if (dataCat.success) okC++;
+        } catch (_) {}
+      }
+      
+      toast(`✅ Sincronização completa realizada com sucesso!`, 'success');
+    } else {
+      toast('Falha na sincronização em lote: ' + (data.error || 'Erro interno'), 'error');
+    }
+  } catch (e) {
+    toast('Erro de conexão ao sincronizar: ' + e.message, 'error');
   }
-  
-  // Sincroniza Categorias
-  for (const c of categories) {
-    try {
-      const res  = await fetch(config.appsScriptUrl, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'saveCategory', category: c }),
-      });
-      const data = await res.json();
-      if (data.success) okC++;
-    } catch (_) {}
-  }
-  
-  toast(`✅ ${okP}/${products.length} produtos e ${okC}/${categories.length} categorias sincronizadas!`, 'success');
 }
 
 async function syncSingleProduct(id) {
