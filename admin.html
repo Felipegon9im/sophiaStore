@@ -1630,6 +1630,14 @@
       <td style="text-align:right" id="r-change">R$ 0,00</td>
     </tr>
   </table>
+  
+  <div id="r-pix-area" style="display:none; text-align:center; margin: 15px 0;">
+    <div class="receipt-divider"></div>
+    <b style="font-size:12px;display:block;margin-top:10px;">PAGAMENTO VIA PIX</b>
+    <img id="r-pix-qr" src="" style="width: 130px; height: 130px; margin: 10px 0;"><br>
+    <div style="font-size: 11px; word-break: break-all;">Chave: <b id="r-pix-key"></b></div>
+  </div>
+  
   <div class="receipt-divider"></div>
   <div class="receipt-info" style="text-align:left">
     <b>CLIENTE:</b> <span id="r-client">Cliente de Balcão</span><br>
@@ -3640,6 +3648,38 @@ function clearPosSale() {
   renderPosCart();
 }
 
+function generatePixBRCode(pixKey, merchantName, merchantCity, amount) {
+  function pad(str, len) { return String(str).padStart(len, '0'); }
+  function formatField(id, value) { return id + pad(value.length, 2) + value; }
+  
+  let payload = formatField('00', '01');
+  let gui = formatField('00', 'BR.GOV.BCB.PIX');
+  let key = formatField('01', pixKey);
+  payload += formatField('26', gui + key);
+  payload += formatField('52', '0000');
+  payload += formatField('53', '986');
+  if (amount) payload += formatField('54', amount.toFixed(2));
+  payload += formatField('58', 'BR');
+  
+  const mName = merchantName.substring(0, 25).normalize('NFD').replace(/[\u0300-\u036f]/g, '') || 'LOJA';
+  const mCity = merchantCity.substring(0, 15).normalize('NFD').replace(/[\u0300-\u036f]/g, '') || 'CIDADE';
+  
+  payload += formatField('59', mName);
+  payload += formatField('60', mCity);
+  payload += formatField('62', formatField('05', '***'));
+  payload += '6304';
+  
+  let crc = 0xFFFF;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      if ((crc & 0x8000) !== 0) crc = (crc << 1) ^ 0x1021;
+      else crc = crc << 1;
+    }
+  }
+  return payload + (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+}
+
 async function finalizePosSale(carneSchedule = null) {
   if (posCart.length === 0) {
     toast('⚠️ Adicione pelo menos um produto para finalizar a venda!', 'warning');
@@ -3785,6 +3825,28 @@ async function finalizePosSale(carneSchedule = null) {
   } else {
     if (cashRow) cashRow.style.display = 'none';
     if (changeRow) changeRow.style.display = 'none';
+  }
+  
+  const pixArea = document.getElementById('r-pix-area');
+  const pixQr = document.getElementById('r-pix-qr');
+  const pixKeyEl = document.getElementById('r-pix-key');
+  
+  if (paymentMethod === 'Pix' && storeInfo && storeInfo.pix) {
+    const payload = generatePixBRCode(storeInfo.pix, storeInfo.name || 'Loja', 'Florianopolis', total);
+    pixQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(payload)}`;
+    pixKeyEl.textContent = storeInfo.pix;
+    pixArea.style.display = 'block';
+    
+    // Aguarda carregar a imagem para que a impressora térmica não pule
+    await new Promise(r => {
+      if (pixQr.complete) r();
+      else {
+        pixQr.onload = r;
+        pixQr.onerror = r;
+      }
+    });
+  } else {
+    pixArea.style.display = 'none';
   }
   
   const rItemsContainer = document.getElementById('r-items');
