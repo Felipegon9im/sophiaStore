@@ -1525,6 +1525,7 @@
             <div class="pos-kpi">
               <span>Desconto (R$ ou %)</span>
               <input type="text" id="pos-discount" placeholder="Ex: 10 ou 5%" oninput="calculatePosTotals()" style="width: 100px; padding: 0.25rem 0.5rem; text-align: right; font-size: 0.75rem;">
+            </div>
             <div class="pos-kpi" id="pos-cc-fee-row" style="display:none">
               <span>Taxa Cartão (<span id="pos-cc-fee-pct">0</span>%)</span>
               <span class="pos-kpi-val" id="pos-cc-fee-val">R$ 0,00</span>
@@ -3936,8 +3937,12 @@ async function finalizePosSale(carneSchedule = null) {
   } else {
     setTimeout(() => {
       window.print();
-      clearPosSale();
-      filterPosProducts('');
+      // Atrasa a limpeza do PDV para garantir que o spooler de impressão do SO 
+      // já capturou o estado atual do DOM do cupom térmico.
+      setTimeout(() => {
+        clearPosSale();
+        filterPosProducts('');
+      }, 1000);
     }, 300);
   }
 }
