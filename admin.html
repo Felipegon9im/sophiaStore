@@ -5572,7 +5572,16 @@ if (window.whatsappAPI) {
 
   window.whatsappAPI.onProgress((e, data) => {
     if(data.target) {
-      appendWpLog(`Enviando para ${data.target}... [${data.status === 'ok' ? 'SUCESSO' : 'ERRO'}]`, data.status === 'error' ? 'red' : '#00ff00');
+      let statusText = 'ERRO';
+      let statusColor = 'red';
+      if (data.status === 'ok') {
+        statusText = 'SUCESSO';
+        statusColor = '#00ff00';
+      } else if (data.status === 'invalid') {
+        statusText = 'NÃO CADASTRADO';
+        statusColor = 'orange';
+      }
+      appendWpLog(`Enviando para ${data.target}... [${statusText}]`, statusColor);
     }
     document.getElementById('wp-progress-sent').textContent = data.current + ' processados';
     document.getElementById('wp-progress-total').textContent = data.total + ' total';

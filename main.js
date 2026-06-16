@@ -164,23 +164,42 @@ function setupWhatsAppIPC() {
     for (let i = 0; i < numbers.length; i++) {
       const number = numbers[i].trim();
       let chatId = number;
+      let isRegistered = true;
       
       if (!number.endsWith('@g.us') && !number.endsWith('@c.us')) {
         let cleanNumber = number.replace(/\D/g, '');
-        if (!cleanNumber.startsWith('55')) cleanNumber = '55' + cleanNumber;
-        chatId = cleanNumber + '@c.us';
+        if (cleanNumber.length > 0) {
+          if (!cleanNumber.startsWith('55') && cleanNumber.length <= 11) {
+            cleanNumber = '55' + cleanNumber;
+          }
+          try {
+            const registeredId = await whatsappClient.getNumberId(cleanNumber);
+            if (registeredId) {
+              chatId = registeredId._serialized;
+            } else {
+              isRegistered = false;
+              chatId = cleanNumber + '@c.us';
+            }
+          } catch (e) {
+            chatId = cleanNumber + '@c.us';
+          }
+        }
       }
       
       let statusStr = 'error';
-      try {
-        if (media) {
-          await whatsappClient.sendMessage(chatId, media, { caption: message });
-        } else {
-          await whatsappClient.sendMessage(chatId, message);
-        }
-        successCount++;
-        statusStr = 'ok';
-      } catch (err) {}
+      if (!isRegistered) {
+        statusStr = 'invalid';
+      } else {
+        try {
+          if (media) {
+            await whatsappClient.sendMessage(chatId, media, { caption: message });
+          } else {
+            await whatsappClient.sendMessage(chatId, message);
+          }
+          successCount++;
+          statusStr = 'ok';
+        } catch (err) {}
+      }
       
       if (mainWindow) {
         mainWindow.webContents.send('whatsapp-progress', { 
