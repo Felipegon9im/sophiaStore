@@ -1353,6 +1353,7 @@
             <button class="btn btn-primary" onclick="exportToPDF('vendas')" style="background-color:#db2777; border-color:#db2777;">📥 Gerar PDF de Vendas e Pedidos</button>
             <button class="btn btn-primary" onclick="exportToPDF('estoque')" style="background-color:#db2777; border-color:#db2777;">📦 Gerar PDF de Posição de Estoque</button>
             <button class="btn btn-primary" onclick="exportToPDF('clientes')" style="background-color:#db2777; border-color:#db2777;">👥 Gerar PDF de Listagem de Clientes</button>
+            <button class="btn btn-primary" onclick="exportToPDF('carnes')" style="background-color:#db2777; border-color:#db2777;">💳 Gerar PDF de Controle de Carnês</button>
           </div>
         </div>
 
@@ -1366,6 +1367,7 @@
             <button class="btn btn-success" onclick="exportToExcel('vendas')" style="background-color:#059669; border-color:#059669;">📥 Exportar Vendas para Excel</button>
             <button class="btn btn-success" onclick="exportToExcel('estoque')" style="background-color:#059669; border-color:#059669;">📦 Exportar Estoque para Excel</button>
             <button class="btn btn-success" onclick="exportToExcel('clientes')" style="background-color:#059669; border-color:#059669;">👥 Exportar Clientes para Excel</button>
+            <button class="btn btn-success" onclick="exportToExcel('carnes')" style="background-color:#059669; border-color:#059669;">💳 Exportar Controle de Carnês para Excel</button>
           </div>
         </div>
       </div>
@@ -3172,7 +3174,7 @@ async function loadFromSheets(silent = false) {
         orders: 0,
         total: 0,
         last: c.last || '-',
-        carnes: []
+        carnes: typeof c.carnes === 'string' ? JSON.parse(c.carnes) : (c.carnes || [])
       }));
       
       // Calcular compras e total do cliente a partir dos pedidos
@@ -3384,7 +3386,8 @@ async function syncCustomerToSupabase(customer) {
       name: customer.name,
       whatsapp: customer.whatsapp || '',
       email: customer.email || '',
-      last: customer.last || '-'
+      last: customer.last || '-',
+      carnes: customer.carnes || []
     };
     
     const { data, error: selectError } = await supabaseClient
@@ -5042,6 +5045,37 @@ function exportToExcel(type) {
     customers.forEach(c => {
       html += `<tr><td>${c.name}</td><td>${c.whatsapp}</td><td>${c.email}</td><td>${c.orders}</td><td>${c.total.toFixed(2)}</td><td>${c.last}</td></tr>`;
     });
+  } else if (type === 'carnes') {
+    filename = 'controle_carnes.xls';
+    html += '<tr><th>Cliente</th><th>Pedido</th><th>Parcela</th><th>Vencimento</th><th>Valor (R$)</th><th>Status</th></tr>';
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    customers.forEach(cust => {
+      if (cust.carnes && Array.isArray(cust.carnes)) {
+        cust.carnes.forEach(carne => {
+          carne.installments.forEach(inst => {
+            const val = parseFloat(inst.value) || 0;
+            const isPaid = inst.status === 'Pago';
+            
+            let isOverdue = false;
+            if (inst.dueDate && !isPaid) {
+              const parts = inst.dueDate.split('/');
+              if (parts.length === 3) {
+                const dueDateObj = new Date(parts[2], parts[1] - 1, parts[0]);
+                if (dueDateObj < today) {
+                  isOverdue = true;
+                }
+              }
+            }
+            
+            const statusText = isPaid ? 'Pago' : (isOverdue ? 'Atrasado' : 'Pendente');
+            html += `<tr><td>${cust.name}</td><td>${carne.orderId}</td><td>${inst.parcel}/${carne.installments.length}</td><td>${inst.dueDate}</td><td>${val.toFixed(2)}</td><td>${statusText}</td></tr>`;
+          });
+        });
+      }
+    });
   }
   
   html += '</table>';
@@ -5206,6 +5240,108 @@ function exportToPDF(type) {
     html += `
         </tbody>
       </table>
+    `;
+  } else if (type === 'carnes') {
+    title = 'Relatório de Controle de Carnês';
+    html += `<h1>${title}</h1>`;
+    html += `<h2>Gerado em: ${dateStr} | Sophia Elegance Store</h2>`;
+    html += `
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Pedido</th>
+            <th>Parcela</th>
+            <th>Vencimento</th>
+            <th>Valor</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    let totalPaid = 0;
+    let totalPending = 0;
+    let totalOverdue = 0;
+    let totalCount = 0;
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    customers.forEach(cust => {
+      if (cust.carnes && Array.isArray(cust.carnes)) {
+        cust.carnes.forEach(carne => {
+          carne.installments.forEach(inst => {
+            totalCount++;
+            const val = parseFloat(inst.value) || 0;
+            const isPaid = inst.status === 'Pago';
+            
+            // Check overdue
+            let isOverdue = false;
+            if (inst.dueDate && !isPaid) {
+              const parts = inst.dueDate.split('/');
+              if (parts.length === 3) {
+                const dueDateObj = new Date(parts[2], parts[1] - 1, parts[0]);
+                if (dueDateObj < today) {
+                  isOverdue = true;
+                }
+              }
+            }
+
+            if (isPaid) {
+              totalPaid += val;
+            } else {
+              totalPending += val;
+              if (isOverdue) {
+                totalOverdue += val;
+              }
+            }
+
+            const statusText = isPaid ? 'Pago' : (isOverdue ? 'Atrasado' : 'Pendente');
+            const statusStyle = isPaid 
+              ? 'color: #10b981; font-weight: bold;' 
+              : (isOverdue ? 'color: #ef4444; font-weight: bold;' : 'color: #f59e0b; font-weight: bold;');
+
+            html += `
+              <tr>
+                <td>${cust.name}</td>
+                <td>${carne.orderId}</td>
+                <td>${inst.parcel}/${carne.installments.length}</td>
+                <td>${inst.dueDate}</td>
+                <td>R$ ${val.toFixed(2).replace('.', ',')}</td>
+                <td style="${statusStyle}">${statusText}</td>
+              </tr>
+            `;
+          });
+        });
+      }
+    });
+
+    if (totalCount === 0) {
+      html += `<tr><td colspan="6" style="text-align:center; color:#9ca3af; padding: 2rem;">Nenhum carnê ou parcela cadastrada no momento.</td></tr>`;
+    }
+
+    html += `
+        </tbody>
+      </table>
+      
+      <div style="margin-top: 2rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1rem; border-radius: 6px;">
+          <div style="font-size: 0.75rem; color: #166534; font-weight: bold;">TOTAL RECEBIDO (PAGO)</div>
+          <div style="font-size: 1.25rem; font-weight: bold; color: #15803d; margin-top: 0.25rem;">R$ ${totalPaid.toFixed(2).replace('.', ',')}</div>
+        </div>
+        <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 1rem; border-radius: 6px;">
+          <div style="font-size: 0.75rem; color: #92400e; font-weight: bold;">TOTAL A RECEBER (PENDENTE)</div>
+          <div style="font-size: 1.25rem; font-weight: bold; color: #b45309; margin-top: 0.25rem;">R$ ${totalPending.toFixed(2).replace('.', ',')}</div>
+        </div>
+        <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 1rem; border-radius: 6px;">
+          <div style="font-size: 0.75rem; color: #991b1b; font-weight: bold;">TOTAL EM ATRASO</div>
+          <div style="font-size: 1.25rem; font-weight: bold; color: #b91c1c; margin-top: 0.25rem;">R$ ${totalOverdue.toFixed(2).replace('.', ',')}</div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 1rem; background: #f3f4f6; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 6px; text-align: center; font-weight: bold;">
+        VALOR TOTAL EM CARNÊS: R$ ${(totalPaid + totalPending).toFixed(2).replace('.', ',')}
+      </div>
     `;
   }
   
