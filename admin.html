@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sophia Admin · Gestão de Estoque</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -1350,44 +1351,38 @@
       </div>
       <div class="config-grid">
 
-        <!-- Google Sheets -->
+        <!-- Supabase Database -->
         <div class="config-card">
           <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
-            <span style="font-size:2rem">📊</span>
-            <h3>Google Sheets</h3>
+            <span style="font-size:2rem">⚡</span>
+            <h3>Supabase Cloud</h3>
           </div>
-          <p>Conecte via <strong>Google Apps Script</strong> (intermediário seguro). Todos os produtos e estoque são salvos em tempo real na sua planilha.</p>
-          <div class="config-status" id="sheets-status">
-            <div class="status-dot disconnected" id="sheets-dot"></div>
-            <span id="sheets-status-text">Não conectado</span>
+          <p>Conecte diretamente ao seu banco de dados <strong>Supabase (PostgreSQL)</strong>. Velocidade máxima e tempo real para o painel.</p>
+          <div class="config-status" id="supabase-status">
+            <div class="status-dot disconnected" id="supabase-dot"></div>
+            <span id="supabase-status-text">Não conectado</span>
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Supabase URL</label>
+            <input type="text" id="supabase-url" placeholder="https://your-project.supabase.co" style="width: 100%; border: 1px solid var(--gray-300); border-radius: 6px; height: 38px; padding: 0 0.75rem; font-size: 0.85rem;">
           </div>
           <div class="form-group" style="margin-bottom:1.25rem">
-            <label>URL do Apps Script (Web App)</label>
-            <div class="input-lock-wrapper" style="position: relative; display: flex; align-items: center; width: 100%;">
-              <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec" readonly style="padding-right: 2.75rem; background: var(--gray-100); color: var(--gray-600); cursor: not-allowed; width: 100%; border: 1px solid var(--gray-300); border-radius: 6px; height: 38px; font-size: 0.85rem; transition: all 0.2s;">
-              <button type="button" id="sheets-url-lock-btn" onclick="toggleUrlLock()" style="position: absolute; right: 0.25rem; background: none; border: none; cursor: pointer; color: var(--gray-500); display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 4px; transition: all 0.2s;" title="Desbloquear para edição" onmouseover="this.style.background='var(--gray-200)'" onmouseout="this.style.background='none'">
-                <!-- Closed Lock SVG -->
-                <svg id="lock-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-              </button>
-            </div>
+            <label>Supabase Anon Key (Chave Pública)</label>
+            <input type="text" id="supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsIn..." style="width: 100%; border: 1px solid var(--gray-300); border-radius: 6px; height: 38px; padding: 0 0.75rem; font-size: 0.85rem;">
           </div>
           <div style="display:flex;gap:0.75rem">
-            <button class="btn btn-primary" onclick="connectSheets()">🔗 Conectar</button>
-            <button class="btn btn-secondary" onclick="testSheets()">🧪 Testar</button>
-            <button class="btn btn-success" onclick="loadFromSheets()">⬇️ Carregar</button>
+            <button class="btn btn-primary" onclick="connectSupabase()">🔗 Conectar</button>
+            <button class="btn btn-secondary" onclick="testSupabase()">🧪 Testar Conexão</button>
           </div>
-          <div id="sheets-guide" style="margin-top:1rem;padding:0.75rem;background:var(--pink-pale);border-radius:6px;font-size:0.7rem;line-height:1.8;display:none">
-            <strong style="color:var(--pink)">Como configurar (5 passos):</strong><br>
-            1. Acesse <a href="https://script.google.com" target="_blank" style="color:var(--pink)">script.google.com</a> → Novo Projeto<br>
-            2. Cole o conteúdo do arquivo <strong>apps-script.js</strong> entregue junto<br>
-            3. Salve (Ctrl+S) e clique em <strong>Implantar → Nova Implantação</strong><br>
-            4. Tipo: <em>Aplicativo da Web</em> · Executar como: <em>Eu</em> · Acesso: <em>Qualquer pessoa</em><br>
-            5. Copie a URL gerada e cole no campo acima
+          <div id="supabase-guide" style="margin-top:1rem;padding:0.75rem;background:var(--pink-pale);border-radius:6px;font-size:0.7rem;line-height:1.8;display:none">
+            <strong style="color:var(--pink)">Como configurar:</strong><br>
+            1. Acesse <a href="https://supabase.com" target="_blank" style="color:var(--pink)">supabase.com</a> e crie um projeto gratuito.<br>
+            2. No menu do projeto, vá em <strong>Project Settings → API</strong>.<br>
+            3. Copie o <strong>Project URL</strong> e cole no campo "Supabase URL".<br>
+            4. Copie a chave <strong>anon public</strong> e cole no campo "Anon Key".<br>
+            5. Vá no <strong>SQL Editor</strong> e execute o script SQL do plano de migração para criar as tabelas.
           </div>
-          <button onclick="document.getElementById('sheets-guide').style.display=document.getElementById('sheets-guide').style.display==='none'?'block':'none'" style="font-size:0.7rem;color:var(--pink);background:none;border:none;cursor:pointer;margin-top:0.75rem">📖 Como configurar?</button>
+          <button onclick="document.getElementById('supabase-guide').style.display=document.getElementById('supabase-guide').style.display==='none'?'block':'none'" style="font-size:0.7rem;color:var(--pink);background:none;border:none;cursor:pointer;margin-top:0.75rem">📖 Como configurar?</button>
         </div>
 
         <!-- Cloudinary Storage -->
@@ -1580,6 +1575,10 @@
             <div class="form-group full">
               <label>Personal Access Token (API v3)</label>
               <input type="password" id="bl-access-token" placeholder="Insira o Token Gerado no Bling">
+            </div>
+            <div class="form-group full" style="margin-top:0.75rem">
+              <label>URL do Apps Script (Ponte do Bling / Webhooks)</label>
+              <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec" style="width: 100%; border: 1px solid var(--gray-300); border-radius: 6px; height: 38px; padding: 0 0.75rem; font-size: 0.85rem;">
             </div>
           </div>
 
@@ -2105,13 +2104,26 @@ function escapeHTML(str) {
 // ── CONFIG STATE ──
 const config = {
   appsScriptUrl:      localStorage.getItem('appsScriptUrl')      || '',
+  sheetsConnected:    localStorage.getItem('sheetsConnected')    === 'true',
+  supabaseUrl:        localStorage.getItem('supabaseUrl')        || '',
+  supabaseKey:        localStorage.getItem('supabaseKey')        || '',
+  supabaseConnected:  localStorage.getItem('supabaseConnected')  === 'true',
   cloudName:          localStorage.getItem('cloudName')          || '',
   uploadPreset:       localStorage.getItem('uploadPreset')       || 'sophia_store',
-  sheetsConnected:    localStorage.getItem('sheetsConnected')    === 'true',
   cloudinaryConnected:localStorage.getItem('cloudinaryConnected')=== 'true',
   blingToken:         localStorage.getItem('blingToken')         || '',
   blingConnected:     localStorage.getItem('blingConnected')     === 'true',
 };
+
+// Inicializar cliente do Supabase
+let supabaseClient = null;
+if (config.supabaseConnected && config.supabaseUrl && config.supabaseKey) {
+  try {
+    supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+  } catch(e) {
+    console.error("Erro ao inicializar Supabase client:", e);
+  }
+}
 
 // ── PRODUCTS DATA ──
 let products = [
@@ -2920,162 +2932,196 @@ function changeOrderStatus(id) {
   }
 }
 
-// ── GOOGLE SHEETS INTEGRATION (via Apps Script) ──────────────
+// ── SUPABASE CLOUD DATABASE INTEGRATION ──────────────
 async function syncToSheets(product) {
-  if (!config.sheetsConnected || !config.appsScriptUrl) {
-    toast('Configure o Apps Script em Configurações primeiro', 'error');
+  if (!config.supabaseConnected || !supabaseClient) {
     return;
   }
   try {
-    const res  = await fetch(config.appsScriptUrl, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'save', product }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      toast('✅ Sincronizado com Google Sheets!', 'success');
-      saveProductsLocal();
-    } else {
-      toast('Erro no Sheets: ' + (data.error || 'desconhecido'), 'error');
-    }
+    const payload = {
+      id: parseInt(product.id),
+      name: product.name,
+      sku: product.sku || '',
+      cat: product.cat || '',
+      cost: parseFloat(product.cost) || 0,
+      price: parseFloat(product.price) || 0,
+      sale_price: product.salePrice ? parseFloat(product.salePrice) : null,
+      stock: product.stock,
+      status: product.status || 'Ativo',
+      featured: product.featured === 'Sim',
+      img_url: product.imgUrl || '',
+      cloud_id: product.cloudId || '',
+      bling_id: product.blingId || ''
+    };
+
+    const { error } = await supabaseClient.from('produtos').upsert([payload]);
+    if (error) throw error;
+    
+    toast('✅ Sincronizado com Supabase!', 'success');
   } catch (e) {
-    toast('Erro de conexão: ' + e.message, 'error');
+    toast('Erro no Supabase: ' + e.message, 'error');
   }
 }
 
 async function deleteFromSheets(id) {
-  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  if (!config.supabaseConnected || !supabaseClient) return;
   try {
-    await fetch(config.appsScriptUrl, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'delete', id }),
-    });
-  } catch (_) {}
+    const { error } = await supabaseClient.from('produtos').delete().eq('id', parseInt(id));
+    if (error) throw error;
+  } catch (e) {
+    console.error("Erro ao deletar no Supabase:", e);
+  }
 }
 
 async function syncCategoryToSheets(category) {
-  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  if (!config.supabaseConnected || !supabaseClient) return;
   try {
-    await fetch(config.appsScriptUrl, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveCategory', category }),
-    });
-  } catch (_) {}
+    const payload = {
+      id: parseInt(category.id),
+      name: category.name,
+      desc: category.desc || '',
+      img_url: category.imgUrl || '',
+      cloud_id: category.cloudId || '',
+      order: parseInt(category.order) || 0
+    };
+    const { error } = await supabaseClient.from('categorias').upsert([payload]);
+    if (error) throw error;
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 async function deleteCategoryFromSheets(id) {
-  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  if (!config.supabaseConnected || !supabaseClient) return;
   try {
-    await fetch(config.appsScriptUrl, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteCategory', id }),
-    });
-  } catch (_) {}
+    const { error } = await supabaseClient.from('categorias').delete().eq('id', parseInt(id));
+    if (error) throw error;
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 async function syncStockToSheets(id, stock) {
-  if (!config.sheetsConnected || !config.appsScriptUrl) return;
+  if (!config.supabaseConnected || !supabaseClient) return;
   try {
-    await fetch(config.appsScriptUrl, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'updateStock', id, stock }),
-    });
-  } catch (_) {}
+    const { error } = await supabaseClient.from('produtos').update({ stock }).eq('id', parseInt(id));
+    if (error) throw error;
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 async function loadFromSheets(silent = false) {
-  if (!config.sheetsConnected || !config.appsScriptUrl) return;
-  if (!silent) toast('🔄 Carregando dados do Google Sheets...', 'info');
+  if (!config.supabaseConnected || !supabaseClient) return;
+  if (!silent) toast('🔄 Carregando dados do Supabase...', 'info');
   try {
-    const res  = await fetch(config.appsScriptUrl + '?action=list&t=' + new Date().getTime());
-    const data = await res.json();
-    if (data.success) {
-      if (data.products && data.products.length > 0) {
-        products = data.products;
-        normalizeProductsStock();
-        saveProductsLocal();
-        renderProducts();
-      }
-      if (data.categories && data.categories.length > 0) {
-        categories = data.categories;
-        saveCategories();
-        renderCategories();
-      }
-      
-      // Carrega os pedidos que vieram do Google Sheets / Bling
-      if (data.orders && data.orders.length > 0) {
-        // Mescla com os pedidos locais (evita duplicar IDs)
-        const newOrdersMap = new Map();
-        
-        // Primeiro, adiciona os pedidos locais
-        orders.forEach(o => newOrdersMap.set(String(o.id), o));
-        
-        // Depois, sobrescreve ou adiciona os pedidos do Sheets/Bling
-        data.orders.forEach(o => newOrdersMap.set(String(o.id), o));
-        
-        orders = Array.from(newOrdersMap.values());
-        
-        // Ordena do mais recente para o mais antigo (simplificado)
-        orders.reverse();
-        
-        try { localStorage.setItem('sophia_orders', JSON.stringify(orders)); } catch(_) {}
-        renderOrders();
-      }
-      
-      renderDashboard();
-      if (!silent) toast('✅ Dados sincronizados com o Sheets!', 'success');
-    } else {
-      if (!silent) toast('Sheets vazio. Mostrando dados locais.', 'info');
+    // 1. Carrega produtos
+    const { data: pData, error: pError } = await supabaseClient.from('produtos').select('*');
+    if (pError) throw pError;
+    if (pData) {
+      products = pData.map(p => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku || '',
+        cat: p.cat || '',
+        cost: parseFloat(p.cost) || 0,
+        price: parseFloat(p.price) || 0,
+        salePrice: p.sale_price ? parseFloat(p.sale_price) : null,
+        stock: p.stock || {pp:0, p:0, m:0, g:0, gg:0},
+        status: p.status || 'Ativo',
+        featured: p.featured ? 'Sim' : 'Não',
+        imgUrl: p.img_url || '',
+        cloudId: p.cloud_id || '',
+        blingId: p.bling_id || ''
+      }));
+      saveProductsLocal();
+      renderProducts();
     }
+
+    // 2. Carrega categorias
+    const { data: cData, error: cError } = await supabaseClient.from('categorias').select('*').order('order', { ascending: true });
+    if (cError) throw cError;
+    if (cData) {
+      categories = cData.map(c => ({
+        id: c.id,
+        name: c.name,
+        desc: c.desc || '',
+        imgUrl: c.img_url || '',
+        cloudId: c.cloud_id || '',
+        order: parseInt(c.order) || 0
+      }));
+      saveCategories();
+      renderCategories();
+    }
+
+    // 3. Carrega pedidos
+    const { data: oData, error: oError } = await supabaseClient.from('pedidos').select('*').order('created_at', { ascending: false });
+    if (oError) throw oError;
+    if (oData) {
+      orders = oData.map(o => ({
+        id: o.id,
+        number: o.number || '',
+        customer: o.customer || 'Desconhecido',
+        products: o.products || '',
+        total: parseFloat(o.total) || 0,
+        payment: 'Nuvem',
+        status: o.status || 'Aberto',
+        source: o.source || 'Bling ERP',
+        date: o.created_at ? new Date(o.created_at).toLocaleDateString('pt-BR') : ''
+      }));
+      try { localStorage.setItem('sophia_orders', JSON.stringify(orders)); } catch(_) {}
+      renderOrders();
+    }
+
+    renderDashboard();
+    if (!silent) toast('✅ Dados sincronizados com o Supabase!', 'success');
   } catch (e) {
-    if (!silent) toast('Erro ao carregar Sheets: ' + e.message, 'error');
+    if (!silent) toast('Erro ao carregar Supabase: ' + e.message, 'error');
   }
 }
 
 async function syncSheets() {
-  if (!config.sheetsConnected || !config.appsScriptUrl) {
-    toast('Configure o Apps Script em Configurações primeiro', 'error'); return;
+  if (!config.supabaseConnected || !supabaseClient) {
+    toast('Configure o Supabase em Configurações primeiro', 'error'); return;
   }
-  toast('🔄 Sincronizando produtos em lote com a nuvem...', 'info');
-  
+  toast('🔄 Sincronizando dados com o Supabase...', 'info');
   try {
-    // Sincroniza produtos em lote
-    const res = await fetch(config.appsScriptUrl, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveBatch', products: products }),
-    });
-    const data = await res.json();
-    
-    if (data.success) {
-      // Atualiza os blingIds locais retornados da sincronização
-      if (data.updatedBlingIds && Array.isArray(data.updatedBlingIds)) {
-        data.updatedBlingIds.forEach(item => {
-          const p = products.find(x => x.id === item.id);
-          if (p) p.blingId = item.blingId;
-        });
-        saveProductsLocal();
-        renderProducts();
-      }
-      
-      // Sincroniza Categorias
-      let okC = 0;
-      for (const c of categories) {
-        try {
-          const resCat = await fetch(config.appsScriptUrl, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'saveCategory', category: c }),
-          });
-          const dataCat = await resCat.json();
-          if (dataCat.success) okC++;
-        } catch (_) {}
-      }
-      
-      toast(`✅ Sincronização completa realizada com sucesso!`, 'success');
-    } else {
-      toast('Falha na sincronização em lote: ' + (data.error || 'Erro interno'), 'error');
-    }
+    // Sincronizar produtos
+    const productsPayload = products.map(product => ({
+      id: parseInt(product.id),
+      name: product.name,
+      sku: product.sku || '',
+      cat: product.cat || '',
+      cost: parseFloat(product.cost) || 0,
+      price: parseFloat(product.price) || 0,
+      sale_price: product.salePrice ? parseFloat(product.salePrice) : null,
+      stock: product.stock,
+      status: product.status || 'Ativo',
+      featured: product.featured === 'Sim',
+      img_url: product.imgUrl || '',
+      cloud_id: product.cloudId || '',
+      bling_id: product.blingId || ''
+    }));
+
+    const { error: pError } = await supabaseClient.from('produtos').upsert(productsPayload);
+    if (pError) throw pError;
+
+    // Sincronizar categorias
+    const categoriesPayload = categories.map(category => ({
+      id: parseInt(category.id),
+      name: category.name,
+      desc: category.desc || '',
+      img_url: category.imgUrl || '',
+      cloud_id: category.cloudId || '',
+      order: parseInt(category.order) || 0
+    }));
+
+    const { error: cError } = await supabaseClient.from('categorias').upsert(categoriesPayload);
+    if (cError) throw cError;
+
+    toast('✅ Sincronização completa no Supabase!', 'success');
   } catch (e) {
-    toast('Erro de conexão ao sincronizar: ' + e.message, 'error');
+    toast('Erro ao sincronizar com Supabase: ' + e.message, 'error');
   }
 }
 
@@ -3349,76 +3395,39 @@ function handleFiles(files) {
 }
 function handleDrop(e) { e.preventDefault(); document.getElementById('upload-zone').classList.remove('dragover'); handleFiles(e.dataTransfer.files); }
 
-// ── CONFIG CONNECT ──
-function connectSheets() {
-  const url = document.getElementById('sheets-url').value.trim();
-  if (!url || !url.startsWith('https://script.google.com')) {
-    toast('Cole a URL do Apps Script (começa com https://script.google.com...)', 'error'); return;
+// ── SUPABASE CONNECT ──
+function connectSupabase() {
+  const url = document.getElementById('supabase-url').value.trim();
+  const key = document.getElementById('supabase-key').value.trim();
+  if (!url || !key) {
+    toast('Preencha a URL e a Anon Key do Supabase!', 'error'); return;
   }
-  localStorage.setItem('appsScriptUrl', url);
-  localStorage.setItem('sheetsConnected', 'true');
-  config.appsScriptUrl   = url;
-  config.sheetsConnected = true;
-  document.getElementById('sheets-dot').classList.replace('disconnected','connected');
-  document.getElementById('sheets-status-text').textContent = 'Conectado ✓';
-  toast('✅ Google Sheets conectado via Apps Script!', 'success');
+  localStorage.setItem('supabaseUrl', url);
+  localStorage.setItem('supabaseKey', key);
+  localStorage.setItem('supabaseConnected', 'true');
+  config.supabaseUrl = url;
+  config.supabaseKey = key;
+  config.supabaseConnected = true;
   
-  // Auto-lock the field after connecting
-  const input = document.getElementById('sheets-url');
-  if (!input.hasAttribute('readonly')) {
-    toggleUrlLock();
+  try {
+    supabaseClient = supabase.createClient(url, key);
+    document.getElementById('supabase-dot').classList.replace('disconnected','connected');
+    document.getElementById('supabase-status-text').textContent = 'Conectado ✓';
+    toast('✅ Supabase conectado com sucesso!', 'success');
+  } catch(e) {
+    toast('❌ Erro de inicialização: ' + e.message, 'error');
   }
 }
 
-function toggleUrlLock() {
-  const input = document.getElementById('sheets-url');
-  const btn = document.getElementById('sheets-url-lock-btn');
-  const svg = document.getElementById('lock-icon-svg');
-  
-  if (input.hasAttribute('readonly')) {
-    // UNLOCKING
-    input.removeAttribute('readonly');
-    input.style.background = 'white';
-    input.style.color = '#1f2937'; // gray-800
-    input.style.cursor = 'text';
-    input.style.borderColor = 'var(--pink)';
-    btn.style.color = 'var(--pink)';
-    btn.title = 'Bloquear campo';
-    
-    // Change SVG to open lock
-    svg.innerHTML = `
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-      <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
-    `;
-    toast('🔓 Campo desbloqueado para edição!', 'info');
-  } else {
-    // LOCKING
-    input.setAttribute('readonly', 'true');
-    input.style.background = 'var(--gray-100)';
-    input.style.color = 'var(--gray-600)';
-    input.style.cursor = 'not-allowed';
-    input.style.borderColor = 'var(--gray-300)';
-    btn.style.color = 'var(--gray-500)';
-    btn.title = 'Desbloquear para edição';
-    
-    // Change SVG to closed lock
-    svg.innerHTML = `
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-    `;
-    toast('🔒 Campo bloqueado para evitar alterações acidentais!', 'success');
-  }
-}
-async function testSheets() {
-  if (!config.sheetsConnected || !config.appsScriptUrl) {
+async function testSupabase() {
+  if (!config.supabaseConnected || !supabaseClient) {
     toast('❌ Não conectado. Configure primeiro.', 'error'); return;
   }
   toast('🧪 Testando conexão...', 'info');
   try {
-    const res  = await fetch(config.appsScriptUrl + '?action=list&t=' + new Date().getTime());
-    const data = await res.json();
-    if (data.success) toast('✅ Conexão OK! Planilha acessível. ' + (data.products?.length || 0) + ' produtos encontrados.', 'success');
-    else toast('❌ Erro: ' + (data.error || 'resposta inesperada'), 'error');
+    const { data, error } = await supabaseClient.from('produtos').select('count', { count: 'exact', head: true });
+    if (error) throw error;
+    toast('✅ Conexão OK! Banco de dados acessível.', 'success');
   } catch (e) {
     toast('❌ Falha na conexão: ' + e.message, 'error');
   }
@@ -3534,16 +3543,20 @@ function loadConfigForm() {
   if (cn) document.getElementById('cl-cloud-name').value = cn;
   const up = localStorage.getItem('uploadPreset');
   if (up) document.getElementById('cl-upload-preset').value = up;
+  const sUrl = localStorage.getItem('supabaseUrl');
+  if (sUrl) document.getElementById('supabase-url').value = sUrl;
+  const sKey = localStorage.getItem('supabaseKey');
+  if (sKey) document.getElementById('supabase-key').value = sKey;
   
-  const updateUrl = localStorage.getItem('sophia_update_url') || 'https://raw.githubusercontent.com/Felipegon9im/sophiaStore/main/version.json';
+  const updateUrl = localStorage.getItem('supabase_update_url') || 'https://raw.githubusercontent.com/Felipegon9im/sophiaStore/main/version.json';
   const elUpdateUrl = document.getElementById('update-url-config');
   if (elUpdateUrl) elUpdateUrl.value = updateUrl;
   const elVer = document.getElementById('current-version-text');
   if (elVer) elVer.textContent = 'v1.0.0';
   
-  if (localStorage.getItem('sheetsConnected') === 'true') {
-    document.getElementById('sheets-dot').classList.replace('disconnected','connected');
-    document.getElementById('sheets-status-text').textContent = 'Conectado ✓';
+  if (localStorage.getItem('supabaseConnected') === 'true') {
+    document.getElementById('supabase-dot').classList.replace('disconnected','connected');
+    document.getElementById('supabase-status-text').textContent = 'Conectado ✓';
   }
   if (localStorage.getItem('cloudinaryConnected') === 'true') {
     document.getElementById('cloudinary-dot').classList.replace('disconnected','connected');
@@ -3651,9 +3664,14 @@ function addIntegrationLog(msg, type = 'system') {
 
 function connectBling() {
   const token = document.getElementById('bl-access-token').value.trim();
+  const url = document.getElementById('sheets-url').value.trim();
 
   if (!token) {
     toast('Preencha o Access Token do Bling para conectar', 'error');
+    return;
+  }
+  if (url && !url.startsWith('https://script.google.com')) {
+    toast('A URL da ponte Bling deve começar com https://script.google.com', 'error');
     return;
   }
 
@@ -3665,13 +3683,20 @@ function connectBling() {
     localStorage.setItem('blingToken', token);
     config.blingConnected = true;
     config.blingToken = token;
+    
+    if (url) {
+      localStorage.setItem('appsScriptUrl', url);
+      localStorage.setItem('sheetsConnected', 'true');
+      config.appsScriptUrl = url;
+      config.sheetsConnected = true;
+    }
 
     document.getElementById('bling-dot').className = 'status-dot connected';
     document.getElementById('bling-status-text').textContent = 'Conectado ✓';
     document.getElementById('bling-conn-text').textContent = 'Conectado ✓';
     document.getElementById('bling-conn-text').style.color = 'var(--success)';
 
-    addIntegrationLog('Conexão Bling estabelecida com sucesso! API v3 operante.', 'system');
+    addIntegrationLog('Conexão Bling e ponte Apps Script estabelecida com sucesso! API v3 operante.', 'system');
     toast('Bling conectado com sucesso!', 'success');
   }, 1200);
 }
