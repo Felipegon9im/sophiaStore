@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sophia Elegance Store</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@200;300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1792,56 +1793,98 @@ function adminToStoreProduct(p) {
   };
 }
 
+const supabaseUrl = 'https://sfocvsknccuehrnoouox.supabase.co';
+const supabaseKey = 'sb_publishable_GiCiYoNOMlpImpdQkKjVdg_8mZJhM1k';
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
 async function loadProductsFromSheets() {
-  // Tentar carregar do localStorage (cache do admin)
+  // 1. Tentar carregar do localStorage (cache local)
   try {
-    const cached = localStorage.getItem('sophia_products');
-    if (cached) {
-      const adminProds = JSON.parse(cached);
+    const cachedProds = localStorage.getItem('sophia_products');
+    if (cachedProds) {
+      const adminProds = JSON.parse(cachedProds);
       const ativos = adminProds.filter(p => p.status === 'Ativo');
       if (ativos.length > 0) {
         productsData = ativos.map(adminToStoreProduct);
         renderProducts();
-        // Não usar 'return' aqui para forçar a atualização via internet
       }
+    }
+    const cachedCats = localStorage.getItem('sophia_categories');
+    if (cachedCats) {
+      categoriesData = JSON.parse(cachedCats);
+      renderCategories();
     }
   } catch(_) {}
 
-  // Tentar carregar do Apps Script diretamente
-  const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbzRlUIqKpsNLeFqoAd1N8PDHMRbTI-HibsuVRDKUw8CFRQWgJREc7MoiB4_ADmmvZPhTg/exec';
-  if (appsScriptUrl) {
-    try {
-      const res  = await fetch(appsScriptUrl + '?action=list&t=' + Date.now());
-      const data = await res.json();
-      if (data.success) {
-        if (data.products && data.products.length > 0) {
-          const ativos = data.products.filter(p => p.status === 'Ativo');
-          productsData = ativos.map(adminToStoreProduct);
-          localStorage.setItem('sophia_products', JSON.stringify(data.products));
-        }
-        if (data.categories && data.categories.length > 0) {
-          categoriesData = data.categories;
-          localStorage.setItem('sophia_categories', JSON.stringify(data.categories));
-        }
-        renderProducts();
-        renderCategories();
-        
-        // Verifica se há pedido para abrir produto específico via link
-        const urlParams = new URLSearchParams(window.location.search);
-        const pId = urlParams.get('p');
-        if (pId) {
-          const parsedId = Number(pId) || pId;
-          setTimeout(() => openProductDetail(parsedId), 500);
-        }
-        
-        return;
-      }
-    } catch(_) {}
+  // 2. Carregar do Supabase Cloud
+  try {
+    // Buscar produtos
+    const { data: pData, error: pError } = await supabaseClient
+      .from('produtos')
+      .select('*');
+    if (pError) throw pError;
+
+    if (pData && pData.length > 0) {
+      const mappedProds = pData.map(p => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku || '',
+        cat: p.cat || '',
+        cost: parseFloat(p.cost) || 0,
+        price: parseFloat(p.price) || 0,
+        salePrice: p.sale_price ? parseFloat(p.sale_price) : null,
+        stock: p.stock || {pp:0, p:0, m:0, g:0, gg:0},
+        status: p.status || 'Ativo',
+        featured: p.featured ? 'Sim' : 'Não',
+        imgUrl: p.img_url || '',
+        cloudId: p.cloud_id || '',
+        blingId: p.bling_id || ''
+      }));
+      
+      const ativos = mappedProds.filter(p => p.status === 'Ativo');
+      productsData = ativos.map(adminToStoreProduct);
+      localStorage.setItem('sophia_products', JSON.stringify(mappedProds));
+    }
+
+    // Buscar categorias
+    const { data: cData, error: cError } = await supabaseClient
+      .from('categorias')
+      .select('*')
+      .order('order', { ascending: true });
+    if (cError) throw cError;
+
+    if (cData && cData.length > 0) {
+      categoriesData = cData.map(c => ({
+        id: c.id,
+        name: c.name,
+        desc: c.desc || '',
+        imgUrl: c.img_url || '',
+        cloudId: c.cloud_id || '',
+        order: parseInt(c.order) || 0
+      }));
+      localStorage.setItem('sophia_categories', JSON.stringify(categoriesData));
+    }
+
+    renderProducts();
+    renderCategories();
+
+    // Verifica se há pedido para abrir produto específico via link
+    const urlParams = new URLSearchParams(window.location.search);
+    const pId = urlParams.get('p');
+    if (pId) {
+      const parsedId = Number(pId) || pId;
+      setTimeout(() => openProductDetail(parsedId), 500);
+    }
+    return;
+  } catch(e) {
+    console.error("Erro ao carregar do Supabase:", e);
   }
 
-  // Fallback: produtos de exemplo
-  productsData = FALLBACK_PRODUCTS;
-  renderProducts();
+  // Fallback padrão se tudo falhar
+  if (!productsData || productsData.length === 0) {
+    productsData = FALLBACK_PRODUCTS;
+    renderProducts();
+  }
 }
 
 function renderProducts(filter = 'Todos', query = '') {
