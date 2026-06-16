@@ -1315,18 +1315,68 @@
 
     <!-- REPORTS PAGE -->
     <div class="page-section" id="page-reports">
-      <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark);margin-bottom:1.5rem">Relatórios</h1>
+      <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark);margin-bottom:1.5rem">Relatórios de Desempenho</h1>
+      
+      <!-- KPIs Dinâmicos -->
       <div class="kpi-grid">
-        <div class="kpi-card pink"><div class="kpi-header"><div class="kpi-icon pink">📅</div></div><div class="kpi-value">R$ 8.420</div><div class="kpi-label">Faturamento Mensal</div></div>
-        <div class="kpi-card gold"><div class="kpi-header"><div class="kpi-icon gold">📦</div></div><div class="kpi-value">R$ 3.200</div><div class="kpi-label">Custo de Estoque</div></div>
-        <div class="kpi-card success"><div class="kpi-header"><div class="kpi-icon success">💹</div></div><div class="kpi-value">R$ 5.220</div><div class="kpi-label">Lucro Bruto</div></div>
-        <div class="kpi-card danger"><div class="kpi-header"><div class="kpi-icon danger">↩️</div></div><div class="kpi-value">2</div><div class="kpi-label">Devoluções</div></div>
+        <div class="kpi-card pink">
+          <div class="kpi-header"><div class="kpi-icon pink">📈</div></div>
+          <div class="kpi-value" id="kpi-rep-sales">R$ 0,00</div>
+          <div class="kpi-label">Faturamento Geral</div>
+        </div>
+        <div class="kpi-card gold">
+          <div class="kpi-header"><div class="kpi-icon gold">📦</div></div>
+          <div class="kpi-value" id="kpi-rep-cost">R$ 0,00</div>
+          <div class="kpi-label">Custo do Estoque</div>
+        </div>
+        <div class="kpi-card success">
+          <div class="kpi-header"><div class="kpi-icon success">💹</div></div>
+          <div class="kpi-value" id="kpi-rep-profit">R$ 0,00</div>
+          <div class="kpi-label">Margem Estimada</div>
+        </div>
+        <div class="kpi-card danger">
+          <div class="kpi-header"><div class="kpi-icon danger">👤</div></div>
+          <div class="kpi-value" id="kpi-rep-customers">0</div>
+          <div class="kpi-label">Clientes Ativos</div>
+        </div>
       </div>
-      <div class="panel"><div class="panel-header"><div class="panel-title">📊 Exportar para Google Sheets</div></div>
+      
+      <!-- Seções de Relatórios -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(350px, 1fr));gap:1.5rem;margin-top:1.5rem">
+        <!-- PDF Reports -->
+        <div class="panel">
+          <div class="panel-header" style="background: linear-gradient(135deg, #ec4899, #db2777); color: white;">
+            <div class="panel-title" style="color: white;">📄 Relatórios em PDF (Para Impressão)</div>
+          </div>
+          <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:0.75rem;color:var(--gray-600)">Gere relatórios elegantes, formatados para impressão em folha A4 ou salvamento em PDF.</p>
+            <button class="btn btn-primary" onclick="exportToPDF('vendas')" style="background-color:#db2777; border-color:#db2777;">📥 Gerar PDF de Vendas e Pedidos</button>
+            <button class="btn btn-primary" onclick="exportToPDF('estoque')" style="background-color:#db2777; border-color:#db2777;">📦 Gerar PDF de Posição de Estoque</button>
+            <button class="btn btn-primary" onclick="exportToPDF('clientes')" style="background-color:#db2777; border-color:#db2777;">👥 Gerar PDF de Listagem de Clientes</button>
+          </div>
+        </div>
+
+        <!-- Excel Reports -->
+        <div class="panel">
+          <div class="panel-header" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+            <div class="panel-title" style="color: white;">📊 Relatórios em Excel (Planilha)</div>
+          </div>
+          <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:0.75rem;color:var(--gray-600)">Exporta planilhas limpas compatíveis com o Microsoft Excel e Google Sheets.</p>
+            <button class="btn btn-success" onclick="exportToExcel('vendas')" style="background-color:#059669; border-color:#059669;">📥 Exportar Vendas para Excel</button>
+            <button class="btn btn-success" onclick="exportToExcel('estoque')" style="background-color:#059669; border-color:#059669;">📦 Exportar Estoque para Excel</button>
+            <button class="btn btn-success" onclick="exportToExcel('clientes')" style="background-color:#059669; border-color:#059669;">👥 Exportar Clientes para Excel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Google Sheets Panel -->
+      <div class="panel" style="margin-top:1.5rem">
+        <div class="panel-header"><div class="panel-title">☁️ Sincronização Direta com Google Sheets</div></div>
         <div style="padding:1.5rem;display:flex;gap:1rem;flex-wrap:wrap">
-          <button class="btn btn-success" onclick="exportToSheets('vendas')">📥 Exportar Vendas</button>
-          <button class="btn btn-secondary" onclick="exportToSheets('estoque')">📦 Exportar Estoque</button>
-          <button class="btn btn-secondary" onclick="exportToSheets('clientes')">👥 Exportar Clientes</button>
+          <button class="btn btn-secondary" onclick="exportToSheets('vendas')">🔄 Enviar Vendas ao Sheets</button>
+          <button class="btn btn-secondary" onclick="exportToSheets('estoque')">🔄 Enviar Estoque ao Sheets</button>
+          <button class="btn btn-secondary" onclick="exportToSheets('clientes')">🔄 Enviar Clientes ao Sheets</button>
         </div>
       </div>
     </div>
@@ -2185,6 +2235,7 @@ function renderPage(name) {
   }
   if (name === 'integrations') loadIntegrationsPage();
   if (name === 'caixa')        loadPosPage();
+  if (name === 'reports')      updateReportsKPIs();
 }
 
 // ── DASHBOARD ──
@@ -4944,6 +4995,233 @@ function deleteSupplier(id) {
   saveSuppliersLocal();
   renderSuppliers();
   toast('Fornecedor excluído.', 'info');
+}
+
+// ── REPORTS PDF & EXCEL GENERATION ──
+function updateReportsKPIs() {
+  const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
+  const totalCost = products.reduce((sum, p) => {
+    const qty = Object.values(p.stock || {}).reduce((a,b)=>a+b,0);
+    return sum + (qty * (p.cost || 0));
+  }, 0);
+  
+  const salesEl = document.getElementById('kpi-rep-sales');
+  const costEl = document.getElementById('kpi-rep-cost');
+  const profitEl = document.getElementById('kpi-rep-profit');
+  const custEl = document.getElementById('kpi-rep-customers');
+  
+  if (salesEl) salesEl.textContent = 'R$ ' + totalSales.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  if (costEl) costEl.textContent = 'R$ ' + totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  if (profitEl) {
+    const profit = Math.max(0, totalSales - totalCost);
+    profitEl.textContent = 'R$ ' + profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  }
+  if (custEl) custEl.textContent = customers.length;
+}
+
+function exportToExcel(type) {
+  let html = '<table>';
+  let filename = '';
+  
+  if (type === 'vendas') {
+    filename = 'relatorio_vendas.xls';
+    html += '<tr><th>ID</th><th>Cliente</th><th>Produtos</th><th>Total (R$)</th><th>Forma Pagto</th><th>Status</th><th>Data</th><th>Origem</th></tr>';
+    orders.forEach(o => {
+      html += `<tr><td>${o.id}</td><td>${o.customer}</td><td>${o.products}</td><td>${o.total.toFixed(2)}</td><td>${o.payment}</td><td>${o.status}</td><td>${o.date}</td><td>${o.source}</td></tr>`;
+    });
+  } else if (type === 'estoque') {
+    filename = 'relatorio_estoque.xls';
+    html += '<tr><th>ID</th><th>Nome</th><th>SKU</th><th>Categoria</th><th>Custo (R$)</th><th>Preço (R$)</th><th>Estoque Total</th><th>Status</th></tr>';
+    products.forEach(p => {
+      const stockTotal = Object.values(p.stock || {}).reduce((a,b)=>a+b,0);
+      html += `<tr><td>${p.id}</td><td>${p.name}</td><td>${p.sku}</td><td>${p.cat}</td><td>${p.cost.toFixed(2)}</td><td>${p.price.toFixed(2)}</td><td>${stockTotal}</td><td>${p.status}</td></tr>`;
+    });
+  } else if (type === 'clientes') {
+    filename = 'relatorio_clientes.xls';
+    html += '<tr><th>Nome</th><th>WhatsApp</th><th>E-mail</th><th>Total Compras</th><th>Faturamento Acumulado (R$)</th><th>Última Compra</th></tr>';
+    customers.forEach(c => {
+      html += `<tr><td>${c.name}</td><td>${c.whatsapp}</td><td>${c.email}</td><td>${c.orders}</td><td>${c.total.toFixed(2)}</td><td>${c.last}</td></tr>`;
+    });
+  }
+  
+  html += '</table>';
+  
+  const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportToPDF(type) {
+  let title = '';
+  let html = `
+    <html>
+    <head>
+      <title>Relatório</title>
+      <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 2rem; color: #1f2937; }
+        h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #db2777; }
+        h2 { font-size: 0.9rem; color: #6b7280; font-weight: normal; margin-bottom: 2rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border-bottom: 1px solid #e5e7eb; padding: 0.75rem 0.5rem; text-align: left; font-size: 0.8rem; }
+        th { background-color: #f9fafb; font-weight: 600; color: #374151; }
+        tr:nth-child(even) { background-color: #f9fafb; }
+        .total-row { font-weight: bold; background-color: #f3f4f6 !important; }
+        @media print {
+          body { padding: 0; }
+          @page { size: A4; margin: 1.5cm; }
+        }
+      </style>
+    </head>
+    <body>
+  `;
+  
+  const dateStr = new Date().toLocaleString('pt-BR');
+  
+  if (type === 'vendas') {
+    title = 'Relatório de Vendas e Pedidos';
+    html += `<h1>${title}</h1>`;
+    html += `<h2>Gerado em: ${dateStr} | Sophia Elegance Store</h2>`;
+    html += `
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Produtos</th>
+            <th>Total</th>
+            <th>Forma Pagto</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th>Origem</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    let sum = 0;
+    orders.forEach(o => {
+      sum += o.total;
+      html += `
+        <tr>
+          <td>${o.id}</td>
+          <td>${o.customer}</td>
+          <td>${o.products}</td>
+          <td>R$ ${o.total.toFixed(2).replace('.', ',')}</td>
+          <td>${o.payment}</td>
+          <td>${o.status}</td>
+          <td>${o.date}</td>
+          <td>${o.source}</td>
+        </tr>
+      `;
+    });
+    html += `
+        <tr class="total-row">
+          <td colspan="3">Faturamento Total</td>
+          <td colspan="5">R$ ${sum.toFixed(2).replace('.', ',')}</td>
+        </tr>
+      </tbody>
+    </table>
+    `;
+  } else if (type === 'estoque') {
+    title = 'Relatório de Estoque';
+    html += `<h1>${title}</h1>`;
+    html += `<h2>Gerado em: ${dateStr} | Sophia Elegance Store</h2>`;
+    html += `
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>SKU</th>
+            <th>Categoria</th>
+            <th>Custo</th>
+            <th>Preço</th>
+            <th>Estoque</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    let totalQty = 0;
+    let totalValue = 0;
+    products.forEach(p => {
+      const qty = Object.values(p.stock || {}).reduce((a,b)=>a+b,0);
+      totalQty += qty;
+      totalValue += (qty * p.price);
+      html += `
+        <tr>
+          <td>${p.id}</td>
+          <td>${p.name}</td>
+          <td>${p.sku}</td>
+          <td>${p.cat}</td>
+          <td>R$ ${p.cost.toFixed(2).replace('.', ',')}</td>
+          <td>R$ ${p.price.toFixed(2).replace('.', ',')}</td>
+          <td>${qty} un</td>
+          <td>${p.status}</td>
+        </tr>
+      `;
+    });
+    html += `
+        <tr class="total-row">
+          <td colspan="6">Valores Totais</td>
+          <td>${totalQty} un</td>
+          <td>R$ ${totalValue.toFixed(2).replace('.', ',')}</td>
+        </tr>
+      </tbody>
+    </table>
+    `;
+  } else if (type === 'clientes') {
+    title = 'Relatório de Clientes';
+    html += `<h1>${title}</h1>`;
+    html += `<h2>Gerado em: ${dateStr} | Sophia Elegance Store</h2>`;
+    html += `
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>WhatsApp</th>
+            <th>E-mail</th>
+            <th>Total Compras</th>
+            <th>Total Pago</th>
+            <th>Última Compra</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    customers.forEach(c => {
+      html += `
+        <tr>
+          <td>${c.name}</td>
+          <td>${c.whatsapp}</td>
+          <td>${c.email}</td>
+          <td>${c.orders}</td>
+          <td>R$ ${c.total.toFixed(2).replace('.', ',')}</td>
+          <td>${c.last}</td>
+        </tr>
+      `;
+    });
+    html += `
+        </tbody>
+      </table>
+    `;
+  }
+  
+  html += `
+    </body>
+    </html>
+  `;
+  
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 500);
 }
 
 // ── SYSTEM UPDATE LOGIC ──
