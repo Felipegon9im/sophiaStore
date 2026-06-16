@@ -5583,6 +5583,13 @@ if (window.whatsappAPI) {
       document.getElementById('wp-status-text').textContent = 'Disparo Concluído!';
       document.getElementById('wp-status-text').style.color = 'var(--success)';
       appendWpLog('> Disparo concluído.', '#00ff00');
+      
+      const sendBtn = document.getElementById('wp-send-btn');
+      if (sendBtn) {
+        sendBtn.removeAttribute('disabled');
+        sendBtn.disabled = false;
+        updateWpButtonState();
+      }
     }
   });
 }
