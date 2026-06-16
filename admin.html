@@ -1626,11 +1626,27 @@
           <div class="form-grid" style="margin-bottom:1.25rem">
             <div class="form-group full">
               <label>Personal Access Token (API v3)</label>
-              <input type="password" id="bl-access-token" placeholder="Insira o Token Gerado no Bling">
+              <div class="input-lock-wrapper" style="position: relative; display: flex; align-items: center; width: 100%;">
+                <input type="password" id="bl-access-token" placeholder="Insira o Token Gerado no Bling" readonly style="padding-right: 2.75rem; background: var(--gray-100); color: var(--gray-600); cursor: not-allowed; width: 100%; border: 1px solid var(--gray-300); border-radius: 6px; height: 38px; font-size: 0.85rem; transition: all 0.2s;">
+                <button type="button" id="bl-access-token-lock-btn" onclick="toggleBlingLock('bl-access-token', this)" style="position: absolute; right: 0.25rem; background: none; border: none; cursor: pointer; color: var(--gray-500); display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 4px; transition: all 0.2s;" title="Desbloquear para edição" onmouseover="this.style.background='var(--gray-200)'" onmouseout="this.style.background='none'">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="form-group full" style="margin-top:0.75rem">
               <label>URL do Apps Script (Ponte do Bling / Webhooks)</label>
-              <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec" style="width: 100%; border: 1px solid var(--gray-300); border-radius: 6px; height: 38px; padding: 0 0.75rem; font-size: 0.85rem;">
+              <div class="input-lock-wrapper" style="position: relative; display: flex; align-items: center; width: 100%;">
+                <input type="password" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec" readonly style="padding-right: 2.75rem; background: var(--gray-100); color: var(--gray-600); cursor: not-allowed; width: 100%; border: 1px solid var(--gray-300); border-radius: 6px; height: 38px; font-size: 0.85rem; transition: all 0.2s;">
+                <button type="button" id="sheets-url-lock-btn" onclick="toggleBlingLock('sheets-url', this)" style="position: absolute; right: 0.25rem; background: none; border: none; cursor: pointer; color: var(--gray-500); display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 4px; transition: all 0.2s;" title="Desbloquear para edição" onmouseover="this.style.background='var(--gray-200)'" onmouseout="this.style.background='none'">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -3889,6 +3905,47 @@ function loadConfigForm() {
   }
 }
 
+function toggleBlingLock(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isLocked = input.hasAttribute('readonly');
+  const svg = btn.querySelector('svg');
+  
+  if (isLocked) {
+    input.removeAttribute('readonly');
+    input.type = 'text';
+    input.style.background = 'white';
+    input.style.color = '#1f2937';
+    input.style.cursor = 'text';
+    input.style.borderColor = 'var(--pink)';
+    btn.style.color = 'var(--pink)';
+    btn.title = 'Bloquear e ocultar campo';
+    if (svg) {
+      svg.innerHTML = `
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+      `;
+    }
+    toast('🔓 Campo desbloqueado e visível para edição!', 'info');
+  } else {
+    input.setAttribute('readonly', 'true');
+    input.type = 'password';
+    input.style.background = 'var(--gray-100)';
+    input.style.color = 'var(--gray-600)';
+    input.style.cursor = 'not-allowed';
+    input.style.borderColor = 'var(--gray-300)';
+    btn.style.color = 'var(--gray-500)';
+    btn.title = 'Desbloquear para edição';
+    if (svg) {
+      svg.innerHTML = `
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      `;
+    }
+    toast('🔒 Campo bloqueado e oculto com sucesso!', 'success');
+  }
+}
+
 // ── TOAST ──
 function toast(msg, type='info') {
   const icons = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️' };
@@ -4020,6 +4077,15 @@ function connectBling() {
     document.getElementById('bling-status-text').textContent = 'Conectado ✓';
     document.getElementById('bling-conn-text').textContent = 'Conectado ✓';
     document.getElementById('bling-conn-text').style.color = 'var(--success)';
+
+    // Auto-lock Bling inputs after connecting
+    ['bl-access-token', 'sheets-url'].forEach(id => {
+      const input = document.getElementById(id);
+      if (input && !input.hasAttribute('readonly')) {
+        const btn = document.getElementById(id + '-lock-btn');
+        if (btn) toggleBlingLock(id, btn);
+      }
+    });
 
     addIntegrationLog('Conexão Bling e ponte Apps Script estabelecida com sucesso! API v3 operante.', 'system');
     toast('Bling conectado com sucesso!', 'success');
