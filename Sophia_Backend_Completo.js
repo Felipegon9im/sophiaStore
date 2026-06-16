@@ -306,6 +306,19 @@ function doPost(e) {
       }
     }
     
+    // =====================================
+    // 3. SINCRONIZAR PRODUTO NO BLING
+    // =====================================
+    if (requestData.action === 'syncBlingProduct') {
+      const product = requestData.product;
+      const blingRes = pushProductToBling(product);
+      if (blingRes && blingRes.id) {
+        return jsonResponse({ success: true, blingId: blingRes.id });
+      } else {
+        return jsonResponse({ success: false, error: "Falha ao enviar produto ao Bling" });
+      }
+    }
+    
     return jsonResponse({ success: false, error: "Ação POST não suportada." });
   } catch (err) {
     return jsonResponse({ success: false, error: err.message });

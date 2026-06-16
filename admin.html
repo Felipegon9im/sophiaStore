@@ -2937,6 +2937,31 @@ async function syncToSheets(product) {
   if (!config.supabaseConnected || !supabaseClient) {
     return;
   }
+  
+  // Sincronizar com Bling antes de gravar no Supabase para obter o bling_id
+  if (config.blingConnected && config.appsScriptUrl && !product.blingId) {
+    try {
+      const res = await fetch(config.appsScriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'syncBlingProduct', product })
+      });
+      const data = await res.json();
+      if (data.success && data.blingId) {
+        product.blingId = String(data.blingId);
+        // Atualiza a lista local do produto com o Bling ID
+        const localProd = products.find(p => p.id === product.id);
+        if (localProd) {
+          localProd.blingId = String(data.blingId);
+          saveProductsLocal();
+          renderProducts();
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao sincronizar produto com Bling:", e);
+    }
+  }
+
   try {
     const payload = {
       id: parseInt(product.id),
