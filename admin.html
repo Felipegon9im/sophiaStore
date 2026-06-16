@@ -1474,9 +1474,13 @@
             <label>Instagram</label>
             <input type="text" id="store-instagram" placeholder="@sophiaelegancestore">
           </div>
-          <div class="form-group" style="margin-bottom:1.25rem">
+          <div class="form-group" style="margin-bottom:1rem">
             <label>Chave PIX (Para Recebimentos)</label>
             <input type="text" id="store-pix" placeholder="CNPJ, E-mail, Celular ou Aleatória">
+          </div>
+          <div class="form-group" style="margin-bottom:1.25rem">
+            <label>Link da Vitrine Web (Ex: https://sophiaelegance.com)</label>
+            <input type="text" id="store-url" placeholder="https://sophiaelegancestore.com">
           </div>
           <div class="form-group" style="margin-bottom:1.25rem">
             <label>Taxa da Máquina (Cartão de Crédito) - %</label>
@@ -2269,6 +2273,7 @@ function renderProducts(filter='') {
       </td>
       <td>
         <div style="display:flex;gap:0.35rem">
+          <button class="btn btn-sm btn-secondary btn-icon" style="color:#25D366" title="Compartilhar" onclick="openWpShareModal('product',${p.id})">💬</button>
           <button class="btn btn-sm btn-secondary btn-icon" title="Editar" onclick="openModal('edit',${p.id})">✏️</button>
           <button class="btn btn-sm btn-secondary btn-icon" title="Duplicar" onclick="duplicateProduct(${p.id})">📋</button>
           <button class="btn btn-sm btn-secondary btn-icon" title="Excluir" onclick="deleteProduct(${p.id})" style="color:var(--danger)">🗑</button>
@@ -3502,8 +3507,9 @@ function saveStoreInfo() {
   const instagram = document.getElementById('store-instagram').value.trim();
   const pix = document.getElementById('store-pix').value.trim();
   const ccFee = document.getElementById('store-cc-fee').value.trim();
+  const url = document.getElementById('store-url').value.trim();
   
-  storeInfo = { name, address, email, instagram, pix, ccFee };
+  storeInfo = { name, address, email, instagram, pix, ccFee, url };
   localStorage.setItem('sophiaStoreInfo', JSON.stringify(storeInfo));
   toast('✅ Informações da loja salvas!', 'success');
 }
@@ -3517,6 +3523,7 @@ function loadStoreInfoUI() {
     document.getElementById('store-instagram').value = storeInfo.instagram || '';
     document.getElementById('store-pix').value = storeInfo.pix || '';
     document.getElementById('store-cc-fee').value = storeInfo.ccFee || '';
+    document.getElementById('store-url').value = storeInfo.url || '';
   }
 }
 
@@ -4390,6 +4397,7 @@ function renderCategories() {
           <span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:white;font-weight:400">${c.name}</span>
         </div>
         <div style="position:absolute;top:0.75rem;right:0.75rem;display:flex;gap:0.4rem">
+          <button onclick="openWpShareModal('category',${c.id})" class="btn btn-sm btn-secondary btn-icon" style="color:#25D366" title="Compartilhar">💬</button>
           <button onclick="openCatModal(${c.id})" class="btn btn-sm btn-secondary btn-icon" title="Editar">✏️</button>
           <button onclick="deleteCategory(${c.id})" class="btn btn-sm btn-secondary btn-icon" style="color:var(--danger)" title="Excluir">🗑</button>
         </div>
@@ -5102,6 +5110,232 @@ function timerCheckScheduledCampaigns() {
   }
 }
 
+
+// ── WHATSAPP SHARE CAMPAIGNS ──
+let currentShareType = '';
+let currentShareId = null;
+const DEFAULT_TEMPLATES = {
+  custom: "",
+  launch: "Olá {NOME_CLIENTE}! 🌸 Olha esse lançamento maravilhoso da Sophia Elegance Store: *{NOME_PRODUTO}* por apenas *R$ {PRECO_PRODUTO}*! ✨ Confira mais detalhes e fotos aqui: {LINK_PRODUTO}",
+  promo: "Oi {NOME_CLIENTE}! 💕 Temos uma promoção incrível para você: *{NOME_PRODUTO}* com preço especial de *R$ {PRECO_PRODUTO}*! 🛍️ Garanta a sua peça agora mesmo no catálogo: {LINK_PRODUTO}",
+  category: "Olá! 🎀 Nova coleção de *{NOME_CATEGORIA}* disponível na Sophia Elegance Store! Confere as peças e novidades no nosso catálogo online: {LINK_CATEGORIA} 🌸"
+};
+
+function openWpShareModal(type, id) {
+  currentShareType = type;
+  currentShareId = id;
+  
+  let item = null;
+  const selectCust = document.getElementById('wp-share-customer-select');
+  const templateSelect = document.getElementById('wp-share-template-select');
+  
+  if (type === 'product') {
+    item = products.find(p => p.id === id);
+    if (!item) return;
+    document.getElementById('wp-share-preview-img').src = item.imgUrl || '';
+    document.getElementById('wp-share-preview-title').textContent = item.name;
+    document.getElementById('wp-share-preview-detail').textContent = `R$ ${item.price.toFixed(2).replace('.', ',')}`;
+    
+    // Show product templates
+    templateSelect.innerHTML = `
+      <option value="custom">Escrever Mensagem Personalizada...</option>
+      <option value="launch">Lançamento de Produto 🌸</option>
+      <option value="promo">Promoção Especial 🛍️</option>
+    `;
+  } else {
+    item = categories.find(c => c.id === id);
+    if (!item) return;
+    document.getElementById('wp-share-preview-img').src = item.imgUrl || '';
+    document.getElementById('wp-share-preview-title').textContent = item.name;
+    const prodCount = products.filter(p => p.cat === item.name).length;
+    document.getElementById('wp-share-preview-detail').textContent = `${prodCount} produto(s)`;
+    
+    // Show category templates
+    templateSelect.innerHTML = `
+      <option value="custom">Escrever Mensagem Personalizada...</option>
+      <option value="category">Novidades de Categoria 🎀</option>
+    `;
+  }
+  
+  // Reset values
+  document.getElementById('wp-share-message').value = '';
+  templateSelect.value = 'custom';
+  
+  // Populate customers
+  selectCust.innerHTML = '<option value="">Selecione um cliente...</option>' + 
+    customers.map(c => `<option value="${c.whatsapp.replace(/\D/g,'')}" data-name="${escapeHTML(c.name)}">${escapeHTML(c.name)} (${escapeHTML(c.whatsapp)})</option>`).join('');
+  
+  // Reset recipient
+  document.querySelectorAll('input[name="recipient-type"]').forEach(r => {
+    if (r.value === 'customer') r.checked = true;
+  });
+  toggleRecipientType('customer');
+
+  // Load groups
+  const selectGroup = document.getElementById('wp-share-group-select');
+  selectGroup.innerHTML = '<option value="">Carregando grupos...</option>';
+  if (window.whatsappAPI) {
+    window.whatsappAPI.getGroups().then(groups => {
+      if (groups && groups.length > 0) {
+        selectGroup.innerHTML = '<option value="">Selecione um grupo...</option>' +
+          groups.map(g => `<option value="${g.id}">${escapeHTML(g.name)}</option>`).join('');
+      } else {
+        selectGroup.innerHTML = '<option value="">Nenhum grupo encontrado (WhatsApp desconectado?)</option>';
+      }
+    }).catch(err => {
+      selectGroup.innerHTML = '<option value="">Erro ao carregar grupos</option>';
+    });
+  } else {
+    selectGroup.innerHTML = '<option value="">WhatsApp não disponível</option>';
+  }
+  
+  document.getElementById('wp-share-modal').style.display = 'flex';
+}
+
+function closeWpShareModal() {
+  document.getElementById('wp-share-modal').style.display = 'none';
+  currentShareId = null;
+}
+
+function toggleRecipientType(type) {
+  document.getElementById('wp-share-customer-select').style.display = type === 'customer' ? 'block' : 'none';
+  document.getElementById('wp-share-group-select').style.display = type === 'group' ? 'block' : 'none';
+  document.getElementById('wp-share-manual-input').style.display = type === 'manual' ? 'block' : 'none';
+}
+
+function applyShareTemplate() {
+  const tmplKey = document.getElementById('wp-share-template-select').value;
+  const textarea = document.getElementById('wp-share-message');
+  
+  if (tmplKey === 'custom') {
+    textarea.value = '';
+    return;
+  }
+  
+  const rawTmpl = DEFAULT_TEMPLATES[tmplKey] || '';
+  let msg = rawTmpl;
+  
+  // Get website URL from config
+  const storeInfoLocal = JSON.parse(localStorage.getItem('sophiaStoreInfo')) || {};
+  const storefrontUrl = storeInfoLocal.url || 'https://sophiaelegancestore.com';
+
+  if (currentShareType === 'product') {
+    const p = products.find(x => x.id === currentShareId);
+    if (p) {
+      msg = msg.replace(/{NOME_PRODUTO}/g, p.name);
+      const priceText = p.salePrice ? p.salePrice.toFixed(2).replace('.', ',') : p.price.toFixed(2).replace('.', ',');
+      msg = msg.replace(/{PRECO_PRODUTO}/g, priceText);
+      msg = msg.replace(/{LINK_PRODUTO}/g, storefrontUrl + '?p=' + p.id);
+    }
+  } else {
+    const c = categories.find(x => x.id === currentShareId);
+    if (c) {
+      msg = msg.replace(/{NOME_CATEGORIA}/g, c.name);
+      msg = msg.replace(/{LINK_CATEGORIA}/g, storefrontUrl + '?c=' + encodeURIComponent(c.name));
+    }
+  }
+  
+  // Replace customer name if selected
+  const recipientType = document.querySelector('input[name="recipient-type"]:checked').value;
+  if (recipientType === 'customer') {
+    const selectCust = document.getElementById('wp-share-customer-select');
+    if (selectCust.selectedIndex > 0) {
+      const opt = selectCust.options[selectCust.selectedIndex];
+      const cName = opt.getAttribute('data-name') || '';
+      msg = msg.replace(/{NOME_CLIENTE}/g, cName);
+    }
+  }
+  
+  textarea.value = msg;
+}
+
+function sendWpShareMessage() {
+  if (!window.whatsappAPI) {
+    toast('❌ Serviço de WhatsApp não está ativo.', 'error');
+    return;
+  }
+  
+  const recipientType = document.querySelector('input[name="recipient-type"]:checked').value;
+  let recipient = '';
+  let customerName = 'Amiga';
+  
+  if (recipientType === 'customer') {
+    const selectCust = document.getElementById('wp-share-customer-select');
+    if (selectCust.selectedIndex === 0) {
+      toast('Por favor, selecione um cliente!', 'warning');
+      return;
+    }
+    recipient = selectCust.value;
+    const opt = selectCust.options[selectCust.selectedIndex];
+    customerName = opt.getAttribute('data-name') || '';
+  } else if (recipientType === 'group') {
+    const selectGroup = document.getElementById('wp-share-group-select');
+    if (selectGroup.selectedIndex === 0) {
+      toast('Por favor, selecione um grupo!', 'warning');
+      return;
+    }
+    recipient = selectGroup.value;
+  } else {
+    recipient = document.getElementById('wp-share-manual-input').value.trim();
+    if (!recipient) {
+      toast('Por favor, digite o número do WhatsApp!', 'warning');
+      return;
+    }
+  }
+  
+  let msgText = document.getElementById('wp-share-message').value.trim();
+  if (!msgText) {
+    toast('Por favor, escreva a mensagem!', 'warning');
+    return;
+  }
+  
+  // Replace customer name template placeholder
+  msgText = msgText.replace(/{NOME_CLIENTE}/g, customerName);
+  
+  let item = null;
+  if (currentShareType === 'product') {
+    item = products.find(p => p.id === currentShareId);
+  } else {
+    item = categories.find(c => c.id === currentShareId);
+  }
+  if (!item) return;
+
+  const btn = document.getElementById('wp-share-send-btn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = 'Enviando...';
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+  
+  const data = {
+    numbers: [recipient],
+    message: msgText,
+    imageUrl: item.imgUrl || ''
+  };
+  
+  // Send via IPC
+  window.whatsappAPI.sendCampaign(data);
+  toast('🚀 Disparando compartilhamento no WhatsApp...', 'info');
+  
+  // Success callback simulation / timeout
+  setTimeout(() => {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    toast('✅ Mensagem enviada para a fila do WhatsApp!', 'success');
+    closeWpShareModal();
+  }, 1500);
+}
+
+// Add event listener when customer select is changed to auto replace {NOME_CLIENTE}
+document.addEventListener('DOMContentLoaded', () => {
+  const selectCust = document.getElementById('wp-share-customer-select');
+  if (selectCust) {
+    selectCust.addEventListener('change', () => {
+      applyShareTemplate();
+    });
+  }
+});
+
 // ── INIT ──
 (function init() {
   // 1. Carregar produtos e pedidos do localStorage (persistência entre reloads)
@@ -5165,5 +5399,82 @@ function timerCheckScheduledCampaigns() {
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<!-- WhatsApp Share Modal -->
+<div id="wp-share-modal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;" onclick="if(event.target===this) closeWpShareModal()">
+  <div class="panel" style="width: 90%; max-width: 500px; border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: none;">
+    <div class="panel-header" style="background: var(--gray-50); padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: var(--dark); font-weight: 600; margin: 0;">Compartilhar via WhatsApp</h3>
+      <button class="btn-close" onclick="closeWpShareModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--gray-400);">&times;</button>
+    </div>
+    
+    <div class="panel-body" style="padding: 1.5rem;">
+      <!-- Product / Category Preview Summary -->
+      <div style="display: flex; gap: 1rem; align-items: center; padding: 0.75rem; background: var(--gray-50); border-radius: 8px; margin-bottom: 1.25rem; border: 1px solid var(--gray-100);">
+        <img id="wp-share-preview-img" src="" style="width: 50px; height: 60px; object-fit: cover; border-radius: 4px;" onerror="this.style.background='var(--pink-pale)'">
+        <div>
+          <div id="wp-share-preview-title" style="font-weight: 600; font-size: 0.9rem; color: var(--dark);">Nome do Item</div>
+          <div id="wp-share-preview-detail" style="font-size: 0.75rem; color: var(--gray-500);">Preço / Categoria</div>
+        </div>
+      </div>
+      
+      <!-- Recipient Select: Customers or Groups -->
+      <div class="form-group" style="margin-bottom: 1rem;">
+        <label style="font-weight: 600; font-size: 0.8rem; margin-bottom: 0.4rem; display: block;">Selecione o Destinatário</label>
+        <div style="display: flex; gap: 0.85rem; margin-bottom: 0.65rem;">
+          <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem; cursor: pointer; font-weight: 500;">
+            <input type="radio" name="recipient-type" value="customer" checked onclick="toggleRecipientType('customer')"> Cliente Salvo
+          </label>
+          <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem; cursor: pointer; font-weight: 500;">
+            <input type="radio" name="recipient-type" value="group" onclick="toggleRecipientType('group')"> Grupo do WhatsApp
+          </label>
+          <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem; cursor: pointer; font-weight: 500;">
+            <input type="radio" name="recipient-type" value="manual" onclick="toggleRecipientType('manual')"> Inserir Manual
+          </label>
+        </div>
+        
+        <!-- Dropdown for Customers -->
+        <select id="wp-share-customer-select" style="width: 100%; height: 38px; border-radius: 6px; border: 1px solid var(--gray-300); padding: 0 0.5rem; font-size: 0.85rem; font-family: inherit;">
+          <option value="">Selecione um cliente...</option>
+        </select>
+        
+        <!-- Dropdown for Groups -->
+        <select id="wp-share-group-select" style="width: 100%; height: 38px; border-radius: 6px; border: 1px solid var(--gray-300); padding: 0 0.5rem; font-size: 0.85rem; font-family: inherit; display: none;">
+          <option value="">Selecione um grupo...</option>
+        </select>
+        
+        <!-- Input for Manual Phone Number -->
+        <input type="text" id="wp-share-manual-input" placeholder="Telefone com DDD (ex: 5548999999999)" style="width: 100%; height: 38px; border-radius: 6px; border: 1px solid var(--gray-300); padding: 0 0.75rem; font-size: 0.85rem; font-family: inherit; display: none;">
+      </div>
+      
+      <!-- Template Select -->
+      <div class="form-group" style="margin-bottom: 1rem;">
+        <label style="font-weight: 600; font-size: 0.8rem; margin-bottom: 0.4rem; display: block;">Template da Mensagem</label>
+        <select id="wp-share-template-select" onchange="applyShareTemplate()" style="width: 100%; height: 38px; border-radius: 6px; border: 1px solid var(--gray-300); padding: 0 0.5rem; font-size: 0.85rem; font-family: inherit;">
+          <option value="custom">Escrever Mensagem Personalizada...</option>
+          <option value="launch">Lançamento de Produto 🌸</option>
+          <option value="promo">Promoção Especial 🛍️</option>
+          <option value="category">Novidades de Categoria 🎀</option>
+        </select>
+      </div>
+      
+      <!-- Customized message text area -->
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label style="font-weight: 600; font-size: 0.8rem; margin-bottom: 0.4rem; display: block;">Mensagem de Envio</label>
+        <textarea id="wp-share-message" style="width: 100%; min-height: 100px; border-radius: 6px; border: 1px solid var(--gray-300); padding: 0.5rem 0.75rem; font-size: 0.85rem; font-family: inherit; line-height: 1.5; resize: vertical;" placeholder="Personalize sua mensagem de compartilhamento..."></textarea>
+        <span style="font-size: 0.65rem; color: var(--gray-400);">Dica: Use {NOME_CLIENTE} para enviar com o nome da cliente.</span>
+      </div>
+      
+      <!-- Action buttons -->
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="closeWpShareModal()">Cancelar</button>
+        <button class="btn btn-success" id="wp-share-send-btn" onclick="sendWpShareMessage()" style="background:#25D366; border-color:#25D366; color:white; display:flex; align-items:center; gap:6px;">
+          🚀 Enviar no WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

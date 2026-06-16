@@ -136,7 +136,7 @@ function setupWhatsAppIPC() {
 
   ipcMain.on('whatsapp-send-campaign', async (event, data) => {
     if (!whatsappClient) return;
-    const { numbers, message, imagePath } = data;
+    const { numbers, message, imagePath, imageUrl } = data;
     let successCount = 0;
     
     let media = null;
@@ -146,6 +146,12 @@ function setupWhatsAppIPC() {
         media = new MessageMedia('application/pdf', base64data, data.fileName);
       } catch (e) {
         console.error("Erro ao ler PDF base64", e);
+      }
+    } else if (imageUrl) {
+      try {
+        media = await getMessageMediaFromUrl(imageUrl);
+      } catch (e) {
+        console.error("Erro ao baixar imagem da URL", e);
       }
     } else if (imagePath) {
       try {
@@ -203,6 +209,28 @@ function setupWhatsAppIPC() {
       console.error(err);
       return [];
     }
+  });
+}
+
+async function getMessageMediaFromUrl(url) {
+  return new Promise((resolve, reject) => {
+    const protocol = url.startsWith('https') ? https : http;
+    const req = protocol.get(url, (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`Failed to fetch image: status ${res.statusCode}`));
+        return;
+      }
+      const data = [];
+      res.on('data', chunk => data.push(chunk));
+      res.on('end', () => {
+        const buffer = Buffer.concat(data);
+        const mime = res.headers['content-type'] || 'image/jpeg';
+        const base64 = buffer.toString('base64');
+        resolve(new MessageMedia(mime, base64, 'image.jpg'));
+      });
+      res.on('error', err => reject(err));
+    });
+    req.on('error', err => reject(err));
   });
 }
 
