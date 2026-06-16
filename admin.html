@@ -3134,6 +3134,42 @@ async function loadFromSheets(silent = false) {
       renderCustomers();
     }
 
+    // 5. Carrega fornecedores
+    const { data: sData, error: sError } = await supabaseClient.from('fornecedores').select('*');
+    if (sError) throw sError;
+    if (sData) {
+      suppliers = sData.map(s => ({
+        id: s.id,
+        name: s.name,
+        doc: s.doc || '',
+        phone: s.phone || '',
+        email: s.email || '',
+        category: s.category || '',
+        status: s.status || 'Ativo',
+        obs: s.obs || ''
+      }));
+      saveSuppliersLocal();
+      renderSuppliers();
+    }
+
+    // 6. Carrega configuracoes da loja (Caixa)
+    const { data: confData, error: confError } = await supabaseClient.from('configuracao_loja').select('*').eq('id', 1);
+    if (confError) throw confError;
+    if (confData && confData.length > 0) {
+      const conf = confData[0];
+      storeInfo = {
+        name: conf.name || 'Sophia Elegance Store',
+        address: conf.address || '',
+        email: conf.email || '',
+        instagram: conf.instagram || '',
+        pix: conf.pix || '',
+        ccFee: conf.cc_fee ? String(conf.cc_fee) : '0',
+        url: conf.url || ''
+      };
+      localStorage.setItem('sophiaStoreInfo', JSON.stringify(storeInfo));
+      loadStoreInfoUI();
+    }
+
     renderDashboard();
     if (!silent) toast('✅ Dados sincronizados com o Supabase!', 'success');
   } catch (e) {
@@ -3201,9 +3237,91 @@ async function syncSheets() {
       if (oError) throw oError;
     }
 
+    // Sincronizar fornecedores
+    const suppliersPayload = suppliers.map(s => ({
+      id: parseInt(s.id),
+      name: s.name,
+      doc: s.doc || '',
+      phone: s.phone || '',
+      email: s.email || '',
+      category: s.category || '',
+      status: s.status || 'Ativo',
+      obs: s.obs || ''
+    }));
+    if (suppliersPayload.length > 0) {
+      const { error: sError } = await supabaseClient.from('fornecedores').upsert(suppliersPayload);
+      if (sError) throw sError;
+    }
+
+    // Sincronizar configuracao da loja
+    if (storeInfo) {
+      const { error: confError } = await supabaseClient.from('configuracao_loja').upsert([{
+        id: 1,
+        name: storeInfo.name,
+        address: storeInfo.address || '',
+        email: storeInfo.email || '',
+        instagram: storeInfo.instagram || '',
+        pix: storeInfo.pix || '',
+        cc_fee: parseFloat(storeInfo.ccFee) || 0,
+        url: storeInfo.url || ''
+      }]);
+      if (confError) throw confError;
+    }
+
     toast('✅ Sincronização completa no Supabase!', 'success');
   } catch (e) {
     toast('Erro ao sincronizar com Supabase: ' + e.message, 'error');
+  }
+}
+
+// ── SUPABASE FORNECEDORES & CONFIG HELPERS ──
+async function syncSupplierToSupabase(s) {
+  if (!config.supabaseConnected || !supabaseClient) return;
+  try {
+    const payload = {
+      id: parseInt(s.id),
+      name: s.name,
+      doc: s.doc || '',
+      phone: s.phone || '',
+      email: s.email || '',
+      category: s.category || '',
+      status: s.status || 'Ativo',
+      obs: s.obs || ''
+    };
+    const { error } = await supabaseClient.from('fornecedores').upsert([payload]);
+    if (error) throw error;
+  } catch (e) {
+    console.error("Erro ao sincronizar fornecedor no Supabase:", e);
+  }
+}
+
+async function deleteSupplierFromSupabase(id) {
+  if (!config.supabaseConnected || !supabaseClient) return;
+  try {
+    const { error } = await supabaseClient.from('fornecedores').delete().eq('id', parseInt(id));
+    if (error) throw error;
+  } catch (e) {
+    console.error("Erro ao deletar fornecedor no Supabase:", e);
+  }
+}
+
+async function syncStoreInfoToSupabase(info) {
+  if (!config.supabaseConnected || !supabaseClient) return;
+  try {
+    const payload = {
+      id: 1,
+      name: info.name,
+      address: info.address || '',
+      email: info.email || '',
+      instagram: info.instagram || '',
+      pix: info.pix || '',
+      cc_fee: parseFloat(info.ccFee) || 0,
+      url: info.url || ''
+    };
+    const { error } = await supabaseClient.from('configuracao_loja').upsert([payload]);
+    if (error) throw error;
+  } catch (e) {
+    console.error("Erro ao sincronizar configuracao no Supabase:", e);
   }
 }
 
@@ -3672,6 +3790,7 @@ function saveStoreInfo() {
   
   storeInfo = { name, address, email, instagram, pix, ccFee, url };
   localStorage.setItem('sophiaStoreInfo', JSON.stringify(storeInfo));
+  syncStoreInfoToSupabase(storeInfo);
   toast('✅ Informações da loja salvas!', 'success');
 }
 
@@ -4803,11 +4922,13 @@ function saveSupplier() {
     const idx = suppliers.findIndex(x => x.id == editId);
     if (idx > -1) {
       suppliers[idx] = { ...suppliers[idx], ...newSup };
+      syncSupplierToSupabase(suppliers[idx]);
       toast('Fornecedor atualizado!', 'success');
     }
   } else {
     newSup.id = Date.now();
     suppliers.push(newSup);
+    syncSupplierToSupabase(newSup);
     toast('Fornecedor adicionado!', 'success');
   }
 
@@ -4818,6 +4939,7 @@ function saveSupplier() {
 
 function deleteSupplier(id) {
   if (!confirm('Deseja realmente excluir este fornecedor?')) return;
+  deleteSupplierFromSupabase(id);
   suppliers = suppliers.filter(x => x.id != id);
   saveSuppliersLocal();
   renderSuppliers();
