@@ -325,6 +325,56 @@ function doPost(e) {
   }
 }
 
+// Cria ou Atualiza produto no Bling V3
+function pushProductToBling(product) {
+  const token = getValidBlingToken();
+  if (!token) return null;
+  
+  const finalPrice = product.salePrice ? product.salePrice : product.price;
+  
+  const payload = {
+    "nome": product.name,
+    "codigo": product.sku || String(product.id),
+    "preco": parseFloat(finalPrice) || 0,
+    "tipo": "P",
+    "situacao": product.status === "Ativo" ? "A" : "I",
+    "formato": "S"
+  };
+  
+  let url = "https://api.bling.com.br/v3/produtos";
+  let method = "POST";
+  
+  if (product.blingId) {
+    url += "/" + product.blingId;
+    method = "PUT";
+  }
+  
+  try {
+    const response = UrlFetchApp.fetch(url, {
+      "method": method,
+      "headers": {
+        "Authorization": "Bearer " + token,
+        "Accept": "1.0",
+        "Content-Type": "application/json"
+      },
+      "payload": JSON.stringify(payload),
+      "muteHttpExceptions": true
+    });
+    
+    const resText = response.getContentText();
+    if (response.getResponseCode() === 201 || response.getResponseCode() === 200) {
+      const data = JSON.parse(resText);
+      return data.data; // { id: 12345 }
+    } else {
+      Logger.log("Erro ao pushProductToBling: " + resText);
+      return null;
+    }
+  } catch (e) {
+    Logger.log("Exception ao pushProductToBling: " + e.toString());
+    return null;
+  }
+}
+
 // ==========================================
 // MÉTODOS OAUTH E REFRESH BLING
 // ==========================================

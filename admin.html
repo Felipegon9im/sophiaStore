@@ -2466,23 +2466,34 @@ function saveCustomer() {
     const idx = parseInt(editIndex);
     if (idx >= 0 && idx < customers.length) {
       const oldName = customers[idx].name;
+      
+      if (oldName !== name) {
+        deleteCustomerFromSupabase(oldName);
+      }
+      
       customers[idx].name = name;
       customers[idx].whatsapp = whatsapp;
       customers[idx].email = email;
       
       if (oldName !== name) {
         orders.forEach(o => {
-          if (o.customer === oldName) o.customer = name;
+          if (o.customer === oldName) {
+            o.customer = name;
+            syncOrderToSupabase(o);
+          }
         });
         saveOrdersLocal();
         renderOrders();
       }
+      syncCustomerToSupabase(customers[idx]);
       toast('Cliente atualizado com sucesso!', 'success');
     }
   } else {
-    customers.push({
+    const newCust = {
       name, email, whatsapp, orders: 0, total: 0, last: '-', carnes: []
-    });
+    };
+    customers.push(newCust);
+    syncCustomerToSupabase(newCust);
     toast('Cliente cadastrado com sucesso!', 'success');
   }
   
@@ -2495,6 +2506,7 @@ function deleteCustomer(index) {
   if (index >= 0 && index < customers.length) {
     const c = customers[index];
     if (confirm(`Tem certeza que deseja excluir o cliente "${c.name}"?`)) {
+      deleteCustomerFromSupabase(c.name);
       customers.splice(index, 1);
       saveCustomersLocal();
       renderCustomers();
@@ -3098,6 +3110,30 @@ async function loadFromSheets(silent = false) {
       renderOrders();
     }
 
+    // 4. Carrega clientes
+    const { data: cCustData, error: cCustError } = await supabaseClient.from('clientes').select('*');
+    if (cCustError) throw cCustError;
+    if (cCustData) {
+      customers = cCustData.map(c => ({
+        name: c.name,
+        email: c.email || '',
+        whatsapp: c.whatsapp || '',
+        orders: 0,
+        total: 0,
+        last: c.last || '-',
+        carnes: []
+      }));
+      
+      // Calcular compras e total do cliente a partir dos pedidos
+      customers.forEach(c => {
+        const clientOrders = orders.filter(o => o.customer.toLowerCase() === c.name.toLowerCase());
+        c.orders = clientOrders.length;
+        c.total = clientOrders.reduce((sum, o) => sum + o.total, 0);
+      });
+      saveCustomersLocal();
+      renderCustomers();
+    }
+
     renderDashboard();
     if (!silent) toast('✅ Dados sincronizados com o Supabase!', 'success');
   } catch (e) {
@@ -3144,9 +3180,100 @@ async function syncSheets() {
     const { error: cError } = await supabaseClient.from('categorias').upsert(categoriesPayload);
     if (cError) throw cError;
 
+    // Sincronizar clientes
+    for (const c of customers) {
+      await syncCustomerToSupabase(c);
+    }
+
+    // Sincronizar pedidos
+    const ordersPayload = orders.map(o => ({
+      id: o.id,
+      number: o.number || o.id.replace('#', ''),
+      customer: o.customer,
+      total: parseFloat(o.total) || 0,
+      status: o.status || 'Aberto',
+      source: o.source || 'Bling ERP',
+      products: o.products || ''
+    }));
+    
+    if (ordersPayload.length > 0) {
+      const { error: oError } = await supabaseClient.from('pedidos').upsert(ordersPayload);
+      if (oError) throw oError;
+    }
+
     toast('✅ Sincronização completa no Supabase!', 'success');
   } catch (e) {
     toast('Erro ao sincronizar com Supabase: ' + e.message, 'error');
+  }
+}
+
+// ── SUPABASE CLIENTE & PEDIDO HELPERS ──
+async function syncCustomerToSupabase(customer) {
+  if (!config.supabaseConnected || !supabaseClient) return;
+  try {
+    const payload = {
+      name: customer.name,
+      whatsapp: customer.whatsapp || '',
+      email: customer.email || '',
+      last: customer.last || '-'
+    };
+    
+    const { data, error: selectError } = await supabaseClient
+      .from('clientes')
+      .select('id')
+      .eq('name', customer.name);
+      
+    if (selectError) throw selectError;
+    
+    if (data && data.length > 0) {
+      const { error } = await supabaseClient
+        .from('clientes')
+        .update(payload)
+        .eq('id', data[0].id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabaseClient
+        .from('clientes')
+        .insert([payload]);
+      if (error) throw error;
+    }
+  } catch (e) {
+    console.error("Erro ao sincronizar cliente no Supabase:", e);
+  }
+}
+
+async function deleteCustomerFromSupabase(name) {
+  if (!config.supabaseConnected || !supabaseClient) return;
+  try {
+    const { error } = await supabaseClient
+      .from('clientes')
+      .delete()
+      .eq('name', name);
+    if (error) throw error;
+  } catch (e) {
+    console.error("Erro ao deletar cliente no Supabase:", e);
+  }
+}
+
+async function syncOrderToSupabase(order) {
+  if (!config.supabaseConnected || !supabaseClient) return;
+  try {
+    const payload = {
+      id: order.id,
+      number: order.number || order.id.replace('#', ''),
+      customer: order.customer,
+      total: parseFloat(order.total) || 0,
+      status: order.status || 'Aberto',
+      source: order.source || 'Caixa',
+      products: order.products || ''
+    };
+    
+    const { error } = await supabaseClient
+      .from('pedidos')
+      .upsert([payload]);
+    if (error) throw error;
+  } catch (e) {
+    console.error("Erro ao sincronizar pedido no Supabase:", e);
   }
 }
 
@@ -4278,6 +4405,7 @@ async function finalizePosSale(carneSchedule = null) {
     
     saveCustomersLocal();
     renderCustomers();
+    syncCustomerToSupabase(targetCustomer);
   }
   
   const newOrder = {
@@ -4293,6 +4421,7 @@ async function finalizePosSale(carneSchedule = null) {
   
   orders.unshift(newOrder);
   saveOrdersLocal();
+  syncOrderToSupabase(newOrder);
   
   // 3. Print thermal receipt data fields mapping
   document.getElementById('r-order-id').textContent = orderId;
