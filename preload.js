@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('whatsappAPI', {
 });
 
 contextBridge.exposeInMainWorld('systemAPI', {
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   downloadUpdate: (url) => ipcRenderer.send('system-download-update', { url }),
   installUpdate: (filePath) => ipcRenderer.send('system-install-update', { filePath }),
   onUpdateProgress: (callback) => ipcRenderer.on('system-update-progress', (event, data) => callback(data)),

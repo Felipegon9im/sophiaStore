@@ -3950,7 +3950,7 @@ function loadConfigForm() {
   const elUpdateUrl = document.getElementById('update-url-config');
   if (elUpdateUrl) elUpdateUrl.value = updateUrl;
   const elVer = document.getElementById('current-version-text');
-  if (elVer) elVer.textContent = 'v1.0.0';
+  if (elVer) elVer.textContent = 'v' + appVersion;
   
   if (localStorage.getItem('supabaseConnected') === 'true') {
     document.getElementById('supabase-dot').classList.replace('disconnected','connected');
@@ -5484,6 +5484,20 @@ function exportToPDF(type) {
 }
 
 // ── SYSTEM UPDATE LOGIC ──
+let appVersion = '1.0.0';
+
+async function initVersion() {
+  if (window.systemAPI && window.systemAPI.getAppVersion) {
+    try {
+      appVersion = await window.systemAPI.getAppVersion();
+    } catch(e) {
+      console.error("Erro ao obter versão do app:", e);
+    }
+  }
+  const elVer = document.getElementById('current-version-text');
+  if (elVer) elVer.textContent = 'v' + appVersion;
+}
+
 function checkSystemUpdate() {
   const url = document.getElementById('update-url-config').value.trim();
   if (!url) {
@@ -5500,7 +5514,7 @@ function checkSystemUpdate() {
       return res.json();
     })
     .then(data => {
-      const currentVersion = '1.0.0';
+      const currentVersion = appVersion;
       if (!data.version || !data.url) {
         toast('❌ Arquivo de versão inválido!', 'error');
         return;
@@ -6192,6 +6206,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── INIT ──
 (function init() {
+  // 0. Inicializar versão do app
+  initVersion();
+  
   // 1. Carregar produtos e pedidos do localStorage (persistência entre reloads)
   loadProductsLocal();
   loadOrdersLocal();

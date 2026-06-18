@@ -300,6 +300,10 @@ function downloadFile(url, dest, onProgress, onSuccess, onError) {
 }
 
 function setupUpdaterIPC() {
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+  });
+
   ipcMain.on('system-download-update', (event, { url }) => {
     const tempPath = path.join(os.tmpdir(), 'SophiaStoreSetup.exe');
     if (fs.existsSync(tempPath)) {
