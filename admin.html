@@ -2163,6 +2163,31 @@
           <input type="text" id="f-bling-id" placeholder="Ex: 128391203">
         </div>
 
+        <!-- Vinculo com Shopee -->
+        <div class="form-group full" style="border-top: 1px solid var(--gray-200); padding-top: 1rem; margin-top: 0.5rem">
+          <label style="font-weight: 600; color: #ff5722">🧡 Vínculo com Shopee (Bling)</label>
+        </div>
+        <div class="form-group">
+          <label>ID do Produto na Shopee</label>
+          <input type="text" id="f-shopee-id" placeholder="Ex: 0 ou ID da Shopee">
+        </div>
+        <div class="form-group">
+          <label>Preço na Shopee (R$)</label>
+          <input type="number" id="f-shopee-price" placeholder="Ex: 0.00" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Preço Promocional Shopee (R$)</label>
+          <input type="number" id="f-shopee-sale-price" placeholder="Ex: 0.00 (opcional)" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>ID do Fornecedor na Shopee</label>
+          <input type="text" id="f-shopee-supplier-id" placeholder="Ex: 0">
+        </div>
+        <div class="form-group">
+          <label>ID da Marca na Shopee</label>
+          <input type="text" id="f-shopee-brand-id" placeholder="Ex: 0">
+        </div>
+
         <div class="form-group" style="border-top: 1px solid var(--gray-100); padding-top: 0.5rem">
           <label>Status</label>
           <select id="f-status">
@@ -2926,6 +2951,11 @@ async function saveProduct() {
     imgUrl,
     cloudId,
     blingId:  document.getElementById('f-bling-id').value.trim(),
+    shopeeId: document.getElementById('f-shopee-id').value.trim(),
+    shopeePrice: parseFloat(document.getElementById('f-shopee-price').value) || 0,
+    shopeeSalePrice: parseFloat(document.getElementById('f-shopee-sale-price').value) || 0,
+    shopeeSupplierId: document.getElementById('f-shopee-supplier-id').value.trim(),
+    shopeeBrandId: document.getElementById('f-shopee-brand-id').value.trim(),
   };
 
   if (isEdit) {
@@ -3100,7 +3130,12 @@ async function syncToSheets(product) {
       weight_gross: parseFloat(product.weightGross) || 0,
       width: parseFloat(product.width) || 0,
       height: parseFloat(product.height) || 0,
-      depth: parseFloat(product.depth) || 0
+      depth: parseFloat(product.depth) || 0,
+      shopee_id: product.shopeeId || '',
+      shopee_price: parseFloat(product.shopeePrice) || 0,
+      shopee_sale_price: parseFloat(product.shopeeSalePrice) || 0,
+      shopee_supplier_id: product.shopeeSupplierId || '',
+      shopee_brand_id: product.shopeeBrandId || ''
     };
 
     const { error } = await supabaseClient.from('produtos').upsert([payload]);
@@ -3181,7 +3216,19 @@ async function loadFromSheets(silent = false) {
         featured: p.featured ? 'Sim' : 'Não',
         imgUrl: p.img_url || '',
         cloudId: p.cloud_id || '',
-        blingId: p.bling_id || ''
+        blingId: p.bling_id || '',
+        brand: p.brand || '',
+        gtin: p.gtin || '',
+        weightNet: p.weight_net !== undefined ? parseFloat(p.weight_net) : 0,
+        weightGross: p.weight_gross !== undefined ? parseFloat(p.weight_gross) : 0,
+        width: p.width !== undefined ? parseFloat(p.width) : 0,
+        height: p.height !== undefined ? parseFloat(p.height) : 0,
+        depth: p.depth !== undefined ? parseFloat(p.depth) : 0,
+        shopeeId: p.shopee_id || '',
+        shopeePrice: p.shopee_price !== undefined ? parseFloat(p.shopee_price) : 0,
+        shopeeSalePrice: p.shopee_sale_price !== undefined ? parseFloat(p.shopee_sale_price) : 0,
+        shopeeSupplierId: p.shopee_supplier_id || '',
+        shopeeBrandId: p.shopee_brand_id || ''
       }));
       saveProductsLocal();
       renderProducts();
@@ -3309,7 +3356,19 @@ async function syncSheets() {
       featured: product.featured === 'Sim',
       img_url: product.imgUrl || '',
       cloud_id: product.cloudId || '',
-      bling_id: product.blingId || ''
+      bling_id: product.blingId || '',
+      brand: product.brand || '',
+      gtin: product.gtin || '',
+      weight_net: parseFloat(product.weightNet) || 0,
+      weight_gross: parseFloat(product.weightGross) || 0,
+      width: parseFloat(product.width) || 0,
+      height: parseFloat(product.height) || 0,
+      depth: parseFloat(product.depth) || 0,
+      shopee_id: product.shopeeId || '',
+      shopee_price: parseFloat(product.shopeePrice) || 0,
+      shopee_sale_price: parseFloat(product.shopeeSalePrice) || 0,
+      shopee_supplier_id: product.shopeeSupplierId || '',
+      shopee_brand_id: product.shopeeBrandId || ''
     }));
 
     const { error: pError } = await supabaseClient.from('produtos').upsert(productsPayload);
@@ -3729,6 +3788,11 @@ function openModal(mode, id) {
       document.getElementById('f-g').value = p.stock.g;
       document.getElementById('f-gg').value = p.stock.gg;
       document.getElementById('f-bling-id').value = p.blingId || '';
+      document.getElementById('f-shopee-id').value = p.shopeeId || '';
+      document.getElementById('f-shopee-price').value = p.shopeePrice !== undefined ? p.shopeePrice : '';
+      document.getElementById('f-shopee-sale-price').value = p.shopeeSalePrice !== undefined ? p.shopeeSalePrice : '';
+      document.getElementById('f-shopee-supplier-id').value = p.shopeeSupplierId || '';
+      document.getElementById('f-shopee-brand-id').value = p.shopeeBrandId || '';
       // Se já tem imagem, mostrar no preview
       if (p.imgUrl) {
         pendingImgUrls = [p.imgUrl];
@@ -3761,6 +3825,11 @@ function openModal(mode, id) {
     document.getElementById('f-g').value = 0;
     document.getElementById('f-gg').value = 0;
     document.getElementById('f-bling-id').value = '';
+    document.getElementById('f-shopee-id').value = '';
+    document.getElementById('f-shopee-price').value = '';
+    document.getElementById('f-shopee-sale-price').value = '';
+    document.getElementById('f-shopee-supplier-id').value = '';
+    document.getElementById('f-shopee-brand-id').value = '';
     document.getElementById('modal-overlay').dataset.editId = '';
   }
   document.getElementById('modal-overlay').classList.add('open');

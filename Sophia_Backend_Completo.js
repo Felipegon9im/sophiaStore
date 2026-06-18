@@ -72,7 +72,10 @@ function doGet(e) {
         salePrice: p.sale_price ? parseFloat(p.sale_price) : null,
         stock: typeof p.stock === 'string' ? JSON.parse(p.stock) : p.stock,
         status: p.status || 'Ativo', featured: p.featured ? "Sim" : "Não", imgUrl: p.img_url || '',
-        cloudId: p.cloud_id || '', blingId: p.bling_id || ''
+        cloudId: p.cloud_id || '', blingId: p.bling_id || '',
+        shopeeId: p.shopee_id || '', shopeePrice: parseFloat(p.shopee_price) || 0,
+        shopeeSalePrice: parseFloat(p.shopee_sale_price) || 0, shopeeSupplierId: p.shopee_supplier_id || '',
+        shopeeBrandId: p.shopee_brand_id || ''
       })) : [];
 
       // Buscar categorias
@@ -386,7 +389,24 @@ function pushProductToBling(product) {
     const resText = response.getContentText();
     if (response.getResponseCode() === 201 || response.getResponseCode() === 200) {
       const data = JSON.parse(resText);
-      return data.data; // { id: 12345 }
+      const blingRes = data.data; // { id: 12345 }
+      
+      if (blingRes && blingRes.id) {
+        // 1. Atualizar estoque físico total
+        const totalStock = (product.stock ? 
+          (parseInt(product.stock.pp) || 0) + 
+          (parseInt(product.stock.p) || 0) + 
+          (parseInt(product.stock.m) || 0) + 
+          (parseInt(product.stock.g) || 0) + 
+          (parseInt(product.stock.gg) || 0) 
+          : 0);
+        updateBlingStock(blingRes.id, totalStock, token);
+        
+        // 2. Vincular com a Shopee
+        linkProductToStore(blingRes.id, product, token);
+      }
+      
+      return blingRes;
     } else {
       Logger.log("Erro ao pushProductToBling: " + resText);
       return null;
@@ -394,6 +414,106 @@ function pushProductToBling(product) {
   } catch (e) {
     Logger.log("Exception ao pushProductToBling: " + e.toString());
     return null;
+  }
+}
+
+// Obtém o primeiro depósito ativo no Bling
+function getBlingDepositId(token) {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  let depId = scriptProperties.getProperty('BLING_DEPOSITO_ID');
+  if (depId) return depId;
+  
+  try {
+    const res = UrlFetchApp.fetch("https://api.bling.com.br/v3/depositos?situacao=1", {
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer " + token,
+        "Accept": "1.0"
+      },
+      "muteHttpExceptions": true
+    });
+    if (res.getResponseCode() === 200) {
+      const data = JSON.parse(res.getContentText());
+      if (data.data && data.data.length > 0) {
+        depId = String(data.data[0].id);
+        scriptProperties.setProperty('BLING_DEPOSITO_ID', depId);
+        return depId;
+      }
+    }
+  } catch(e) {
+    Logger.log("Erro ao obter depósitos: " + e.toString());
+  }
+  return null;
+}
+
+// Sincroniza a quantidade física de estoque no Bling
+function updateBlingStock(blingId, quantity, token) {
+  const depositId = getBlingDepositId(token);
+  if (!depositId) {
+    Logger.log("Erro: Nenhum depósito encontrado no Bling para atualizar o estoque.");
+    return false;
+  }
+  
+  const payload = {
+    "produto": { "id": parseInt(blingId) },
+    "deposito": { "id": parseInt(depositId) },
+    "operacao": "B", // Balanço (ajusta para o valor físico exato)
+    "quantidade": parseFloat(quantity) || 0,
+    "observacoes": "Sincronizado via Sophia Painel"
+  };
+  
+  try {
+    const response = UrlFetchApp.fetch("https://api.bling.com.br/v3/estoques", {
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer " + token,
+        "Accept": "1.0",
+        "Content-Type": "application/json"
+      },
+      "payload": JSON.stringify(payload),
+      "muteHttpExceptions": true
+    });
+    if (response.getResponseCode() === 201 || response.getResponseCode() === 200) {
+      Logger.log("Estoque atualizado no Bling com sucesso para " + quantity + " unidades.");
+      return true;
+    } else {
+      Logger.log("Erro ao atualizar estoque no Bling: " + response.getContentText());
+      return false;
+    }
+  } catch (e) {
+    Logger.log("Exception ao atualizar estoque no Bling: " + e.toString());
+    return false;
+  }
+}
+
+// Vincula o produto à Shopee no Bling
+function linkProductToStore(blingId, product, token) {
+  const shopeeLojaId = "206104156"; // ID da integração Shopee 01
+  const payload = {
+    "produto": { "id": parseInt(blingId) },
+    "loja": { "id": parseInt(shopeeLojaId) },
+    "codigo": product.sku || String(product.id),
+    "preco": parseFloat(product.shopeePrice) || parseFloat(product.price) || 0,
+    "precoPromocional": parseFloat(product.shopeeSalePrice) || null,
+    "idProdutoLoja": product.shopeeId || '',
+    "idMarcaLoja": product.shopeeBrandId || '',
+    "idFornecedorLoja": product.shopeeSupplierId || ''
+  };
+  
+  try {
+    const response = UrlFetchApp.fetch("https://api.bling.com.br/v3/produtos/lojas", {
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer " + token,
+        "Accept": "1.0",
+        "Content-Type": "application/json"
+      },
+      "payload": JSON.stringify(payload),
+      "muteHttpExceptions": true
+    });
+    Logger.log("Vínculo Shopee realizado no Bling: " + response.getContentText());
+  } catch (e) {
+    Logger.log("Erro ao vincular produto com Shopee no Bling: " + e.toString());
   }
 }
 
