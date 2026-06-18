@@ -1049,63 +1049,145 @@
   #product-detail-modal-overlay {
     position: fixed; inset: 0; background: rgba(10,0,7,0.6);
     z-index: 6000; display: flex; align-items: center; justify-content: center;
-    opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
     backdrop-filter: blur(12px);
   }
   #product-detail-modal-overlay.open { opacity: 1; pointer-events: all; }
+  
   .detail-modal {
-    background: var(--white); border-radius: 16px; width: 850px; max-width: 95vw;
-    max-height: 90vh; overflow-y: auto; display: grid; grid-template-columns: 1.1fr 1fr;
-    box-shadow: 0 30px 70px rgba(0,0,0,0.3); transform: scale(0.95) translateY(20px);
+    background: var(--white); border-radius: 20px; width: 1000px; max-width: 95vw;
+    max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column;
+    box-shadow: var(--shadow-lg); transform: scale(0.95) translateY(20px);
     transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    position: relative;
+    position: relative; scrollbar-width: thin;
+    scrollbar-color: var(--pink-light) var(--pink-pale);
   }
   #product-detail-modal-overlay.open .detail-modal { transform: scale(1) translateY(0); }
+  
   .detail-close-btn {
     position: absolute; top: 1.25rem; right: 1.25rem;
-    width: 32px; height: 32px; border-radius: 50%;
+    width: 36px; height: 36px; border-radius: 50%;
     background: rgba(255,255,255,0.9); border: none; 
     display: flex; align-items: center; justify-content: center;
-    font-size: 1rem; color: var(--dark); z-index: 10;
+    font-size: 1.1rem; color: var(--dark); z-index: 10;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: all 0.2s;
+    cursor: pointer;
   }
   .detail-close-btn:hover { background: var(--pink); color: white; }
   
-  .detail-img-side {
-    position: relative; background: var(--pink-pale); overflow: hidden;
-    height: 100%; min-height: 480px; display: flex; align-items: center; justify-content: center;
+  .detail-main-wrapper {
+    display: grid; grid-template-columns: 1.15fr 1fr; gap: 2.5rem; padding: 2.5rem;
   }
-  .detail-img-side img { width: 100%; height: 100%; object-fit: cover; }
+  
+  .detail-gallery-container {
+    display: flex; gap: 1rem; height: 480px;
+  }
+  
+  .thumbnail-list {
+    display: flex; flex-direction: column; gap: 0.5rem; width: 70px; flex-shrink: 0;
+  }
+  
+  .thumbnail-item {
+    width: 70px; height: 90px; border: 1.5px solid #e5e7eb; border-radius: 8px;
+    overflow: hidden; cursor: pointer; transition: all 0.2s; background: var(--pink-pale);
+  }
+  
+  .thumbnail-item.active, .thumbnail-item:hover {
+    border-color: var(--pink); box-shadow: 0 0 5px rgba(233,30,140,0.3);
+  }
+  
+  .thumbnail-item img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  
+  .main-image-container {
+    flex-grow: 1; border-radius: 12px; overflow: hidden; background: var(--pink-pale);
+    display: flex; align-items: center; justify-content: center; border: 1px solid rgba(233,30,140,0.05);
+    height: 480px; position: relative;
+  }
+  
+  .main-image-container img {
+    width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease, transform-origin 0.3s ease;
+  }
   
   .detail-info-side {
-    padding: 2.5rem; display: flex; flex-direction: column; justify-content: center;
+    display: flex; flex-direction: column; justify-content: flex-start;
   }
+  
   .detail-cat {
-    font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase;
-    color: var(--gray); font-weight: 500; margin-bottom: 0.5rem;
+    font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gray); font-weight: 600; margin-bottom: 0.5rem;
   }
+  
   .detail-title {
-    font-family: 'Cormorant Garamond', serif; font-size: 2rem;
-    font-weight: 300; line-height: 1.2; color: var(--dark); margin-bottom: 0.75rem;
+    font-family: 'Cormorant Garamond', serif; font-size: 2.2rem;
+    font-weight: 300; line-height: 1.2; color: var(--dark); margin-bottom: 0.5rem;
   }
-  .detail-price { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.25rem; }
-  .detail-price .price-now { font-size: 1.5rem; font-weight: 500; color: var(--pink); }
-  .detail-price .price-was { font-size: 1.1rem; color: var(--gray); text-decoration: line-through; }
+  
+  .detail-ribbon {
+    display: inline-block; background: var(--pink-pale); color: var(--pink);
+    font-size: 0.7rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 20px;
+    margin-bottom: 1rem; width: fit-content; border: 1px dashed var(--pink-light);
+  }
+  
+  .detail-price-box {
+    margin-bottom: 1.5rem;
+  }
+  
+  .detail-price { display: flex; align-items: baseline; gap: 0.75rem; }
+  .detail-price .price-now { font-size: 2rem; font-weight: 600; color: var(--pink); }
+  .detail-price .price-was { font-size: 1.2rem; color: var(--gray); text-decoration: line-through; }
+  
+  .detail-price-installments {
+    font-size: 0.8rem; color: var(--gray); margin-top: 0.25rem; font-weight: 400;
+  }
   
   .detail-desc {
-    font-size: 0.78rem; line-height: 1.8; color: var(--gray);
+    font-size: 0.82rem; line-height: 1.6; color: var(--gray);
     margin-bottom: 1.5rem; font-weight: 300;
   }
   
-  .detail-sizes { margin-bottom: 1.5rem; }
   .detail-label {
-    font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase;
-    color: var(--dark); font-weight: 600; margin-bottom: 0.6rem; display: block;
+    font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--dark); font-weight: 700; margin-bottom: 0.5rem; display: block;
   }
-  .size-selector-wrap { display: flex; gap: 0.5rem; }
+  
+  .detail-colors {
+    margin-bottom: 1.25rem;
+  }
+  
+  .color-options {
+    display: flex; gap: 0.5rem;
+  }
+  
+  .color-circle {
+    width: 26px; height: 26px; border-radius: 50%; border: 2px solid white;
+    outline: 1.5px solid #e5e7eb; cursor: pointer; transition: all 0.2s;
+  }
+  
+  .color-circle.active, .color-circle:hover {
+    outline: 2px solid var(--pink);
+  }
+  
+  .detail-sizes { margin-bottom: 1.25rem; }
+  
+  .size-header-wrap {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;
+  }
+  
+  .size-chart-link {
+    font-size: 0.72rem; color: var(--pink); font-weight: 600; cursor: pointer;
+    text-decoration: none; transition: color 0.2s;
+  }
+  .size-chart-link:hover {
+    color: var(--pink-deep); text-decoration: underline;
+  }
+  
+  .size-selector-wrap { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  
   .size-selector-btn {
     width: 44px; height: 44px; border: 1.5px solid #e5e7eb; background: white;
-    font-size: 0.75rem; font-family: 'Montserrat', sans-serif; font-weight: 600;
+    font-size: 0.78rem; font-family: 'Montserrat', sans-serif; font-weight: 600;
     display: flex; align-items: center; justify-content: center;
     transition: var(--transition);
     border-radius: 8px;
@@ -1131,11 +1213,35 @@
     color: var(--gray);
   }
   
+  .quantity-selector-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .quantity-selector {
+    display: flex; align-items: center; border: 1.5px solid #e5e7eb;
+    border-radius: 8px; width: fit-content; overflow: hidden;
+  }
+  
+  .qty-btn {
+    width: 38px; height: 38px; border: none; background: #f9fafb;
+    font-size: 1.1rem; font-weight: 600; display: flex; align-items: center;
+    justify-content: center; cursor: pointer; transition: background 0.2s;
+    color: var(--dark);
+  }
+  .qty-btn:hover { background: #f3f4f6; }
+  
+  .qty-input {
+    width: 45px; height: 38px; border: none; border-left: 1.5px solid #e5e7eb;
+    border-right: 1.5px solid #e5e7eb; text-align: center; font-size: 0.85rem;
+    font-family: 'Montserrat', sans-serif; font-weight: 600; color: var(--dark);
+    background: white; -webkit-appearance: none; margin: 0;
+  }
+  
   .detail-checkout-channels {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    margin-top: 1.5rem;
+    margin-top: 1rem;
   }
   
   .checkout-channel-btn {
@@ -1144,8 +1250,8 @@
     border: none; 
     border-radius: 8px;
     font-family: 'Montserrat', sans-serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.15em;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     font-weight: 600;
     display: flex;
@@ -1196,6 +1302,198 @@
     background: #111;
     box-shadow: 0 6px 20px rgba(0,0,0,0.35);
   }
+  
+  .payment-badges {
+    margin-top: 1.25rem; border-top: 1px solid #f3f4f6; padding-top: 1rem;
+    text-align: center;
+  }
+  .payment-badges span {
+    font-size: 0.65rem; color: var(--gray); text-transform: uppercase;
+    letter-spacing: 0.05em; display: block; margin-bottom: 0.5rem;
+  }
+  .payment-badges-row {
+    display: flex; justify-content: center; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+  }
+  .payment-badge {
+    background: #f9fafb; padding: 0.3rem 0.5rem; border-radius: 4px;
+    border: 1px solid #e5e7eb; font-size: 0.62rem; font-weight: 600; color: #4b5563;
+  }
+  
+  .detail-trust-bullets {
+    margin-top: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .trust-bullet-item {
+    display: flex; align-items: center; gap: 0.5rem; font-size: 0.72rem; color: #4b5563;
+  }
+  .trust-bullet-item svg {
+    color: var(--pink); flex-shrink: 0;
+  }
+  
+  /* ── LANDING SECTION DETAILS ── */
+  .detail-extra-wrapper {
+    width: 100%;
+  }
+  
+  .landing-section-dark {
+    background: #1a0a12; color: white; padding: 3.5rem 2.5rem; text-align: center;
+  }
+  .landing-section-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; color: var(--gold);
+    margin-bottom: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .landing-section-subtitle {
+    font-size: 0.85rem; max-width: 600px; margin: 0 auto 2rem; color: #d1d5db;
+    font-weight: 300; line-height: 1.6;
+  }
+  .landing-grid-2 {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;
+    max-width: 900px; margin: 0 auto;
+  }
+  .landing-image-card {
+    border-radius: 12px; overflow: hidden; border: 1px solid rgba(212,175,106,0.2);
+    background: rgba(255,255,255,0.03); aspect-ratio: 1.1/1; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .landing-image-card img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  
+  .landing-section-light {
+    background: #fff; padding: 3.5rem 2.5rem; text-align: center; border-bottom: 1px solid #f3f4f6;
+  }
+  .landing-section-light .landing-section-title {
+    color: var(--dark);
+  }
+  .landing-section-light .landing-section-subtitle {
+    color: var(--gray);
+  }
+  
+  .size-table-container {
+    max-width: 900px; margin: 0 auto 2rem; background: var(--gray-light);
+    border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: var(--shadow-sm);
+  }
+  
+  .size-table {
+    width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;
+  }
+  .size-table th {
+    background: var(--dark); color: white; padding: 0.85rem 1rem;
+    font-weight: 500; font-family: 'Montserrat', sans-serif; text-transform: uppercase;
+    font-size: 0.75rem; letter-spacing: 0.05em;
+  }
+  .size-table td {
+    padding: 0.85rem 1rem; border-bottom: 1px solid #e5e7eb; color: var(--dark);
+    font-family: 'Montserrat', sans-serif; font-weight: 500;
+  }
+  .size-table tr:last-child td { border-bottom: none; }
+  .size-table tr:nth-child(even) { background: rgba(26,10,18,0.02); }
+  
+  .size-instructions-btn {
+    display: inline-block; background: var(--dark); color: white;
+    font-family: 'Montserrat', sans-serif; font-size: 0.7rem; font-weight: 600;
+    padding: 0.5rem 1.25rem; border-radius: 20px; text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 1.5rem; border: none; cursor: default;
+  }
+  
+  .size-guide-row {
+    display: flex; align-items: center; justify-content: center; gap: 2rem;
+    max-width: 800px; margin: 0 auto; flex-wrap: wrap; text-align: left;
+  }
+  .size-guide-diagram {
+    width: 180px; height: 220px; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; border: 1.5px dashed var(--gold); border-radius: 12px;
+    padding: 1rem; background: var(--pink-pale);
+  }
+  .size-guide-diagram svg {
+    width: 100%; height: 100%; fill: none; stroke: var(--dark); stroke-width: 1.5;
+  }
+  .size-guide-list {
+    display: flex; flex-direction: column; gap: 0.75rem; max-width: 450px;
+  }
+  .size-guide-item {
+    display: flex; gap: 0.75rem; align-items: flex-start; font-size: 0.78rem;
+    line-height: 1.4; color: var(--gray);
+  }
+  .size-guide-num {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--pink);
+    color: white; display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; font-weight: 700; flex-shrink: 0; margin-top: 0.1rem;
+  }
+  
+  .reviews-section {
+    background: var(--pink-pale); padding: 3.5rem 2.5rem; text-align: center;
+    border-bottom: 1px solid rgba(233,30,140,0.1);
+  }
+  .reviews-summary-card {
+    display: flex; align-items: center; justify-content: center; gap: 3rem;
+    max-width: 800px; margin: 0 auto 2.5rem; flex-wrap: wrap; background: white;
+    padding: 2rem; border-radius: 16px; border: 1px solid rgba(233,30,140,0.1);
+    box-shadow: var(--shadow-sm);
+  }
+  .reviews-score-box { text-align: center; }
+  .reviews-score-num {
+    font-size: 3.5rem; font-weight: 700; color: var(--dark);
+    font-family: 'Montserrat', sans-serif; line-height: 1;
+  }
+  .reviews-stars { color: #f59e0b; font-size: 1.2rem; margin: 0.5rem 0; }
+  .reviews-score-label { font-size: 0.72rem; color: var(--gray); }
+  
+  .reviews-bars {
+    display: flex; flex-direction: column; gap: 0.5rem; width: 300px;
+    max-width: 100%; text-align: left;
+  }
+  .review-bar-row {
+    display: flex; align-items: center; gap: 0.75rem; font-size: 0.72rem; color: var(--gray);
+  }
+  .review-bar-label { width: 15px; text-align: right; }
+  .review-bar-bg { flex-grow: 1; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+  .review-bar-fill { height: 100%; background: #f59e0b; border-radius: 4px; }
+  .review-bar-percent { width: 30px; text-align: right; font-weight: 500; }
+  
+  .reviews-list {
+    max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem;
+    text-align: left;
+  }
+  .review-item {
+    background: white; padding: 1.5rem; border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.04); box-shadow: var(--shadow-sm);
+  }
+  .review-item-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;
+    flex-wrap: wrap; gap: 0.5rem;
+  }
+  .review-author {
+    font-size: 0.85rem; font-weight: 600; color: var(--dark); display: flex; align-items: center; gap: 0.4rem;
+  }
+  .verified-badge {
+    background: #dcfce7; color: #15803d; font-size: 0.58rem; font-weight: 700;
+    padding: 0.15rem 0.4rem; border-radius: 10px; display: inline-flex; align-items: center; gap: 0.15rem;
+  }
+  .review-date { font-size: 0.72rem; color: var(--gray); }
+  .review-stars-small { color: #f59e0b; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .review-comment { font-size: 0.78rem; line-height: 1.5; color: #4b5563; font-weight: 300; }
+  
+  .footer-seals-section {
+    background: white; padding: 3rem 2rem; border-top: 1px solid #f3f4f6;
+  }
+  .seals-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; max-width: 1000px; margin: 0 auto;
+  }
+  .seal-card {
+    text-align: center; display: flex; flex-direction: column; align-items: center;
+  }
+  .seal-icon-wrapper {
+    width: 50px; height: 50px; border-radius: 50%; background: var(--pink-pale);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;
+    color: var(--pink);
+  }
+  .seal-card h4 {
+    font-size: 0.75rem; font-weight: 600; color: var(--dark); margin-bottom: 0.4rem;
+    font-family: 'Montserrat', sans-serif; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .seal-card p {
+    font-size: 0.7rem; color: var(--gray); line-height: 1.4; max-width: 180px;
+  }
 
   /* ── RESPONSIVE ── */
   @media (max-width: 1024px) {
@@ -1221,16 +1519,41 @@
     
     /* Responsive modal detail */
     .detail-modal {
-      grid-template-columns: 1fr;
-      max-height: 95vh;
       width: 95vw;
+      max-height: 95vh;
     }
-    .detail-img-side {
-      min-height: 250px;
-      height: 250px;
+    .detail-main-wrapper {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      padding: 1.5rem;
+    }
+    .detail-gallery-container {
+      flex-direction: column-reverse;
+      height: auto;
+      min-height: unset;
+    }
+    .thumbnail-list {
+      flex-direction: row;
+      width: 100%;
+      height: auto;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+    .thumbnail-item {
+      flex-shrink: 0;
+    }
+    .main-image-container {
+      height: 320px;
     }
     .detail-info-side {
-      padding: 1.5rem;
+      padding: 0;
+    }
+    .landing-grid-2 {
+      grid-template-columns: 1fr;
+    }
+    .seals-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
     }
   }
   /* ── TOAST NOTIFICATION ── */
@@ -1638,54 +1961,299 @@
 </div>
 
 <!-- Product Detail Modal Overlay -->
+<!-- Product Detail Modal Overlay -->
 <div id="product-detail-modal-overlay">
   <div class="detail-modal" id="product-detail-box">
     <button class="detail-close-btn" onclick="closeProductDetail()">✕</button>
-    <div class="detail-img-side">
-      <img id="detail-modal-img" src="" alt="">
-    </div>
-    <div class="detail-info-side">
-      <div class="detail-cat" id="detail-modal-cat">CATEGORIA</div>
-      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-        <h2 class="detail-title" id="detail-modal-title">Nome do Produto</h2>
-        <button onclick="shareProduct(currentDetailProduct.id)" style="background:none;border:none;cursor:pointer;font-size:1.5rem;color:var(--pink)" title="Compartilhar Produto">📤</button>
-      </div>
-      <div class="detail-price">
-        <span class="price-now" id="detail-modal-price">R$ 0,00</span>
-        <span class="price-was" id="detail-modal-old-price">R$ 0,00</span>
-      </div>
-      <p class="detail-desc" id="detail-modal-desc">Descrição do produto.</p>
+    
+    <!-- Top section: main details with two columns -->
+    <div class="detail-main-wrapper">
       
-      <div class="detail-sizes">
-        <span class="detail-label">Selecione o Tamanho</span>
-        <div class="size-selector-wrap" id="detail-modal-sizes">
-          <!-- Injetado dinamicamente via JS -->
+      <!-- Column 1: Gallery with miniaturas and main image -->
+      <div class="detail-gallery-container">
+        <div class="thumbnail-list" id="detail-thumbnails">
+          <!-- Injected dynamically via JS -->
+        </div>
+        <div class="main-image-container">
+          <img id="detail-modal-img" src="" alt="">
         </div>
       </div>
       
-      <div class="detail-checkout-channels">
-        <span class="detail-label">Comprar Por Onde Preferir</span>
-        <!-- WhatsApp Buy -->
-        <button class="checkout-channel-btn btn-channel-wa" id="detail-btn-wa" onclick="checkoutSingleWhatsApp()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-          Comprar via WhatsApp
-        </button>
-        <!-- Shopee Buy -->
-        <a class="checkout-channel-btn btn-channel-shopee" id="detail-btn-shopee" target="_blank" href="#">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-          Comprar na Shopee
-        </a>
-        <!-- TikTok Buy -->
-        <a class="checkout-channel-btn btn-channel-tiktok" id="detail-btn-tiktok" target="_blank" href="#">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
-          TikTok Shop
-        </a>
-        <!-- Add to cart -->
-        <button class="checkout-channel-btn btn-channel-cart" id="detail-btn-cart" onclick="addCurrentToCart()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-          Adicionar ao Carrinho
-        </button>
+      <!-- Column 2: Details & options side -->
+      <div class="detail-info-side">
+        <div class="detail-cat" id="detail-modal-cat">CATEGORIA</div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 1rem;">
+          <h2 class="detail-title" id="detail-modal-title">Nome do Produto</h2>
+          <button onclick="shareProduct(currentDetailProduct.id, event)" style="background:none;border:none;cursor:pointer;font-size:1.5rem;color:var(--pink)" title="Compartilhar Produto">📤</button>
+        </div>
+        
+        <div class="detail-ribbon">🌸 Para vestir com estilo e elegância!</div>
+        
+        <div class="detail-price-box">
+          <div class="detail-price">
+            <span class="price-now" id="detail-modal-price">R$ 0,00</span>
+            <span class="price-was" id="detail-modal-old-price">R$ 0,00</span>
+          </div>
+          <div class="detail-price-installments" id="detail-modal-installments">
+            ou 10x de R$ 0,00 sem juros no cartão
+          </div>
+        </div>
+        
+        <p class="detail-desc" id="detail-modal-desc">Descrição do produto.</p>
+        
+        <!-- Color Option Selector -->
+        <div class="detail-colors">
+          <span class="detail-label">Cores Disponíveis</span>
+          <div class="color-options" id="detail-modal-colors">
+            <!-- Injected dynamically via JS -->
+          </div>
+        </div>
+        
+        <!-- Size Selector -->
+        <div class="detail-sizes">
+          <div class="size-header-wrap">
+            <span class="detail-label">Selecione o Tamanho</span>
+            <a onclick="scrollToSizeChart()" class="size-chart-link">📐 Guia de Medidas</a>
+          </div>
+          <div class="size-selector-wrap" id="detail-modal-sizes">
+            <!-- Injected dynamically via JS -->
+          </div>
+        </div>
+        
+        <!-- Quantity Selector -->
+        <div class="quantity-selector-section">
+          <span class="detail-label">Quantidade</span>
+          <div class="quantity-selector">
+            <button class="qty-btn" onclick="adjustDetailQty(-1)">-</button>
+            <input type="number" class="qty-input" id="detail-modal-qty" value="1" min="1" readonly>
+            <button class="qty-btn" onclick="adjustDetailQty(1)">+</button>
+          </div>
+        </div>
+        
+        <!-- Checkout Channels & Action buttons -->
+        <div class="detail-checkout-channels">
+          <!-- Add to cart -->
+          <button class="checkout-channel-btn btn-channel-cart" id="detail-btn-cart" onclick="addCurrentToCart()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+            Adicionar à Sacola
+          </button>
+          
+          <!-- WhatsApp Buy -->
+          <button class="checkout-channel-btn btn-channel-wa" id="detail-btn-wa" onclick="checkoutSingleWhatsApp()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            Comprar via WhatsApp
+          </button>
+          
+          <!-- Shopee Buy -->
+          <a class="checkout-channel-btn btn-channel-shopee" id="detail-btn-shopee" target="_blank" href="#">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+            Comprar na Shopee
+          </a>
+          
+          <!-- TikTok Buy -->
+          <a class="checkout-channel-btn btn-channel-tiktok" id="detail-btn-tiktok" target="_blank" href="#">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
+            TikTok Shop
+          </a>
+        </div>
+        
+        <!-- Payment Badges -->
+        <div class="payment-badges">
+          <span>Formas de Pagamento Aceitas</span>
+          <div class="payment-badges-row">
+            <div class="payment-badge">Pix</div>
+            <div class="payment-badge">Visa</div>
+            <div class="payment-badge">Mastercard</div>
+            <div class="payment-badge">Elo</div>
+            <div class="payment-badge">Hipercard</div>
+            <div class="payment-badge">Boleto</div>
+          </div>
+        </div>
+        
+        <!-- Small Bullet Icons -->
+        <div class="detail-trust-bullets">
+          <div class="trust-bullet-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+            <span>Envio para todo o Brasil com código de rastreamento.</span>
+          </div>
+          <div class="trust-bullet-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>Troca fácil ou devolução em até 7 dias úteis.</span>
+          </div>
+        </div>
       </div>
+    </div>
+    
+    <!-- Bottom section: Landing Page-style extra details -->
+    <div class="detail-extra-wrapper">
+      
+      <!-- Feature 1: Advanced Thermal Comfort / Premium Quality -->
+      <div class="landing-section-dark">
+        <div class="landing-section-title">Alta Costura & Acabamento Premium</div>
+        <div class="landing-section-subtitle">
+          Cada peça da Sophia Elegance é produzida seguindo rigorosos padrões de modelagem, costura e seleção de tecidos de alta qualidade para garantir caimento impecável e durabilidade.
+        </div>
+        <div class="landing-grid-2" id="detail-landing-features-dark">
+          <!-- Generated dynamically via JS: 2 visual details / cards of the product -->
+        </div>
+      </div>
+      
+      <!-- Feature 2: Lifestyle / Winter Promo (Exclusive promotion/details) -->
+      <div class="landing-section-light">
+        <div class="landing-section-title">Design Exclusivo Para Você Brilhar</div>
+        <div class="landing-section-subtitle">
+          Criamos coleções sofisticadas e atemporais, alinhando as maiores tendências da moda feminina ao conforto essencial do seu dia a dia.
+        </div>
+        <div class="landing-grid-2" id="detail-landing-features-light">
+          <!-- Generated dynamically via JS: lifestyle preview cards -->
+        </div>
+      </div>
+      
+      <!-- Measurement Chart Section -->
+      <div class="landing-section-light" id="size-chart-section-element" style="border-top: 1px solid #f3f4f6;">
+        <div class="landing-section-title">📐 Tabela de Medidas Oficial</div>
+        <div class="landing-section-subtitle">
+          Compare as medidas do seu corpo com as do produto abaixo para escolher o tamanho ideal. Uma leve folga de 1 a 2 cm é normal e aceitável.
+        </div>
+        
+        <div class="size-table-container">
+          <table class="size-table">
+            <thead>
+              <tr id="size-table-header-row">
+                <!-- Injected dynamically via JS -->
+              </tr>
+            </thead>
+            <tbody id="size-table-body-rows">
+              <!-- Injected dynamically via JS -->
+            </tbody>
+          </table>
+        </div>
+        
+        <button class="size-instructions-btn">Como Medir?</button>
+        
+        <div class="size-guide-row">
+          <!-- SVG Mannequin / Measurement visual -->
+          <div class="size-guide-diagram">
+            <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+              <path d="M50,15 C52,15 54,17 54,20 C54,23 52,25 50,25 C48,25 46,23 46,20 C46,17 48,15 50,15 Z" />
+              <path d="M42,27 L58,27 C62,27 65,30 65,34 L62,55 C61,60 59,65 59,70 L59,120 L41,120 L41,70 C41,65 39,60 38,55 L35,34 C35,30 38,27 42,27 Z" />
+              <path d="M35,34 L31,65" />
+              <path d="M65,34 L69,65" />
+              <line x1="37" y1="42" x2="63" y2="42" stroke="var(--pink)" stroke-width="1.5" stroke-dasharray="2,2" />
+              <circle cx="50" cy="42" r="3" fill="var(--pink)" />
+              <line x1="39" y1="58" x2="61" y2="58" stroke="var(--pink)" stroke-width="1.5" stroke-dasharray="2,2" />
+              <circle cx="50" cy="58" r="3" fill="var(--pink)" />
+              <line x1="38" y1="72" x2="62" y2="72" stroke="var(--pink)" stroke-width="1.5" stroke-dasharray="2,2" />
+              <circle cx="50" cy="72" r="3" fill="var(--pink)" />
+            </svg>
+          </div>
+          
+          <div class="size-guide-list">
+            <div class="size-guide-item">
+              <span class="size-guide-num">1</span>
+              <div>
+                <strong>Busto/Tórax:</strong> Meça ao redor da parte mais saliente do tórax/busto, passando por baixo das axilas com a fita métrica nivelada.
+              </div>
+            </div>
+            <div class="size-guide-item">
+              <span class="size-guide-num">2</span>
+              <div>
+                <strong>Cintura:</strong> Passe a fita ao redor da linha mais fina da sua cintura natural, logo acima do umbigo. Mantenha a fita firme mas sem apertar.
+              </div>
+            </div>
+            <div class="size-guide-item">
+              <span class="size-guide-num">3</span>
+              <div>
+                <strong>Quadril:</strong> Fique de pé com os pés juntos e meça a circunferência na parte mais cheia do seu quadril (aproximadamente 20cm abaixo da cintura).
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Customer Reviews / Opinioes dos Clientes -->
+      <div class="reviews-section">
+        <div class="landing-section-title">Opiniões de Quem Já Comprou</div>
+        <div class="landing-section-subtitle">
+          Veja a opinião real e avaliações das nossas clientes que adquiriram esta peça.
+        </div>
+        
+        <div class="reviews-summary-card">
+          <div class="reviews-score-box">
+            <div class="reviews-score-num" id="reviews-avg-score">4.9</div>
+            <div class="reviews-stars" id="reviews-stars-row">★★★★★</div>
+            <div class="reviews-score-label">Com base em avaliações reais</div>
+          </div>
+          
+          <div class="reviews-bars">
+            <div class="review-bar-row">
+              <span class="review-bar-label">5★</span>
+              <div class="review-bar-bg"><div class="review-bar-fill" style="width: 90%;"></div></div>
+              <span class="review-bar-percent">90%</span>
+            </div>
+            <div class="review-bar-row">
+              <span class="review-bar-label">4★</span>
+              <div class="review-bar-bg"><div class="review-bar-fill" style="width: 8%;"></div></div>
+              <span class="review-bar-percent">8%</span>
+            </div>
+            <div class="review-bar-row">
+              <span class="review-bar-label">3★</span>
+              <div class="review-bar-bg"><div class="review-bar-fill" style="width: 2%;"></div></div>
+              <span class="review-bar-percent">2%</span>
+            </div>
+            <div class="review-bar-row">
+              <span class="review-bar-label">2★</span>
+              <div class="review-bar-bg"><div class="review-bar-fill" style="width: 0%;"></div></div>
+              <span class="review-bar-percent">0%</span>
+            </div>
+            <div class="review-bar-row">
+              <span class="review-bar-label">1★</span>
+              <div class="review-bar-bg"><div class="review-bar-fill" style="width: 0%;"></div></div>
+              <span class="review-bar-percent">0%</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="reviews-list" id="detail-reviews-list">
+          <!-- Injected dynamically via JS -->
+        </div>
+      </div>
+      
+      <!-- Footer Trust Seals -->
+      <div class="footer-seals-section">
+        <div class="seals-grid">
+          <div class="seal-card">
+            <div class="seal-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+            </div>
+            <h4>Frete Rápido</h4>
+            <p>Enviamos para todas as regiões do Brasil com agilidade e rastreio completo.</p>
+          </div>
+          <div class="seal-card">
+            <div class="seal-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+            </div>
+            <h4>Satisfação ou Reembolso</h4>
+            <p>Se não gostar ou não servir, você tem até 7 dias para solicitar a devolução gratuita.</p>
+          </div>
+          <div class="seal-card">
+            <div class="seal-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            </div>
+            <h4>Suporte via WhatsApp</h4>
+            <p>Dúvidas sobre tamanhos ou tecidos? Nossa equipe atende você no WhatsApp.</p>
+          </div>
+          <div class="seal-card">
+            <div class="seal-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <h4>Pagamento Seguro</h4>
+            <p>Processamento 100% criptografado e seguro com as principais bandeiras e Pix.</p>
+          </div>
+        </div>
+      </div>
+      
     </div>
   </div>
 </div>
@@ -2195,12 +2763,21 @@ function openProductDetail(id, event) {
   currentDetailProduct = product;
   selectedSize = ''; // Reset sizing
 
-  document.getElementById('detail-modal-img').src = product.img;
-  document.getElementById('detail-modal-img').alt = product.name;
+  // Reset quantity to 1
+  document.getElementById('detail-modal-qty').value = 1;
+
+  const img = document.getElementById('detail-modal-img');
+  img.src = product.img;
+  img.alt = product.name;
+  img.style.transform = 'scale(1)';
+  img.style.transformOrigin = 'center center';
+  img.style.filter = 'none';
+
   document.getElementById('detail-modal-cat').textContent = product.cat;
   document.getElementById('detail-modal-title').textContent = product.name;
   document.getElementById('detail-modal-desc').textContent = product.desc || 'Sem descrição cadastrada ainda.';
   
+  // Set prices
   document.getElementById('detail-modal-price').textContent = `R$ ${product.price.toFixed(2).replace('.',',')}`;
   const oldPriceEl = document.getElementById('detail-modal-old-price');
   if (product.oldPrice) {
@@ -2210,7 +2787,80 @@ function openProductDetail(id, event) {
     oldPriceEl.style.display = 'none';
   }
 
-  // Populate Sizing selectors depending on stock
+  // Installment calculation
+  const installmentVal = (product.price / 10).toFixed(2).replace('.', ',');
+  document.getElementById('detail-modal-installments').textContent = `ou 10x de R$ ${installmentVal} sem juros no cartão`;
+
+  // 1. Generate vertical thumbnails (zoom simulation)
+  const thumbWrap = document.getElementById('detail-thumbnails');
+  thumbWrap.innerHTML = '';
+  
+  const detailAngles = [
+    { label: 'Frente', scale: 1, origin: 'center center' },
+    { label: 'Detalhe Superior', scale: 1.5, origin: 'center top' },
+    { label: 'Textura Costura', scale: 1.7, origin: 'center center' },
+    { label: 'Caimento Inferior', scale: 1.35, origin: 'center bottom' }
+  ];
+  
+  detailAngles.forEach((angle, idx) => {
+    const item = document.createElement('div');
+    item.className = 'thumbnail-item' + (idx === 0 ? ' active' : '');
+    item.innerHTML = `<img src="${product.img}" alt="${product.name} - ${angle.label}">`;
+    
+    item.onclick = () => {
+      document.querySelectorAll('.thumbnail-item').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+      img.style.transform = `scale(${angle.scale})`;
+      img.style.transformOrigin = angle.origin;
+    };
+    thumbWrap.appendChild(item);
+  });
+
+  // 2. Dynamic Color Selectors (color change filter effect)
+  const colorWrap = document.getElementById('detail-modal-colors');
+  colorWrap.innerHTML = '';
+  
+  let colorOptions = [];
+  const cat = (product.cat || '').toLowerCase();
+  if (cat.includes('vestido') || cat.includes('macacão') || cat.includes('conjunto')) {
+    colorOptions = [
+      { name: 'Dourado Elegance', color: '#D4AF6A', filter: 'none' },
+      { name: 'Preto Clássico', color: '#1a0a12', filter: 'brightness(0.35) contrast(1.1) grayscale(1)' },
+      { name: 'Rosa Suave', color: '#F472B6', filter: 'hue-rotate(-45deg) saturate(1.2) brightness(0.95)' }
+    ];
+  } else if (cat.includes('blusa') || cat.includes('cropped') || cat.includes('camisa') || cat.includes('cardigan') || cat.includes('casaco')) {
+    colorOptions = [
+      { name: 'Rosa Sophia', color: '#E91E8C', filter: 'none' },
+      { name: 'Branco Off', color: '#F9FAFB', filter: 'brightness(1.2) saturate(0.2) contrast(0.9)' },
+      { name: 'Nude Terroso', color: '#C87A53', filter: 'hue-rotate(240deg) saturate(0.7) brightness(1.1)' }
+    ];
+  } else {
+    colorOptions = [
+      { name: 'Rosa Padrão', color: '#E91E8C', filter: 'none' },
+      { name: 'Elegante Gold', color: '#D4AF6A', filter: 'hue-rotate(60deg) brightness(1.1)' },
+      { name: 'Preto Noite', color: '#1a0a12', filter: 'brightness(0.3) grayscale(1)' }
+    ];
+  }
+  
+  colorOptions.forEach((col, idx) => {
+    const circle = document.createElement('div');
+    circle.className = 'color-circle' + (idx === 0 ? ' active' : '');
+    circle.style.backgroundColor = col.color;
+    circle.title = col.name;
+    circle.onclick = () => {
+      document.querySelectorAll('.color-circle').forEach(el => el.classList.remove('active'));
+      circle.classList.add('active');
+      img.style.filter = col.filter;
+      
+      // Sync thumbnails filters
+      document.querySelectorAll('.thumbnail-item img').forEach(thumbImg => {
+        thumbImg.style.filter = col.filter;
+      });
+    };
+    colorWrap.appendChild(circle);
+  });
+
+  // 3. Sizing selectors depending on stock
   const sizeWrap = document.getElementById('detail-modal-sizes');
   sizeWrap.innerHTML = '';
   
@@ -2230,6 +2880,15 @@ function openProductDetail(id, event) {
     sizeWrap.appendChild(btn);
   });
 
+  // 4. Render Dynamic Size Chart
+  renderSizeChart(product.cat);
+
+  // 5. Render Dynamic Landing Page Features
+  renderLandingFeatures(product);
+
+  // 6. Render Customer reviews
+  renderReviews(product);
+
   // Wire up Marketplace buttons
   const btnShopee = document.getElementById('detail-btn-shopee');
   const btnTiktok = document.getElementById('detail-btn-tiktok');
@@ -2248,7 +2907,9 @@ function openProductDetail(id, event) {
     btnTiktok.style.display = 'none';
   }
 
-  // Show Modal
+  // Show Modal & reset scroll top
+  const modalBox = document.getElementById('product-detail-box');
+  modalBox.scrollTop = 0;
   document.getElementById('product-detail-modal-overlay').classList.add('open');
 }
 
@@ -2264,13 +2925,148 @@ function selectSize(size, btn) {
   selectedSize = size.toUpperCase();
 }
 
+function adjustDetailQty(delta) {
+  const qtyInput = document.getElementById('detail-modal-qty');
+  let current = parseInt(qtyInput.value) || 1;
+  current += delta;
+  if (current < 1) current = 1;
+  qtyInput.value = current;
+}
+
+function scrollToSizeChart() {
+  const chartEl = document.getElementById('size-chart-section-element');
+  const modalEl = document.querySelector('.detail-modal');
+  if (chartEl && modalEl) {
+    modalEl.scrollTo({
+      top: chartEl.offsetTop - 20,
+      behavior: 'smooth'
+    });
+  }
+}
+
+function renderSizeChart(category) {
+  const headerRow = document.getElementById('size-table-header-row');
+  const bodyRows = document.getElementById('size-table-body-rows');
+  
+  let columns = [];
+  let rows = [];
+  
+  const cat = (category || '').toLowerCase();
+  if (cat.includes('vestido') || cat.includes('macacão') || cat.includes('conjunto')) {
+    columns = ['Tamanho', 'Busto (cm)', 'Cintura (cm)', 'Quadril (cm)', 'Comprimento (cm)'];
+    rows = [
+      { size: 'PP', busto: '82 - 86', cintura: '64 - 68', quadril: '90 - 94', comp: '98' },
+      { size: 'P', busto: '86 - 90', cintura: '68 - 72', quadril: '94 - 98', comp: '100' },
+      { size: 'M', busto: '90 - 94', cintura: '72 - 76', quadril: '98 - 102', comp: '102' },
+      { size: 'G', busto: '96 - 100', cintura: '78 - 82', quadril: '104 - 108', comp: '104' },
+      { size: 'GG', busto: '102 - 106', cintura: '84 - 88', quadril: '110 - 114', comp: '106' }
+    ];
+  } else if (cat.includes('blusa') || cat.includes('cropped') || cat.includes('camisa') || cat.includes('t-shirt') || cat.includes('body')) {
+    columns = ['Tamanho', 'Busto (cm)', 'Cintura (cm)', 'Comprimento (cm)'];
+    rows = [
+      { size: 'PP', busto: '84 - 88', cintura: '66 - 70', comp: '55' },
+      { size: 'P', busto: '88 - 92', cintura: '70 - 74', comp: '57' },
+      { size: 'M', busto: '92 - 96', cintura: '74 - 78', comp: '59' },
+      { size: 'G', busto: '98 - 102', cintura: '80 - 84', comp: '61' },
+      { size: 'GG', busto: '104 - 108', cintura: '86 - 90', comp: '63' }
+    ];
+  } else if (cat.includes('calça') || cat.includes('saia') || cat.includes('short') || cat.includes('pantacourt')) {
+    columns = ['Tamanho', 'Cintura (cm)', 'Quadril (cm)', 'Comprimento (cm)'];
+    rows = [
+      { size: 'PP', cintura: '62 - 66', quadril: '90 - 94', comp: '100' },
+      { size: 'P', cintura: '66 - 70', quadril: '94 - 98', comp: '102' },
+      { size: 'M', cintura: '70 - 74', quadril: '98 - 102', comp: '104' },
+      { size: 'G', cintura: '76 - 80', quadril: '104 - 108', comp: '106' },
+      { size: 'GG', cintura: '82 - 86', quadril: '110 - 114', comp: '108' }
+    ];
+  } else {
+    // Default general size chart
+    columns = ['Tamanho', 'Busto (cm)', 'Cintura (cm)', 'Quadril (cm)'];
+    rows = [
+      { size: 'PP', busto: '82 - 86', cintura: '62 - 66', quadril: '90 - 94' },
+      { size: 'P', busto: '86 - 90', cintura: '66 - 70', quadril: '94 - 98' },
+      { size: 'M', busto: '90 - 94', cintura: '70 - 74', quadril: '98 - 102' },
+      { size: 'G', busto: '96 - 100', cintura: '76 - 80', quadril: '104 - 108' },
+      { size: 'GG', busto: '102 - 106', cintura: '82 - 86', quadril: '110 - 114' }
+    ];
+  }
+  
+  headerRow.innerHTML = columns.map(col => `<th>${col}</th>`).join('');
+  bodyRows.innerHTML = rows.map(row => {
+    const cells = Object.keys(row).map(key => `<td>${row[key]}</td>`).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+}
+
+function renderLandingFeatures(product) {
+  const darkFeat = document.getElementById('detail-landing-features-dark');
+  const lightFeat = document.getElementById('detail-landing-features-light');
+  
+  darkFeat.innerHTML = `
+    <div class="landing-image-card">
+      <img src="${product.img}" style="filter: brightness(0.85);" alt="${product.name} - Detalhe">
+    </div>
+    <div style="text-align: left; display: flex; flex-direction: column; justify-content: center;">
+      <h4 style="font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; color: var(--gold); margin-bottom: 0.5rem; letter-spacing: 0.05em; text-transform: uppercase;">Toque Suave & Conforto Térmico</h4>
+      <p style="font-size: 0.8rem; color: #d1d5db; line-height: 1.6; font-weight: 300;">
+        Material selecionado de algodão premium com fibras de elastano que promovem conforto prolongado e caimento de alto padrão. Tecido respirável de toque aveludado perfeito para o dia a dia.
+      </p>
+    </div>
+  `;
+  
+  lightFeat.innerHTML = `
+    <div style="text-align: left; display: flex; flex-direction: column; justify-content: center;">
+      <h4 style="font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; color: var(--dark); margin-bottom: 0.5rem; letter-spacing: 0.05em; text-transform: uppercase;">Costuras Reforçadas & Acabamento Francês</h4>
+      <p style="font-size: 0.8rem; color: var(--gray); line-height: 1.6; font-weight: 300;">
+        Desenvolvido com bainhas duplas e costura invisible de alta durabilidade. Uma peça atemporal que mantém seu caimento e cor originais mesmo após lavagens frequentes.
+      </p>
+    </div>
+    <div class="landing-image-card">
+      <img src="${product.img}" style="filter: contrast(1.05);" alt="${product.name} - Lifestyle">
+    </div>
+  `;
+}
+
+function renderReviews(product) {
+  const comments = [
+    { author: 'Mariana Silva', stars: 5, date: 'Há 3 dias', comment: 'Amei muito! O caimento é maravilhoso e veste super bem. O tecido é muito macio e quentinho. Chegou super rápido!' },
+    { author: 'Beatriz Costa', stars: 5, date: 'Há 1 semana', comment: 'Comprei o tamanho M seguindo a tabela e serviu certinho. A qualidade do acabamento é de alto nível, surpreendente!' },
+    { author: 'Ana Souza', stars: 4, date: 'Há 2 semanas', comment: 'Lindo produto, caimento impecável. Fica super elegante no corpo. A entrega foi super rápida, recomendo!' }
+  ];
+  
+  const listEl = document.getElementById('detail-reviews-list');
+  listEl.innerHTML = comments.map(c => `
+    <div class="review-item">
+      <div class="review-item-header">
+        <div class="review-author">
+          ${c.author}
+          <span class="verified-badge">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Compra Verificada
+          </span>
+        </div>
+        <div class="review-date">${c.date}</div>
+      </div>
+      <div class="review-stars-small">${'★'.repeat(c.stars)}${'☆'.repeat(5 - c.stars)}</div>
+      <p class="review-comment">${c.comment}</p>
+    </div>
+  `).join('');
+}
+
 function checkoutSingleWhatsApp() {
   if (!currentDetailProduct) return;
   if (!selectedSize) {
     showToast('Por favor, selecione um tamanho antes de prosseguir!', 'error');
     return;
   }
-  const msg = `Olá! Gostaria de comprar o produto *${currentDetailProduct.name}* no tamanho *${selectedSize}* no valor de R$ ${currentDetailProduct.price.toFixed(2).replace('.',',')}!`;
+  
+  const qtyInput = document.getElementById('detail-modal-qty');
+  const qty = parseInt(qtyInput.value) || 1;
+  
+  const qtyText = qty > 1 ? ` (Quantidade: *${qty}*)` : '';
+  const totalVal = (currentDetailProduct.price * qty).toFixed(2).replace('.', ',');
+  
+  const msg = `Olá! Gostaria de comprar o produto *${currentDetailProduct.name}* no tamanho *${selectedSize}*${qtyText} no valor total de R$ ${totalVal}!`;
   window.open(`https://api.whatsapp.com/send/?phone=5548996439322&text=${encodeURIComponent(msg)}`, '_blank');
 }
 
@@ -2281,17 +3077,20 @@ function addCurrentToCart() {
     return;
   }
   
-  // Custom addToCart logic to preserve sizes
+  const qtyInput = document.getElementById('detail-modal-qty');
+  const qty = parseInt(qtyInput.value) || 1;
+  
+  // Custom addToCart logic to preserve sizes and quantity
   const cartId = currentDetailProduct.id + '-' + selectedSize;
   const existing = cartItems.find(i => i.cartId === cartId);
   if (existing) {
-    existing.qty++;
+    existing.qty += qty;
   } else {
     cartItems.push({
       ...currentDetailProduct,
       cartId: cartId,
       name: `${currentDetailProduct.name} (${selectedSize})`,
-      qty: 1
+      qty: qty
     });
   }
   updateCart();
