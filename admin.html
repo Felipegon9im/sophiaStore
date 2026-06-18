@@ -2103,6 +2103,35 @@
           <textarea id="f-desc" placeholder="Descreva o produto, material, tecido..."></textarea>
         </div>
 
+        <!-- Peso e Dimensões para Integração Logística (Bling/Shopee) -->
+        <div class="form-group full" style="border-top: 1px solid var(--gray-200); padding-top: 1rem; margin-top: 0.5rem">
+          <label style="font-weight: 600; color: var(--primary)">📦 Logística & Integrações (Peso e Dimensões)</label>
+        </div>
+        <div class="form-group">
+          <label>Código de Barras (GTIN/EAN)</label>
+          <input type="text" id="f-gtin" placeholder="Ex: 7891234567890">
+        </div>
+        <div class="form-group">
+          <label>Peso Líquido (kg)</label>
+          <input type="number" id="f-weight-net" placeholder="Ex: 0.200" step="0.001" min="0">
+        </div>
+        <div class="form-group">
+          <label>Peso Bruto (kg)</label>
+          <input type="number" id="f-weight-gross" placeholder="Ex: 0.250" step="0.001" min="0">
+        </div>
+        <div class="form-group">
+          <label>Largura (cm)</label>
+          <input type="number" id="f-width" placeholder="Ex: 20" step="0.1" min="0">
+        </div>
+        <div class="form-group">
+          <label>Altura (cm)</label>
+          <input type="number" id="f-height" placeholder="Ex: 15" step="0.1" min="0">
+        </div>
+        <div class="form-group">
+          <label>Profundidade/Comprimento (cm)</label>
+          <input type="number" id="f-depth" placeholder="Ex: 5" step="0.1" min="0">
+        </div>
+
         <div class="form-group full">
           <label>Estoque por Tamanho</label>
           <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.75rem;margin-top:0.25rem">
@@ -2874,10 +2903,17 @@ async function saveProduct() {
     name,
     sku:       document.getElementById('f-sku').value,
     cat:       document.getElementById('f-category').value,
+    brand:     document.getElementById('f-brand').value.trim(),
     cost,
     price,
     salePrice: parseFloat(document.getElementById('f-sale-price').value) || null,
     desc:      document.getElementById('f-desc').value || '',
+    gtin:      document.getElementById('f-gtin').value.trim(),
+    weightNet:   parseFloat(document.getElementById('f-weight-net').value) || 0,
+    weightGross: parseFloat(document.getElementById('f-weight-gross').value) || 0,
+    width:       parseFloat(document.getElementById('f-width').value) || 0,
+    height:      parseFloat(document.getElementById('f-height').value) || 0,
+    depth:       parseFloat(document.getElementById('f-depth').value) || 0,
     stock: {
       pp: parseInt(document.getElementById('f-pp').value) || 0,
       p:  parseInt(document.getElementById('f-p').value)  || 0,
@@ -3019,8 +3055,8 @@ async function syncToSheets(product) {
     return;
   }
   
-  // Sincronizar com Bling antes de gravar no Supabase para obter o bling_id
-  if (config.blingConnected && config.appsScriptUrl && !product.blingId) {
+  // Sincronizar com Bling antes de gravar no Supabase para obter/atualizar o bling_id
+  if (config.blingConnected && config.appsScriptUrl) {
     try {
       const res = await fetch(config.appsScriptUrl, {
         method: 'POST',
@@ -3049,6 +3085,7 @@ async function syncToSheets(product) {
       name: product.name,
       sku: product.sku || '',
       cat: product.cat || '',
+      brand: product.brand || '',
       cost: parseFloat(product.cost) || 0,
       price: parseFloat(product.price) || 0,
       sale_price: product.salePrice ? parseFloat(product.salePrice) : null,
@@ -3057,7 +3094,13 @@ async function syncToSheets(product) {
       featured: product.featured === 'Sim',
       img_url: product.imgUrl || '',
       cloud_id: product.cloudId || '',
-      bling_id: product.blingId || ''
+      bling_id: product.blingId || '',
+      gtin: product.gtin || '',
+      weight_net: parseFloat(product.weightNet) || 0,
+      weight_gross: parseFloat(product.weightGross) || 0,
+      width: parseFloat(product.width) || 0,
+      height: parseFloat(product.height) || 0,
+      depth: parseFloat(product.depth) || 0
     };
 
     const { error } = await supabaseClient.from('produtos').upsert([payload]);
@@ -3667,10 +3710,17 @@ function openModal(mode, id) {
       document.getElementById('f-name').value = p.name;
       document.getElementById('f-sku').value = p.sku;
       document.getElementById('f-category').value = p.cat;
+      document.getElementById('f-brand').value = p.brand || '';
       document.getElementById('f-cost').value = p.cost;
       document.getElementById('f-price').value = p.price;
       document.getElementById('f-sale-price').value = p.salePrice || '';
       document.getElementById('f-desc').value = p.desc || '';
+      document.getElementById('f-gtin').value = p.gtin || '';
+      document.getElementById('f-weight-net').value = p.weightNet !== undefined ? p.weightNet : '';
+      document.getElementById('f-weight-gross').value = p.weightGross !== undefined ? p.weightGross : '';
+      document.getElementById('f-width').value = p.width !== undefined ? p.width : '';
+      document.getElementById('f-height').value = p.height !== undefined ? p.height : '';
+      document.getElementById('f-depth').value = p.depth !== undefined ? p.depth : '';
       document.getElementById('f-status').value = p.status;
       document.getElementById('f-featured').value = p.featured;
       document.getElementById('f-pp').value = p.stock.pp;
@@ -3692,10 +3742,17 @@ function openModal(mode, id) {
     document.getElementById('f-name').value = '';
     document.getElementById('f-sku').value = 'AUTO-' + String(products.length+1).padStart(3,'0');
     document.getElementById('f-category').value = 'Vestidos';
+    document.getElementById('f-brand').value = '';
     document.getElementById('f-cost').value = '';
     document.getElementById('f-price').value = '';
     document.getElementById('f-sale-price').value = '';
     document.getElementById('f-desc').value = '';
+    document.getElementById('f-gtin').value = '';
+    document.getElementById('f-weight-net').value = '';
+    document.getElementById('f-weight-gross').value = '';
+    document.getElementById('f-width').value = '';
+    document.getElementById('f-height').value = '';
+    document.getElementById('f-depth').value = '';
     document.getElementById('f-status').value = 'Ativo';
     document.getElementById('f-featured').value = 'Não';
     document.getElementById('f-pp').value = 0;

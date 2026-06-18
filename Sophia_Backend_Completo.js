@@ -338,8 +338,30 @@ function pushProductToBling(product) {
     "preco": parseFloat(finalPrice) || 0,
     "tipo": "P",
     "situacao": product.status === "Ativo" ? "A" : "I",
-    "formato": "S"
+    "formato": "S",
+    "marca": product.brand || '',
+    "descricaoCurta": product.desc || '',
+    "descricaoComplementar": product.desc || '',
+    "pesoLiquido": parseFloat(product.weightNet) || 0,
+    "pesoBruto": parseFloat(product.weightGross) || 0,
+    "gtin": product.gtin || '',
+    "dimensoes": {
+      "largura": parseFloat(product.width) || 0,
+      "altura": parseFloat(product.height) || 0,
+      "profundidade": parseFloat(product.depth) || 0,
+      "unidadeMedida": 2
+    }
   };
+  
+  if (product.imgUrl) {
+    payload.midia = {
+      "imagens": [
+        {
+          "url": product.imgUrl
+        }
+      ]
+    };
+  }
   
   let url = "https://api.bling.com.br/v3/produtos";
   let method = "POST";
