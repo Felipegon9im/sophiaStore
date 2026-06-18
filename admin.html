@@ -5555,6 +5555,19 @@ function exportToPDF(type) {
 // ── SYSTEM UPDATE LOGIC ──
 let appVersion = '1.0.0';
 
+// Compara duas versões semver (retorna true se newVer > oldVer)
+function isNewerVersion(newVer, oldVer) {
+  const newParts = String(newVer).replace(/[^0-9.]/g, '').split('.').map(Number);
+  const oldParts = String(oldVer).replace(/[^0-9.]/g, '').split('.').map(Number);
+  for (let i = 0; i < Math.max(newParts.length, oldParts.length); i++) {
+    const n = newParts[i] || 0;
+    const o = oldParts[i] || 0;
+    if (n > o) return true;
+    if (n < o) return false;
+  }
+  return false;
+}
+
 async function initVersion() {
   if (window.systemAPI && window.systemAPI.getAppVersion) {
     try {
@@ -5592,15 +5605,20 @@ function checkSystemUpdate() {
       const updateInfoArea = document.getElementById('update-info-area');
       const newVersionVal = document.getElementById('new-version-val');
       const newVersionNotes = document.getElementById('new-version-notes');
+      const btnDownload = document.getElementById('btn-start-download');
       
-      if (data.version !== currentVersion) {
+      const hasUpdate = isNewerVersion(data.version, currentVersion);
+      
+      if (hasUpdate) {
         newVersionVal.textContent = 'v' + data.version;
         newVersionNotes.textContent = data.notes || 'Nenhuma nota de versão fornecida.';
+        if (btnDownload) btnDownload.style.display = 'block';
         updateInfoArea.style.display = 'block';
         toast(`🎉 Nova versão v${data.version} disponível!`, 'success');
       } else {
-        newVersionVal.textContent = 'v' + data.version + ' (Versão Atual)';
-        newVersionNotes.textContent = 'Seu painel já está na versão mais recente.';
+        newVersionVal.textContent = 'v' + data.version + ' (Sua versão: v' + currentVersion + ')';
+        newVersionNotes.textContent = 'O seu painel já está na versão mais recente disponível.';
+        if (btnDownload) btnDownload.style.display = 'none';
         updateInfoArea.style.display = 'block';
         toast('✅ O sistema já está atualizado!', 'success');
       }
