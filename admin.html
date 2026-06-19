@@ -2134,7 +2134,7 @@
 
         <div class="form-group full">
           <label>Estoque por Tamanho</label>
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.75rem;margin-top:0.25rem">
+          <div id="size-stock-container" style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.75rem;margin-top:0.25rem">
             <div><label style="font-size:0.65rem;color:var(--gray-400)">PP</label><input type="number" id="f-pp" placeholder="0" min="0"></div>
             <div><label style="font-size:0.65rem;color:var(--gray-400)">P</label><input type="number" id="f-p" placeholder="0" min="0"></div>
             <div><label style="font-size:0.65rem;color:var(--gray-400)">M</label><input type="number" id="f-m" placeholder="0" min="0"></div>
@@ -2470,7 +2470,7 @@ function renderProducts(filter='') {
       </td>
       <td>
         <div style="font-weight:500;font-size:0.85rem;${total<5?'color:var(--danger)':''}">${total} un</div>
-        <div style="font-size:0.65rem;color:var(--gray-400)">P:${p.stock.p} M:${p.stock.m} G:${p.stock.g}</div>
+        <div style="font-size:0.65rem;color:var(--gray-400)">${formatStockBrief(p.stock)}</div>
         <div class="stock-bar" style="margin-top:4px"><div class="stock-fill" style="width:${Math.min(total/50*100,100)}%;background:${total<5?'var(--danger)':total<15?'var(--warning)':'var(--success)'}"></div></div>
       </td>
       <td>${statusBadge(p.status)}</td>
@@ -2498,6 +2498,32 @@ function renderInventory() {
   document.getElementById('inventory-table').innerHTML = products.map(p => {
     const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
     const low = total < 5;
+    const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(p.cat || '');
+    
+    let sizesInputsHtml = '';
+    if (isKids) {
+      const kidsSizes = ['1', '2', '3', '4', '6', '8', '10', '12', '14', '16'];
+      sizesInputsHtml = `<td colspan="5">
+        <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center">
+          ${kidsSizes.map(sz => {
+            const val = p.stock[sz] || 0;
+            return `<div style="display:flex;align-items:center;background:var(--gray-50);padding:2px 6px;border-radius:4px;border:1px solid var(--gray-200);gap:4px">
+              <span style="font-size:0.6rem;color:var(--gray-500);font-weight:600">${sz}a</span>
+              <input type="number" value="${val}" min="0" onchange="updateStock(${p.id},'${sz}',this.value)" style="width:38px;text-align:center;border:none;background:transparent;font-size:0.75rem;padding:0;outline:none">
+            </div>`;
+          }).join('')}
+        </div>
+      </td>`;
+    } else {
+      sizesInputsHtml = `
+        <td><input type="number" value="${p.stock.pp || 0}" min="0" onchange="updateStock(${p.id},'pp',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+        <td><input type="number" value="${p.stock.p || 0}" min="0" onchange="updateStock(${p.id},'p',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+        <td><input type="number" value="${p.stock.m || 0}" min="0" onchange="updateStock(${p.id},'m',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+        <td><input type="number" value="${p.stock.g || 0}" min="0" onchange="updateStock(${p.id},'g',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+        <td><input type="number" value="${p.stock.gg || 0}" min="0" onchange="updateStock(${p.id},'gg',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      `;
+    }
+
     return `
     <tr>
       <td>
@@ -2506,11 +2532,7 @@ function renderInventory() {
           <div><div style="font-weight:500;font-size:.8rem">${p.name}</div><div style="font-size:.65rem;color:var(--gray-400)">${p.sku}</div></div>
         </div>
       </td>
-      <td><input type="number" value="${p.stock.pp}" min="0" onchange="updateStock(${p.id},'pp',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
-      <td><input type="number" value="${p.stock.p}" min="0" onchange="updateStock(${p.id},'p',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
-      <td><input type="number" value="${p.stock.m}" min="0" onchange="updateStock(${p.id},'m',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
-      <td><input type="number" value="${p.stock.g}" min="0" onchange="updateStock(${p.id},'g',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
-      <td><input type="number" value="${p.stock.gg}" min="0" onchange="updateStock(${p.id},'gg',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+      ${sizesInputsHtml}
       <td><strong style="${low?'color:var(--danger)':''}">${total}</strong></td>
       <td>${low ? '<span class="badge badge-danger">⚠️ Baixo</span>' : '<span class="badge badge-success">✓ OK</span>'}</td>
       <td><button class="btn btn-sm btn-primary" onclick="syncSingleProduct(${p.id})">↑ Sync</button></td>
@@ -3013,13 +3035,24 @@ async function saveProduct() {
     width:       parseFloat(document.getElementById('f-width').value) || 0,
     height:      parseFloat(document.getElementById('f-height').value) || 0,
     depth:       parseFloat(document.getElementById('f-depth').value) || 0,
-    stock: {
-      pp: parseInt(document.getElementById('f-pp').value) || 0,
-      p:  parseInt(document.getElementById('f-p').value)  || 0,
-      m:  parseInt(document.getElementById('f-m').value)  || 0,
-      g:  parseInt(document.getElementById('f-g').value)  || 0,
-      gg: parseInt(document.getElementById('f-gg').value) || 0,
-    },
+    stock: (function() {
+      const st = {};
+      const inputs = document.querySelectorAll('.size-stock-input');
+      if (inputs.length > 0) {
+        inputs.forEach(input => {
+          const sz = input.getAttribute('data-size');
+          st[sz] = parseInt(input.value) || 0;
+        });
+      } else {
+        // Fallback para quando o formulário ainda não foi totalmente renderizado com a classe nova
+        st.pp = parseInt(document.getElementById('f-pp')?.value) || 0;
+        st.p = parseInt(document.getElementById('f-p')?.value) || 0;
+        st.m = parseInt(document.getElementById('f-m')?.value) || 0;
+        st.g = parseInt(document.getElementById('f-g')?.value) || 0;
+        st.gg = parseInt(document.getElementById('f-gg')?.value) || 0;
+      }
+      return st;
+    })(),
     status:      document.getElementById('f-status').value,
     featured:    document.getElementById('f-featured').value,
     imgUrl,
@@ -3824,12 +3857,16 @@ function normalizeProductsStock() {
   if (!products || !Array.isArray(products)) return;
   products.forEach(p => {
     if (!p.stock) {
-      p.stock = { pp: 0, p: 0, m: 0, g: 0, gg: 0 };
+      const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(p.cat || '');
+      if (isKids) {
+        p.stock = { "1": 0, "2": 0, "3": 0, "4": 0, "6": 0, "8": 0, "10": 0, "12": 0, "14": 0, "16": 0 };
+      } else {
+        p.stock = { pp: 0, p: 0, m: 0, g: 0, gg: 0 };
+      }
     } else {
-      const sizes = ['pp', 'p', 'm', 'g', 'gg'];
-      sizes.forEach(sz => {
+      for (let sz in p.stock) {
         p.stock[sz] = parseInt(p.stock[sz]) || 0;
-      });
+      }
     }
   });
 }
@@ -3882,6 +3919,54 @@ async function uploadToCloudinary(file) {
   }
 }
 
+// Função para renderizar dinamicamente os inputs de estoque baseando-se na categoria (infantil vs adulto)
+function updateSizeInputs(category, stockObj = null) {
+  const container = document.getElementById('size-stock-container');
+  if (!container) return;
+
+  const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(category || '');
+  let html = '';
+  
+  if (isKids) {
+    const kidsSizes = ['1', '2', '3', '4', '6', '8', '10', '12', '14', '16'];
+    html = kidsSizes.map(sz => {
+      const val = stockObj && stockObj[sz] !== undefined ? stockObj[sz] : 0;
+      return `<div>
+        <label style="font-size:0.65rem;color:var(--gray-400)">${sz} anos</label>
+        <input type="number" class="size-stock-input" data-size="${sz}" value="${val}" min="0" style="width:100%;padding:0.3rem 0.5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:0.85rem">
+      </div>`;
+    }).join('');
+  } else {
+    const adultSizes = ['pp', 'p', 'm', 'g', 'gg'];
+    html = adultSizes.map(sz => {
+      const val = stockObj && stockObj[sz] !== undefined ? stockObj[sz] : 0;
+      return `<div>
+        <label style="font-size:0.65rem;color:var(--gray-400)">${sz.toUpperCase()}</label>
+        <input type="number" class="size-stock-input" data-size="${sz}" value="${val}" min="0" style="width:100%;padding:0.3rem 0.5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:0.85rem">
+      </div>`;
+    }).join('');
+  }
+  container.innerHTML = html;
+}
+
+// Formatação compacta para exibição na tabela de produtos
+function formatStockBrief(stock) {
+  if (!stock) return 'Sem estoque';
+  const keys = Object.keys(stock);
+  const numericKeys = keys.filter(k => !isNaN(parseInt(k)) && stock[k] > 0);
+  if (numericKeys.length > 0) {
+    numericKeys.sort((a,b) => parseInt(a) - parseInt(b));
+    return numericKeys.map(k => `${k}a:${stock[k]}`).join(' ');
+  }
+  let parts = [];
+  if (stock.pp) parts.push(`PP:${stock.pp}`);
+  if (stock.p) parts.push(`P:${stock.p}`);
+  if (stock.m) parts.push(`M:${stock.m}`);
+  if (stock.g) parts.push(`G:${stock.g}`);
+  if (stock.gg) parts.push(`GG:${stock.gg}`);
+  return parts.length > 0 ? parts.join(' ') : '0 un';
+}
+
 // Armazena URLs enviadas ao Cloudinary para o produto atual
 let pendingImgUrls = [];
 
@@ -3907,12 +3992,7 @@ function openModal(mode, id) {
       document.getElementById('f-height').value = p.height !== undefined ? p.height : '';
       document.getElementById('f-depth').value = p.depth !== undefined ? p.depth : '';
       document.getElementById('f-status').value = p.status;
-      document.getElementById('f-featured').value = p.featured;
-      document.getElementById('f-pp').value = p.stock.pp;
-      document.getElementById('f-p').value = p.stock.p;
-      document.getElementById('f-m').value = p.stock.m;
-      document.getElementById('f-g').value = p.stock.g;
-      document.getElementById('f-gg').value = p.stock.gg;
+      updateSizeInputs(p.cat, p.stock);
       document.getElementById('f-bling-id').value = p.blingId || '';
       document.getElementById('f-bling-format').value = p.blingFormat || 'S';
       document.getElementById('f-bling-type').value = p.blingType || 'P';
@@ -3958,11 +4038,7 @@ function openModal(mode, id) {
     document.getElementById('f-depth').value = '';
     document.getElementById('f-status').value = 'Ativo';
     document.getElementById('f-featured').value = 'Não';
-    document.getElementById('f-pp').value = 0;
-    document.getElementById('f-p').value = 0;
-    document.getElementById('f-m').value = 0;
-    document.getElementById('f-g').value = 0;
-    document.getElementById('f-gg').value = 0;
+    updateSizeInputs('Vestidos', { pp: 0, p: 0, m: 0, g: 0, gg: 0 });
     document.getElementById('f-bling-id').value = '';
     document.getElementById('f-bling-format').value = 'S';
     document.getElementById('f-bling-type').value = 'P';
@@ -6439,6 +6515,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (selectCust) {
     selectCust.addEventListener('change', () => {
       applyShareTemplate();
+    });
+  }
+  
+  // Dynamic size inputs when changing category in product modal
+  const catSelect = document.getElementById('f-category');
+  if (catSelect) {
+    catSelect.addEventListener('change', (e) => {
+      const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(e.target.value || '');
+      const defaultStock = isKids 
+        ? { "1": 0, "2": 0, "3": 0, "4": 0, "6": 0, "8": 0, "10": 0, "12": 0, "14": 0, "16": 0 }
+        : { pp: 0, p: 0, m: 0, g: 0, gg: 0 };
+      updateSizeInputs(e.target.value, defaultStock);
     });
   }
 });

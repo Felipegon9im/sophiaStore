@@ -90,7 +90,15 @@ function doGet(e) {
         blingDescShort: p.bling_desc_short || '',
         blingDescComp: p.bling_desc_comp || '',
         blingObservacoes: p.bling_observacoes || '',
-        blingTags: p.bling_tags || ''
+        blingTags: p.bling_tags || '',
+        brand: p.brand || '',
+        desc: p.desc || '',
+        gtin: p.gtin || '',
+        weightNet: parseFloat(p.weight_net) || 0,
+        weightGross: parseFloat(p.weight_gross) || 0,
+        width: parseFloat(p.width) || 0,
+        height: parseFloat(p.height) || 0,
+        depth: parseFloat(p.depth) || 0
       })) : [];
 
       // Buscar categorias
@@ -441,13 +449,12 @@ function pushProductToBling(product) {
       
       if (blingRes && blingRes.id) {
         // 1. Atualizar estoque físico total
-        const totalStock = (product.stock ? 
-          (parseInt(product.stock.pp) || 0) + 
-          (parseInt(product.stock.p) || 0) + 
-          (parseInt(product.stock.m) || 0) + 
-          (parseInt(product.stock.g) || 0) + 
-          (parseInt(product.stock.gg) || 0) 
-          : 0);
+        var totalStock = 0;
+        if (product.stock) {
+          for (var key in product.stock) {
+            totalStock += (parseInt(product.stock[key]) || 0);
+          }
+        }
         updateBlingStock(blingRes.id, totalStock, token);
         
         // 2. Vincular com a Shopee
