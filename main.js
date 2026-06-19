@@ -262,7 +262,7 @@ function downloadFile(url, dest, onProgress, onSuccess, onError) {
   };
 
   protocol.get(url, options, (response) => {
-    if (response.statusCode === 301 || response.statusCode === 302) {
+    if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
       downloadFile(response.headers.location, dest, onProgress, onSuccess, onError);
       return;
     }
