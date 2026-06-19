@@ -408,7 +408,7 @@ function pushProductToBling(product) {
     payload.midia = {
       "imagens": [
         {
-          "url": finalImgUrl
+          "link": finalImgUrl
         }
       ]
     };
