@@ -73,9 +73,24 @@ function doGet(e) {
         stock: typeof p.stock === 'string' ? JSON.parse(p.stock) : p.stock,
         status: p.status || 'Ativo', featured: p.featured ? "Sim" : "Não", imgUrl: p.img_url || '',
         cloudId: p.cloud_id || '', blingId: p.bling_id || '',
-        shopeeId: p.shopee_id || '', shopeePrice: parseFloat(p.shopee_price) || 0,
-        shopeeSalePrice: parseFloat(p.shopee_sale_price) || 0, shopeeSupplierId: p.shopee_supplier_id || '',
-        shopeeBrandId: p.shopee_brand_id || ''
+        blingFormat: p.bling_format || 'S',
+        blingType: p.bling_type || 'P',
+        blingUnit: p.bling_unit || 'UN',
+        blingCondition: p.bling_condition !== undefined ? parseInt(p.bling_condition) : 1,
+        blingProduction: p.bling_production || 'P',
+        blingExpiration: p.bling_expiration || '',
+        blingFreeShipping: p.bling_free_shipping || false,
+        blingGtinTributario: p.bling_gtin_tributario || '',
+        blingVolumes: p.bling_volumes !== undefined ? parseInt(p.bling_volumes) : 1,
+        blingItemsBox: p.bling_items_box !== undefined ? parseInt(p.bling_items_box) : 1,
+        blingUnitMeasure: p.bling_unit_measure !== undefined ? parseInt(p.bling_unit_measure) : 2,
+        blingCategoryId: p.bling_category_id || '',
+        blingLinkExterno: p.bling_link_externo || '',
+        blingVideoUrl: p.bling_video_url || '',
+        blingDescShort: p.bling_desc_short || '',
+        blingDescComp: p.bling_desc_comp || '',
+        blingObservacoes: p.bling_observacoes || '',
+        blingTags: p.bling_tags || ''
       })) : [];
 
       // Buscar categorias
@@ -338,29 +353,62 @@ function pushProductToBling(product) {
   const payload = {
     "nome": product.name,
     "codigo": product.sku || String(product.id),
-    "preco": parseFloat(finalPrice) || 0,
-    "tipo": "P",
+    "preco": parseFloat(product.price) || 0,
+    "tipo": product.blingType || "P",
     "situacao": product.status === "Ativo" ? "A" : "I",
-    "formato": "S",
+    "formato": product.blingFormat || "S",
     "marca": product.brand || '',
-    "descricaoCurta": product.desc || '',
-    "descricaoComplementar": product.desc || '',
+    "unidade": product.blingUnit || 'UN',
+    "condicao": parseInt(product.blingCondition) !== undefined ? parseInt(product.blingCondition) : 1,
+    "producao": product.blingProduction || 'P',
+    "freteGratis": !!product.blingFreeShipping,
     "pesoLiquido": parseFloat(product.weightNet) || 0,
     "pesoBruto": parseFloat(product.weightGross) || 0,
     "gtin": product.gtin || '',
+    "gtinTributario": product.blingGtinTributario || '',
+    "volumes": parseInt(product.blingVolumes) || 1,
+    "itensPorCaixa": parseInt(product.blingItemsBox) || 1,
+    "descricaoCurta": product.blingDescShort || product.desc || '',
+    "descricaoComplementar": product.blingDescComp || product.desc || '',
+    "linkExterno": product.blingLinkExterno || '',
+    "observacoes": product.blingObservacoes || '',
     "dimensoes": {
       "largura": parseFloat(product.width) || 0,
       "altura": parseFloat(product.height) || 0,
       "profundidade": parseFloat(product.depth) || 0,
-      "unidadeMedida": 2
+      "unidadeMedida": parseInt(product.blingUnitMeasure) || 2
     }
   };
+
+  if (product.blingExpiration) {
+    payload.dataValidade = product.blingExpiration;
+  }
+
+  if (product.blingVideoUrl) {
+    payload.video = {
+      "url": product.blingVideoUrl
+    };
+  }
+
+  if (product.blingTags) {
+    payload.tags = product.blingTags.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t !== ''; });
+  }
+
+  if (product.blingCategoryId) {
+    payload.categoria = {
+      "id": parseInt(product.blingCategoryId)
+    };
+  }
   
   if (product.imgUrl) {
+    var finalImgUrl = product.imgUrl;
+    if (finalImgUrl.toLowerCase().indexOf('.webp') > -1) {
+      finalImgUrl = finalImgUrl.replace(/\.webp/gi, '.jpg');
+    }
     payload.midia = {
       "imagens": [
         {
-          "url": product.imgUrl
+          "url": finalImgUrl
         }
       ]
     };
@@ -493,11 +541,8 @@ function linkProductToStore(blingId, product, token) {
     "produto": { "id": parseInt(blingId) },
     "loja": { "id": parseInt(shopeeLojaId) },
     "codigo": product.sku || String(product.id),
-    "preco": parseFloat(product.shopeePrice) || parseFloat(product.price) || 0,
-    "precoPromocional": parseFloat(product.shopeeSalePrice) || null,
-    "idProdutoLoja": product.shopeeId || '',
-    "idMarcaLoja": product.shopeeBrandId || '',
-    "idFornecedorLoja": product.shopeeSupplierId || ''
+    "preco": parseFloat(product.price) || 0,
+    "precoPromocional": product.salePrice ? parseFloat(product.salePrice) : null
   };
   
   try {

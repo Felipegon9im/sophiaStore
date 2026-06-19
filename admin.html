@@ -2163,29 +2163,103 @@
           <input type="text" id="f-bling-id" placeholder="Ex: 128391203">
         </div>
 
-        <!-- Vinculo com Shopee -->
+        <!-- Integração Bling ERP (Campos Adicionais) -->
         <div class="form-group full" style="border-top: 1px solid var(--gray-200); padding-top: 1rem; margin-top: 0.5rem">
-          <label style="font-weight: 600; color: #ff5722">🧡 Vínculo com Shopee (Bling)</label>
+          <label style="font-weight: 600; color: var(--success)">⚙️ Integração Bling ERP (Campos Adicionais)</label>
         </div>
         <div class="form-group">
-          <label>ID do Produto na Shopee</label>
-          <input type="text" id="f-shopee-id" placeholder="Ex: 0 ou ID da Shopee">
+          <label>Formato</label>
+          <select id="f-bling-format">
+            <option value="S">Simples (Item único ou sem variação)</option>
+            <option value="V">Com variação</option>
+            <option value="E">Estruturado</option>
+          </select>
         </div>
         <div class="form-group">
-          <label>Preço na Shopee (R$)</label>
-          <input type="number" id="f-shopee-price" placeholder="Ex: 0.00" step="0.01">
+          <label>Tipo</label>
+          <select id="f-bling-type">
+            <option value="P">Produto</option>
+            <option value="S">Serviço</option>
+          </select>
         </div>
         <div class="form-group">
-          <label>Preço Promocional Shopee (R$)</label>
-          <input type="number" id="f-shopee-sale-price" placeholder="Ex: 0.00 (opcional)" step="0.01">
+          <label>Unidade</label>
+          <input type="text" id="f-bling-unit" placeholder="Ex: UN, PC, PAR" value="UN">
         </div>
         <div class="form-group">
-          <label>ID do Fornecedor na Shopee</label>
-          <input type="text" id="f-shopee-supplier-id" placeholder="Ex: 0">
+          <label>Condição</label>
+          <select id="f-bling-condition">
+            <option value="1">Novo</option>
+            <option value="2">Usado</option>
+            <option value="3">Recondicionado</option>
+            <option value="0">Não Especificado</option>
+          </select>
         </div>
         <div class="form-group">
-          <label>ID da Marca na Shopee</label>
-          <input type="text" id="f-shopee-brand-id" placeholder="Ex: 0">
+          <label>Produção</label>
+          <select id="f-bling-production">
+            <option value="P">Própria</option>
+            <option value="T">Terceiros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Data de Validade</label>
+          <input type="date" id="f-bling-expiration">
+        </div>
+        <div class="form-group">
+          <label>Frete Grátis</label>
+          <select id="f-bling-free-shipping">
+            <option value="false">Não</option>
+            <option value="true">Sim</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>GTIN/EAN Tributário</label>
+          <input type="text" id="f-bling-gtin-tributario" placeholder="Ex: 7891234567890">
+        </div>
+        <div class="form-group">
+          <label>Volumes</label>
+          <input type="number" id="f-bling-volumes" placeholder="1" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label>Itens por Caixa</label>
+          <input type="number" id="f-bling-items-box" placeholder="1" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label>Unidade de Medida (Dimensões)</label>
+          <select id="f-bling-unit-measure">
+            <option value="2">Centímetros</option>
+            <option value="1">Milímetros</option>
+            <option value="3">Metros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ID da Categoria no Bling</label>
+          <input type="text" id="f-bling-category-id" placeholder="Ex: 123456">
+        </div>
+        <div class="form-group">
+          <label>Link Externo</label>
+          <input type="text" id="f-bling-link-externo" placeholder="https://exemplo.com">
+        </div>
+        <div class="form-group">
+          <label>Vídeo (URL)</label>
+          <input type="text" id="f-bling-video-url" placeholder="https://youtube.com/watch?v=...">
+        </div>
+        <div class="form-group full">
+          <label>Descrição Curta (Bling)</label>
+          <textarea id="f-bling-desc-short" placeholder="Resumo do produto para canais de venda..." style="height:60px"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Descrição Complementar (Bling)</label>
+          <textarea id="f-bling-desc-comp" placeholder="Descrição detalhada do produto..." style="height:80px"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Observações (Bling)</label>
+          <textarea id="f-bling-observacoes" placeholder="Observações internas..." style="height:60px"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Tags (Bling)</label>
+          <input type="text" id="f-bling-tags" placeholder="Ex: vestido, verao, linho (separadas por vírgula)">
         </div>
 
         <div class="form-group" style="border-top: 1px solid var(--gray-100); padding-top: 0.5rem">
@@ -2951,11 +3025,24 @@ async function saveProduct() {
     imgUrl,
     cloudId,
     blingId:  document.getElementById('f-bling-id').value.trim(),
-    shopeeId: document.getElementById('f-shopee-id').value.trim(),
-    shopeePrice: parseFloat(document.getElementById('f-shopee-price').value) || 0,
-    shopeeSalePrice: parseFloat(document.getElementById('f-shopee-sale-price').value) || 0,
-    shopeeSupplierId: document.getElementById('f-shopee-supplier-id').value.trim(),
-    shopeeBrandId: document.getElementById('f-shopee-brand-id').value.trim(),
+    blingFormat: document.getElementById('f-bling-format').value,
+    blingType: document.getElementById('f-bling-type').value,
+    blingUnit: document.getElementById('f-bling-unit').value.trim(),
+    blingCondition: parseInt(document.getElementById('f-bling-condition').value) || 1,
+    blingProduction: document.getElementById('f-bling-production').value,
+    blingExpiration: document.getElementById('f-bling-expiration').value,
+    blingFreeShipping: document.getElementById('f-bling-free-shipping').value === 'true',
+    blingGtinTributario: document.getElementById('f-bling-gtin-tributario').value.trim(),
+    blingVolumes: parseInt(document.getElementById('f-bling-volumes').value) || 1,
+    blingItemsBox: parseInt(document.getElementById('f-bling-items-box').value) || 1,
+    blingUnitMeasure: parseInt(document.getElementById('f-bling-unit-measure').value) || 2,
+    blingCategoryId: document.getElementById('f-bling-category-id').value.trim(),
+    blingLinkExterno: document.getElementById('f-bling-link-externo').value.trim(),
+    blingVideoUrl: document.getElementById('f-bling-video-url').value.trim(),
+    blingDescShort: document.getElementById('f-bling-desc-short').value.trim(),
+    blingDescComp: document.getElementById('f-bling-desc-comp').value.trim(),
+    blingObservacoes: document.getElementById('f-bling-observacoes').value.trim(),
+    blingTags: document.getElementById('f-bling-tags').value.trim(),
   };
 
   if (isEdit) {
@@ -3131,11 +3218,24 @@ async function syncToSheets(product) {
       width: parseFloat(product.width) || 0,
       height: parseFloat(product.height) || 0,
       depth: parseFloat(product.depth) || 0,
-      shopee_id: product.shopeeId || '',
-      shopee_price: parseFloat(product.shopeePrice) || 0,
-      shopee_sale_price: parseFloat(product.shopeeSalePrice) || 0,
-      shopee_supplier_id: product.shopeeSupplierId || '',
-      shopee_brand_id: product.shopeeBrandId || ''
+      bling_format: product.blingFormat || 'S',
+      bling_type: product.blingType || 'P',
+      bling_unit: product.blingUnit || 'UN',
+      bling_condition: product.blingCondition !== undefined ? parseInt(product.blingCondition) : 1,
+      bling_production: product.blingProduction || 'P',
+      bling_expiration: product.blingExpiration || '',
+      bling_free_shipping: !!product.blingFreeShipping,
+      bling_gtin_tributario: product.blingGtinTributario || '',
+      bling_volumes: parseInt(product.blingVolumes) || 1,
+      bling_items_box: parseInt(product.blingItemsBox) || 1,
+      bling_unit_measure: parseInt(product.blingUnitMeasure) || 2,
+      bling_category_id: product.blingCategoryId || '',
+      bling_link_externo: product.blingLinkExterno || '',
+      bling_video_url: product.blingVideoUrl || '',
+      bling_desc_short: product.blingDescShort || '',
+      bling_desc_comp: product.blingDescComp || '',
+      bling_observacoes: product.blingObservacoes || '',
+      bling_tags: product.blingTags || ''
     };
 
     const { error } = await supabaseClient.from('produtos').upsert([payload]);
@@ -3224,11 +3324,24 @@ async function loadFromSheets(silent = false) {
         width: p.width !== undefined ? parseFloat(p.width) : 0,
         height: p.height !== undefined ? parseFloat(p.height) : 0,
         depth: p.depth !== undefined ? parseFloat(p.depth) : 0,
-        shopeeId: p.shopee_id || '',
-        shopeePrice: p.shopee_price !== undefined ? parseFloat(p.shopee_price) : 0,
-        shopeeSalePrice: p.shopee_sale_price !== undefined ? parseFloat(p.shopee_sale_price) : 0,
-        shopeeSupplierId: p.shopee_supplier_id || '',
-        shopeeBrandId: p.shopee_brand_id || ''
+        blingFormat: p.bling_format || 'S',
+        blingType: p.bling_type || 'P',
+        blingUnit: p.bling_unit || 'UN',
+        blingCondition: p.bling_condition !== undefined ? parseInt(p.bling_condition) : 1,
+        blingProduction: p.bling_production || 'P',
+        blingExpiration: p.bling_expiration || '',
+        blingFreeShipping: p.bling_free_shipping || false,
+        blingGtinTributario: p.bling_gtin_tributario || '',
+        blingVolumes: p.bling_volumes !== undefined ? parseInt(p.bling_volumes) : 1,
+        blingItemsBox: p.bling_items_box !== undefined ? parseInt(p.bling_items_box) : 1,
+        blingUnitMeasure: p.bling_unit_measure !== undefined ? parseInt(p.bling_unit_measure) : 2,
+        blingCategoryId: p.bling_category_id || '',
+        blingLinkExterno: p.bling_link_externo || '',
+        blingVideoUrl: p.bling_video_url || '',
+        blingDescShort: p.bling_desc_short || '',
+        blingDescComp: p.bling_desc_comp || '',
+        blingObservacoes: p.bling_observacoes || '',
+        blingTags: p.bling_tags || ''
       }));
       saveProductsLocal();
       renderProducts();
@@ -3364,11 +3477,24 @@ async function syncSheets() {
       width: parseFloat(product.width) || 0,
       height: parseFloat(product.height) || 0,
       depth: parseFloat(product.depth) || 0,
-      shopee_id: product.shopeeId || '',
-      shopee_price: parseFloat(product.shopeePrice) || 0,
-      shopee_sale_price: parseFloat(product.shopeeSalePrice) || 0,
-      shopee_supplier_id: product.shopeeSupplierId || '',
-      shopee_brand_id: product.shopeeBrandId || ''
+      bling_format: product.blingFormat || 'S',
+      bling_type: product.blingType || 'P',
+      bling_unit: product.blingUnit || 'UN',
+      bling_condition: product.blingCondition !== undefined ? parseInt(product.blingCondition) : 1,
+      bling_production: product.blingProduction || 'P',
+      bling_expiration: product.blingExpiration || '',
+      bling_free_shipping: !!product.blingFreeShipping,
+      bling_gtin_tributario: product.blingGtinTributario || '',
+      bling_volumes: parseInt(product.blingVolumes) || 1,
+      bling_items_box: parseInt(product.blingItemsBox) || 1,
+      bling_unit_measure: parseInt(product.blingUnitMeasure) || 2,
+      bling_category_id: product.blingCategoryId || '',
+      bling_link_externo: product.blingLinkExterno || '',
+      bling_video_url: product.blingVideoUrl || '',
+      bling_desc_short: product.blingDescShort || '',
+      bling_desc_comp: product.blingDescComp || '',
+      bling_observacoes: product.blingObservacoes || '',
+      bling_tags: product.blingTags || ''
     }));
 
     const { error: pError } = await supabaseClient.from('produtos').upsert(productsPayload);
@@ -3788,11 +3914,24 @@ function openModal(mode, id) {
       document.getElementById('f-g').value = p.stock.g;
       document.getElementById('f-gg').value = p.stock.gg;
       document.getElementById('f-bling-id').value = p.blingId || '';
-      document.getElementById('f-shopee-id').value = p.shopeeId || '';
-      document.getElementById('f-shopee-price').value = p.shopeePrice !== undefined ? p.shopeePrice : '';
-      document.getElementById('f-shopee-sale-price').value = p.shopeeSalePrice !== undefined ? p.shopeeSalePrice : '';
-      document.getElementById('f-shopee-supplier-id').value = p.shopeeSupplierId || '';
-      document.getElementById('f-shopee-brand-id').value = p.shopeeBrandId || '';
+      document.getElementById('f-bling-format').value = p.blingFormat || 'S';
+      document.getElementById('f-bling-type').value = p.blingType || 'P';
+      document.getElementById('f-bling-unit').value = p.blingUnit || 'UN';
+      document.getElementById('f-bling-condition').value = p.blingCondition !== undefined ? p.blingCondition : '1';
+      document.getElementById('f-bling-production').value = p.blingProduction || 'P';
+      document.getElementById('f-bling-expiration').value = p.blingExpiration || '';
+      document.getElementById('f-bling-free-shipping').value = String(p.blingFreeShipping || false);
+      document.getElementById('f-bling-gtin-tributario').value = p.blingGtinTributario || '';
+      document.getElementById('f-bling-volumes').value = p.blingVolumes !== undefined ? p.blingVolumes : '1';
+      document.getElementById('f-bling-items-box').value = p.blingItemsBox !== undefined ? p.blingItemsBox : '1';
+      document.getElementById('f-bling-unit-measure').value = p.blingUnitMeasure !== undefined ? p.blingUnitMeasure : '2';
+      document.getElementById('f-bling-category-id').value = p.blingCategoryId || '';
+      document.getElementById('f-bling-link-externo').value = p.blingLinkExterno || '';
+      document.getElementById('f-bling-video-url').value = p.blingVideoUrl || '';
+      document.getElementById('f-bling-desc-short').value = p.blingDescShort || '';
+      document.getElementById('f-bling-desc-comp').value = p.blingDescComp || '';
+      document.getElementById('f-bling-observacoes').value = p.blingObservacoes || '';
+      document.getElementById('f-bling-tags').value = p.blingTags || '';
       // Se já tem imagem, mostrar no preview
       if (p.imgUrl) {
         pendingImgUrls = [p.imgUrl];
@@ -3825,11 +3964,24 @@ function openModal(mode, id) {
     document.getElementById('f-g').value = 0;
     document.getElementById('f-gg').value = 0;
     document.getElementById('f-bling-id').value = '';
-    document.getElementById('f-shopee-id').value = '';
-    document.getElementById('f-shopee-price').value = '';
-    document.getElementById('f-shopee-sale-price').value = '';
-    document.getElementById('f-shopee-supplier-id').value = '';
-    document.getElementById('f-shopee-brand-id').value = '';
+    document.getElementById('f-bling-format').value = 'S';
+    document.getElementById('f-bling-type').value = 'P';
+    document.getElementById('f-bling-unit').value = 'UN';
+    document.getElementById('f-bling-condition').value = '1';
+    document.getElementById('f-bling-production').value = 'P';
+    document.getElementById('f-bling-expiration').value = '';
+    document.getElementById('f-bling-free-shipping').value = 'false';
+    document.getElementById('f-bling-gtin-tributario').value = '';
+    document.getElementById('f-bling-volumes').value = '1';
+    document.getElementById('f-bling-items-box').value = '1';
+    document.getElementById('f-bling-unit-measure').value = '2';
+    document.getElementById('f-bling-category-id').value = '';
+    document.getElementById('f-bling-link-externo').value = '';
+    document.getElementById('f-bling-video-url').value = '';
+    document.getElementById('f-bling-desc-short').value = '';
+    document.getElementById('f-bling-desc-comp').value = '';
+    document.getElementById('f-bling-observacoes').value = '';
+    document.getElementById('f-bling-tags').value = '';
     document.getElementById('modal-overlay').dataset.editId = '';
   }
   document.getElementById('modal-overlay').classList.add('open');
