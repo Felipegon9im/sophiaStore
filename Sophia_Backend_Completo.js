@@ -338,10 +338,11 @@ function doPost(e) {
     if (requestData.action === 'syncBlingProduct') {
       const product = requestData.product;
       const blingRes = pushProductToBling(product);
-      if (blingRes && blingRes.id) {
-        return jsonResponse({ success: true, blingId: blingRes.id });
+      if (blingRes && blingRes.success) {
+        return jsonResponse({ success: true, blingId: blingRes.data.id });
       } else {
-        return jsonResponse({ success: false, error: "Falha ao enviar produto ao Bling" });
+        const errorMsg = (blingRes && blingRes.error) ? blingRes.error : "Falha desconhecida ao enviar produto ao Bling";
+        return jsonResponse({ success: false, error: errorMsg });
       }
     }
     
@@ -354,7 +355,7 @@ function doPost(e) {
 // Cria ou Atualiza produto no Bling V3
 function pushProductToBling(product) {
   const token = getValidBlingToken();
-  if (!token) return null;
+  if (!token) return { success: false, error: "Token Bling inválido ou expirado." };
   
   const finalPrice = product.salePrice ? product.salePrice : product.price;
   
@@ -367,8 +368,8 @@ function pushProductToBling(product) {
     "formato": product.blingFormat || "S",
     "marca": product.brand || '',
     "unidade": product.blingUnit || 'UN',
-    "condicao": parseInt(product.blingCondition) !== undefined ? parseInt(product.blingCondition) : 1,
-    "producao": product.blingProduction || 'P',
+    "condicao": !isNaN(parseInt(product.blingCondition)) ? parseInt(product.blingCondition) : 1,
+    "tipoProducao": product.blingProduction || 'P',
     "freteGratis": !!product.blingFreeShipping,
     "pesoLiquido": parseFloat(product.weightNet) || 0,
     "pesoBruto": parseFloat(product.weightGross) || 0,
@@ -392,12 +393,6 @@ function pushProductToBling(product) {
     payload.dataValidade = product.blingExpiration;
   }
 
-  if (product.blingVideoUrl) {
-    payload.video = {
-      "url": product.blingVideoUrl
-    };
-  }
-
   if (product.blingTags) {
     payload.tags = product.blingTags.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t !== ''; });
   }
@@ -408,18 +403,29 @@ function pushProductToBling(product) {
     };
   }
   
-  if (product.imgUrl) {
-    var finalImgUrl = product.imgUrl;
-    if (finalImgUrl.toLowerCase().indexOf('.webp') > -1) {
-      finalImgUrl = finalImgUrl.replace(/\.webp/gi, '.jpg');
-    }
+  // Media handling (images and video)
+  var hasImage = !!product.imgUrl;
+  var hasVideo = !!product.blingVideoUrl;
+  
+  if (hasImage || hasVideo) {
     payload.midia = {
-      "imagens": [
-        {
-          "link": finalImgUrl
-        }
-      ]
+      "imagens": {
+        "imagensURL": []
+      },
+      "video": {
+        "url": product.blingVideoUrl || ""
+      }
     };
+    
+    if (hasImage) {
+      var finalImgUrl = product.imgUrl;
+      if (finalImgUrl.toLowerCase().indexOf('.webp') > -1) {
+        finalImgUrl = finalImgUrl.replace(/\.webp/gi, '.jpg');
+      }
+      payload.midia.imagens.imagensURL.push({
+        "link": finalImgUrl
+      });
+    }
   }
   
   let url = "https://api.bling.com.br/v3/produtos";
@@ -443,7 +449,8 @@ function pushProductToBling(product) {
     });
     
     const resText = response.getContentText();
-    if (response.getResponseCode() === 201 || response.getResponseCode() === 200) {
+    const responseCode = response.getResponseCode();
+    if (responseCode === 201 || responseCode === 200) {
       const data = JSON.parse(resText);
       const blingRes = data.data; // { id: 12345 }
       
@@ -461,14 +468,14 @@ function pushProductToBling(product) {
         linkProductToStore(blingRes.id, product, token);
       }
       
-      return blingRes;
+      return { success: true, data: blingRes };
     } else {
       Logger.log("Erro ao pushProductToBling: " + resText);
-      return null;
+      return { success: false, error: "Bling API Error (Code " + responseCode + "): " + resText };
     }
   } catch (e) {
     Logger.log("Exception ao pushProductToBling: " + e.toString());
-    return null;
+    return { success: false, error: e.toString() };
   }
 }
 

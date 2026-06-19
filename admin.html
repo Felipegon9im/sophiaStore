@@ -3223,9 +3223,13 @@ async function syncToSheets(product) {
           saveProductsLocal();
           renderProducts();
         }
+      } else if (data && !data.success) {
+        console.error("Bling sync error:", data.error);
+        toast('Erro no Bling: ' + (data.error || 'Falha ao sincronizar'), 'error');
       }
     } catch (e) {
       console.error("Erro ao sincronizar produto com Bling:", e);
+      toast('Erro de conexão com o Bling: ' + e.message, 'error');
     }
   }
 
