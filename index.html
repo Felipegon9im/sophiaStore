@@ -2428,7 +2428,8 @@ async function loadProductsFromSheets() {
         desc: c.desc || '',
         imgUrl: c.img_url || '',
         cloudId: c.cloud_id || '',
-        order: parseInt(c.order) || 0
+        order: parseInt(c.order) || 0,
+        type: c.type || 'adulto'
       }));
       localStorage.setItem('sophia_categories', JSON.stringify(categoriesData));
     }
@@ -2864,18 +2865,45 @@ function openProductDetail(id, event) {
   const sizeWrap = document.getElementById('detail-modal-sizes');
   sizeWrap.innerHTML = '';
   
-  const sizes = ['pp', 'p', 'm', 'g', 'gg'];
+  const categoryObj = categoriesData.find(c => c.name.toLowerCase() === (product.cat || '').toLowerCase());
+  let catType = 'adulto';
+  if (categoryObj && categoryObj.type) {
+    catType = categoryObj.type;
+  } else {
+    const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(product.cat || '');
+    if (isKids) catType = 'infantil';
+  }
+
+  let sizes = ['pp', 'p', 'm', 'g', 'gg'];
+  if (catType === 'infantil') {
+    sizes = ['1', '2', '3', '4', '6', '8', '10', '12', '14', '16'];
+  } else if (catType === 'diversos') {
+    sizes = ['unico'];
+  }
+
   sizes.forEach(sz => {
-    const qty = product.stock ? (product.stock[sz] || 0) : 1;
+    const qty = product.stock ? (product.stock[sz] !== undefined ? product.stock[sz] : 0) : 1;
     const btn = document.createElement('button');
     btn.className = 'size-selector-btn';
-    btn.textContent = sz.toUpperCase();
+    
+    if (sz === 'unico') {
+      btn.textContent = 'TAMANHO ÚNICO';
+    } else if (sz === 'pp' || sz === 'gg' || sz === 'p' || sz === 'm' || sz === 'g') {
+      btn.textContent = sz.toUpperCase();
+    } else {
+      btn.textContent = sz + ' anos';
+    }
     
     if (qty <= 0) {
       btn.classList.add('disabled');
       btn.title = 'Sem estoque';
     } else {
       btn.onclick = () => selectSize(sz, btn);
+      // Auto select if it is unico
+      if (sz === 'unico') {
+        btn.classList.add('active');
+        selectedSize = 'UNICO';
+      }
     }
     sizeWrap.appendChild(btn);
   });

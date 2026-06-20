@@ -13,8 +13,8 @@ function getSupabaseCredentials() {
   let key = scriptProperties.getProperty('SUPABASE_KEY');
   
   if (!url || !key) {
-    url = "https://your-project.supabase.co";
-    key = "your-anon-key";
+    url = "https://sfocvsknccuehrnoouox.supabase.co";
+    key = "sb_publishable_GiCiYoNOMlpImpdQkKjVdg_8mZJhM1k";
   }
   return { url, key };
 }
@@ -112,7 +112,8 @@ function doGet(e) {
 
       const categories = Array.isArray(rawCategories) ? rawCategories.map(c => ({
         id: c.id, name: c.name, desc: c.desc || '', 
-        imgUrl: c.img_url || '', cloudId: c.cloud_id || '', order: parseInt(c.order) || 0
+        imgUrl: c.img_url || '', cloudId: c.cloud_id || '', order: parseInt(c.order) || 0,
+        type: c.type || 'adulto'
       })) : [];
 
       // Buscar pedidos
