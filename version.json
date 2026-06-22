@@ -1,5 +1,5 @@
 {
-  "version": "1.0.8",
-  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.8/Sophia.Store.Painel.Setup.1.0.8.exe",
-  "notes": "Restaurada a tela de carregamento (loader) anterior baseada no estilo de texto clássico e minimalista."
+  "version": "1.0.9",
+  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.9/Sophia.Store.Painel.Setup.1.0.9.exe",
+  "notes": "Aumentado o tamanho do logotipo oficial no cabeçalho e rodapé da vitrine, e no painel lateral administrativo para melhor visibilidade e branding."
 }
