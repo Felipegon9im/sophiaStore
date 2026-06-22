@@ -9,12 +9,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@200;300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --pink: #E91E8C;
-    --pink-light: #F472B6;
-    --pink-pale: #FDF2F8;
-    --pink-deep: #BE185D;
-    --gold: #D4AF6A;
-    --gold-light: #F0D89A;
+    --pink: #FD40AD;
+    --pink-light: #FF75C7;
+    --pink-pale: #FFF0F7;
+    --pink-deep: #DE228F;
+    --gold: #C0963F;
+    --gold-light: #E2C485;
     --white: #FFFFFF;
     --dark: #1a0a12;
     --gray: #6B7280;
@@ -51,17 +51,11 @@
     transition: opacity 0.8s ease, visibility 0.8s ease;
   }
   #loader.hidden { opacity: 0; visibility: hidden; }
-  .loader-logo {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 3rem; color: var(--white);
-    letter-spacing: 0.3em;
+  .loader-logo-img {
+    height: 160px;
+    width: auto;
+    object-fit: contain;
     animation: fadeInUp 1s ease forwards;
-  }
-  .loader-sub {
-    font-size: 0.65rem; letter-spacing: 0.5em;
-    color: var(--gold); text-transform: uppercase;
-    margin-top: 0.5rem;
-    animation: fadeInUp 1s ease 0.3s both;
   }
   .loader-bar {
     width: 200px; height: 1px;
@@ -99,20 +93,19 @@
     height: 70px;
   }
   .logo {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.8rem; font-weight: 400;
-    color: var(--white);
+    display: flex;
+    align-items: center;
     text-decoration: none;
-    letter-spacing: 0.05em;
-    transition: color 0.4s;
-    display: flex; flex-direction: column; line-height: 1;
+    height: 100%;
   }
-  header.scrolled .logo { color: var(--pink); }
-  .logo span {
-    font-size: 0.45rem; letter-spacing: 0.55em;
-    text-transform: uppercase; color: var(--gold);
-    font-family: 'Montserrat', sans-serif; font-weight: 300;
-    margin-top: 3px;
+  .logo img {
+    height: 52px;
+    width: auto;
+    object-fit: contain;
+    transition: var(--transition);
+  }
+  header.scrolled .logo img {
+    height: 44px;
   }
   nav { display: flex; gap: 2.5rem; align-items: center; }
   nav a {
@@ -1594,8 +1587,7 @@
 
 <!-- Loader -->
 <div id="loader">
-  <div class="loader-logo">Sophia</div>
-  <div class="loader-sub">Elegance Store</div>
+  <img src="logo.png" class="loader-logo-img" alt="Sophia Elegance Store">
   <div class="loader-bar"></div>
 </div>
 
@@ -1610,8 +1602,7 @@
     <span class="bar"></span>
   </button>
   <a href="#" class="logo">
-    Sophia
-    <span>Elegance Store</span>
+    <img src="logo.png" alt="Sophia Elegance Store">
   </a>
   <nav>
     <a href="#categories">Categorias</a>
@@ -1852,7 +1843,9 @@
 <footer>
   <div class="footer-grid">
     <div>
-      <a href="#" class="footer-logo">Sophia<span>Elegance Store</span></a>
+      <a href="#" class="footer-logo">
+        <img src="logo.png" alt="Sophia Elegance Store" style="height: 56px; object-fit: contain; display: block; margin-bottom: 1rem;">
+      </a>
       <p class="footer-desc">Moda feminina com elegância, qualidade e personalidade. Peças selecionadas para a mulher moderna e sofisticada.</p>
       <p class="footer-desc" style="margin-top: -0.5rem; color: var(--gold);">📍 Servidão três marias 457, Sophiaelegancestore</p>
       <div class="footer-socials">
