@@ -451,11 +451,21 @@ function pushProductToBling(product) {
     
     const resText = response.getContentText();
     const responseCode = response.getResponseCode();
-    if (responseCode === 201 || responseCode === 200) {
-      const data = JSON.parse(resText);
-      const blingRes = data.data; // { id: 12345 }
+    if (responseCode === 200 || responseCode === 201 || responseCode === 204) {
+      let blingId = product.blingId;
       
-      if (blingRes && blingRes.id) {
+      if (responseCode !== 204 && resText) {
+        try {
+          const data = JSON.parse(resText);
+          if (data.data && data.data.id) {
+            blingId = String(data.data.id);
+          }
+        } catch(e) {
+          Logger.log("Erro ao parsear resposta POST Bling: " + e.toString());
+        }
+      }
+      
+      if (blingId) {
         // 1. Atualizar estoque físico total
         var totalStock = 0;
         if (product.stock) {
@@ -463,13 +473,13 @@ function pushProductToBling(product) {
             totalStock += (parseInt(product.stock[key]) || 0);
           }
         }
-        updateBlingStock(blingRes.id, totalStock, token);
+        updateBlingStock(blingId, totalStock, token);
         
         // 2. Vincular com a Shopee
-        linkProductToStore(blingRes.id, product, token);
+        linkProductToStore(blingId, product, token);
       }
       
-      return { success: true, data: blingRes };
+      return { success: true, data: { id: blingId } };
     } else {
       Logger.log("Erro ao pushProductToBling: " + resText);
       return { success: false, error: "Bling API Error (Code " + responseCode + "): " + resText };

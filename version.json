@@ -1,5 +1,5 @@
 {
-  "version": "1.0.4",
-  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.4/Sophia.Store.Painel.Setup.1.0.4.exe",
-  "notes": "Sincronização imediata de estoque do painel de controle com o Bling ao editar quantidades na aba de Gestão de Estoque."
+  "version": "1.0.5",
+  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.5/Sophia.Store.Painel.Setup.1.0.5.exe",
+  "notes": "Correção de sincronização de estoque no Bling: adicionado suporte ao código de resposta HTTP 204 (No Content) para atualizações (PUT) de produtos."
 }
