@@ -1505,9 +1505,21 @@
     .feat-img { height: 50vw; }
   }
   @media (max-width: 768px) {
-    header { padding: 0 1.5rem; }
+    header { 
+      padding: 0 1.5rem; 
+      justify-content: center;
+    }
     nav { display: none; }
-    .mobile-menu-toggle { display: flex; }
+    .mobile-menu-toggle { 
+      display: flex; 
+      position: absolute;
+      left: 1.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .header-actions {
+      display: none;
+    }
     .hero-content { padding: 0 1.5rem; }
     .hero-visual { display: none; }
     section { padding: 4rem 1.5rem; }

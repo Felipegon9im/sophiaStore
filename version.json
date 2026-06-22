@@ -1,5 +1,5 @@
 {
-  "version": "1.0.9",
-  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.9/Sophia.Store.Painel.Setup.1.0.9.exe",
-  "notes": "Aumentado o tamanho do logotipo oficial no cabeçalho e rodapé da vitrine, e no painel lateral administrativo para melhor visibilidade e branding."
+  "version": "1.0.10",
+  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.10/Sophia.Store.Painel.Setup.1.0.10.exe",
+  "notes": "Ocultadas as ações do cabeçalho (pesquisa, perfil, favoritos e carrinho) e centralizado o logotipo na versão mobile."
 }
