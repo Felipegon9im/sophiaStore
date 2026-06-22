@@ -645,40 +645,62 @@
     color: rgba(255,255,255,0.4); margin-top: 0.25rem;
   }
 
-  /* ── TESTIMONIALS ── */
-  #testimonials { background: var(--pink-pale); }
-  .testimonials-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
-    margin-top: 3rem;
-  }
-  .testimonial {
-    background: white; padding: 2.5rem;
-    border-top: 3px solid var(--pink);
+  /* ── LOOKBOOK SCROLL SEQUENCE ── */
+  #lookbook {
     position: relative;
+    height: 300vh;
+    background: #000;
+    margin: 0;
+    padding: 0;
   }
-  .testi-quote {
+  .scroll-sequence-container {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+  }
+  #sequence-canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .sequence-overlay {
+    position: absolute;
+    bottom: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    color: white;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 10;
+  }
+  .sequence-overlay p {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 4rem; color: var(--pink); line-height: 0;
-    margin-bottom: 1.5rem; display: block;
+    font-size: 2rem;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
   }
-  .testi-text {
-    font-size: 0.8rem; line-height: 1.9; color: var(--gray);
-    font-style: italic;
+  .sequence-overlay span {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   }
-  .testi-author {
-    margin-top: 1.5rem; display: flex; align-items: center; gap: 1rem;
-  }
-  .testi-avatar {
-    width: 40px; height: 40px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--pink), var(--pink-deep));
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-family: 'Cormorant Garamond', serif; font-size: 1.1rem;
-  }
-  .testi-name {
-    font-size: 0.75rem; font-weight: 600; color: var(--dark);
-  }
-  .testi-stars {
-    font-size: 0.7rem; color: var(--gold); margin-top: 0.2rem;
+  @keyframes scrollBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(5px); }
   }
 
   /* ── NEWSLETTER ── */
@@ -1669,7 +1691,7 @@
     <a href="#categories">Categorias</a>
     <a href="#products">Coleções</a>
     <a href="#featured">Destaque</a>
-    <a href="#testimonials">Clientes</a>
+    <a href="#lookbook">Looks</a>
     <a href="#newsletter">Contato</a>
   </nav>
   <div class="header-actions">
@@ -1697,7 +1719,7 @@
       <a href="#categories" onclick="closeMobileMenu()">Categorias</a>
       <a href="#products" onclick="closeMobileMenu()">Coleções</a>
       <a href="#featured" onclick="closeMobileMenu()">Destaque</a>
-      <a href="#testimonials" onclick="closeMobileMenu()">Clientes</a>
+      <a href="#lookbook" onclick="closeMobileMenu()">Looks</a>
       <a href="#newsletter" onclick="closeMobileMenu()">Contato</a>
     </nav>
     <div class="menu-drawer-footer">
@@ -1840,45 +1862,13 @@
   </div>
 </section>
 
-<!-- Testimonials -->
-<section id="testimonials">
-  <div style="text-align:center; margin-bottom:1rem">
-    <div class="section-label" style="justify-content:center">Depoimentos</div>
-    <h2 class="section-title">O que nossas <em>clientes</em> dizem</h2>
-  </div>
-  <div class="testimonials-grid">
-    <div class="testimonial">
-      <span class="testi-quote">"</span>
-      <p class="testi-text">Fiquei apaixonada pelo atendimento e pela qualidade das peças. O vestido que comprei foi elogiado por todo mundo na festa!</p>
-      <div class="testi-author">
-        <div class="testi-avatar">A</div>
-        <div>
-          <div class="testi-name">Ana Carolina Silva</div>
-          <div class="testi-stars">★★★★★</div>
-        </div>
-      </div>
-    </div>
-    <div class="testimonial">
-      <span class="testi-quote">"</span>
-      <p class="testi-text">A entrega foi super rápida e a embalagem linda! A blusa ficou perfeita no meu corpo, com certeza voltarei a comprar mais.</p>
-      <div class="testi-author">
-        <div class="testi-avatar">M</div>
-        <div>
-          <div class="testi-name">Mariana Fontes</div>
-          <div class="testi-stars">★★★★★</div>
-        </div>
-      </div>
-    </div>
-    <div class="testimonial">
-      <span class="testi-quote">"</span>
-      <p class="testi-text">Sophia é referência em moda feminina! Peças lindíssimas, com muito bom gosto e elegância. Me sinto especial em cada look.</p>
-      <div class="testi-author">
-        <div class="testi-avatar">J</div>
-        <div>
-          <div class="testi-name">Juliana Melo</div>
-          <div class="testi-stars">★★★★★</div>
-        </div>
-      </div>
+<!-- Lookbook Scroll Sequence -->
+<section id="lookbook">
+  <div class="scroll-sequence-container">
+    <canvas id="sequence-canvas"></canvas>
+    <div class="sequence-overlay">
+      <p>Conceito Sophia</p>
+      <span>Role para explorar <span style="animation: scrollBounce 2s infinite; display: inline-block;">↓</span></span>
     </div>
   </div>
 </section>
@@ -3196,6 +3186,120 @@ document.getElementById('mobile-menu-overlay').addEventListener('click', e => { 
 function filterSearch(val) {
   renderProducts(activeFilter, val);
 }
+
+// ── LOOKBOOK SCROLL SEQUENCE ──
+(function() {
+  const canvas = document.getElementById('sequence-canvas');
+  if (!canvas) return;
+  const context = canvas.getContext('2d');
+  const totalFrames = 240;
+  const framePaths = [];
+  const imageCache = {};
+
+  // Gerar caminhos dos frames
+  for (let i = 0; i < totalFrames; i++) {
+    const frameNum = String(i).padStart(5, '0');
+    framePaths.push(`frames/crie_um_fundo_preto/crie_um_fundo_preto_${frameNum}.png`);
+  }
+
+  // Carregar o primeiro frame imediatamente
+  const firstImage = new Image();
+  firstImage.src = framePaths[0];
+  firstImage.onload = () => {
+    drawImage(firstImage);
+  };
+
+  // Carregar keyframes progressivamente em segundo plano (a cada 5 frames) para suavizar a rolagem rápida
+  setTimeout(() => {
+    for (let i = 0; i < totalFrames; i += 5) {
+      if (i === 0) continue;
+      const img = new Image();
+      img.src = framePaths[i];
+      img.onload = () => {
+        imageCache[i] = img;
+      };
+    }
+  }, 1000);
+
+  function getFrameImage(index, callback) {
+    if (imageCache[index]) {
+      callback(imageCache[index], index);
+      return;
+    }
+    
+    // Fallback: busca o frame cacheado mais próximo para evitar tela piscando ou em branco
+    let closestIndex = -1;
+    let minDiff = Infinity;
+    for (const cachedIdx in imageCache) {
+      const diff = Math.abs(index - Number(cachedIdx));
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = Number(cachedIdx);
+      }
+    }
+    
+    if (closestIndex !== -1) {
+      callback(imageCache[closestIndex], closestIndex);
+    }
+    
+    const img = new Image();
+    img.src = framePaths[index];
+    img.onload = () => {
+      imageCache[index] = img;
+      callback(img, index);
+    };
+  }
+
+  function drawImage(img) {
+    if (!img) return;
+    
+    // Ajustar a resolução interna do canvas para bater com o tamanho nativo do frame
+    if (canvas.width !== img.naturalWidth || canvas.height !== img.naturalHeight) {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+    }
+    
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(img, 0, 0);
+  }
+
+  const lookbookSection = document.getElementById('lookbook');
+  const overlay = lookbookSection.querySelector('.sequence-overlay');
+  let currentTargetIndex = 0;
+
+  function updateSequence() {
+    const rect = lookbookSection.getBoundingClientRect();
+    const sectionHeight = rect.height;
+    const viewportHeight = window.innerHeight;
+    
+    const scrolled = -rect.top;
+    const maxScroll = sectionHeight - viewportHeight;
+    
+    if (scrolled >= 0 && scrolled <= maxScroll) {
+      const scrollPercent = scrolled / maxScroll;
+      const frameIndex = Math.min(totalFrames - 1, Math.floor(scrollPercent * totalFrames));
+      
+      currentTargetIndex = frameIndex;
+      getFrameImage(frameIndex, (img, loadedIndex) => {
+        // Apenas desenha se o frame carregado ainda for relevante para a rolagem atual
+        if (Math.abs(currentTargetIndex - loadedIndex) < 6) {
+          drawImage(img);
+        }
+      });
+      
+      if (overlay) {
+        const opacity = 1 - (scrollPercent * 3.3);
+        overlay.style.opacity = Math.max(0, opacity);
+      }
+    }
+  }
+
+  window.addEventListener('scroll', updateSequence);
+  window.addEventListener('resize', updateSequence);
+  
+  // Executar renderização inicial após carregamento completo
+  setTimeout(updateSequence, 100);
+})();
 </script>
 </body>
 </html>

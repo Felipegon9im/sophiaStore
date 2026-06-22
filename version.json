@@ -1,5 +1,5 @@
 {
-  "version": "1.0.12",
-  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.12/Sophia.Store.Painel.Setup.1.0.12.exe",
-  "notes": "Removidos os ícones não funcionais de Perfil (Minha Conta) e Favoritos (Lista de Desejos) do cabeçalho em todas as resoluções."
+  "version": "1.0.13",
+  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.13/Sophia.Store.Painel.Setup.1.0.13.exe",
+  "notes": "Substituída a seção de depoimentos por um lookbook interativo com animação de sequência de imagens controlada por mouse scroll."
 }
