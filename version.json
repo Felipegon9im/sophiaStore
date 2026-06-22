@@ -1,5 +1,5 @@
 {
-  "version": "1.0.14",
-  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.14/Sophia.Store.Painel.Setup.1.0.14.exe",
-  "notes": "Removido o seletor de cores disponíveis (filtro visual simulado por CSS) do modal de detalhes de produtos."
+  "version": "1.0.15",
+  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.15/Sophia.Store.Painel.Setup.1.0.15.exe",
+  "notes": "Adicionado recurso de auto-rolagem (auto-scroll) suave guiado na seção de Lookbook interativo."
 }

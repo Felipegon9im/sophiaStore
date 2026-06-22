@@ -3227,7 +3227,93 @@ function filterSearch(val) {
     }
   }
 
-  window.addEventListener('scroll', updateSequence);
+  let hasAutoScrolled = false;
+  let isAutoScrolling = false;
+  let lastScrollY = window.scrollY || window.pageYOffset;
+
+  function triggerAutoScroll() {
+    if (isAutoScrolling) return;
+    
+    isAutoScrolling = true;
+    hasAutoScrolled = true;
+
+    // Desabilitar temporariamente o scroll suave nativo para evitar conflito com a animação programática
+    const originalScrollBehavior = document.documentElement.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior = 'auto';
+
+    const startScroll = window.scrollY || window.pageYOffset;
+    const targetScroll = lookbookSection.offsetTop + lookbookSection.offsetHeight - window.innerHeight;
+    const duration = 5000; // 5 segundos para passar suavemente pelos 240 frames
+    const startTime = performance.now();
+
+    const cancelEvents = ['wheel', 'touchmove', 'keydown', 'mousedown'];
+    
+    function stopScrollAnimation() {
+      isAutoScrolling = false;
+      document.documentElement.style.scrollBehavior = originalScrollBehavior;
+      cleanupListeners();
+    }
+
+    function cleanupListeners() {
+      cancelEvents.forEach(evt => {
+        window.removeEventListener(evt, stopScrollAnimation, { passive: true });
+      });
+    }
+
+    cancelEvents.forEach(evt => {
+      window.addEventListener(evt, stopScrollAnimation, { passive: true });
+    });
+
+    // Função de suavização
+    function easeInOutQuad(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    function animateScroll(currentTime) {
+      if (!isAutoScrolling) return; // Se foi cancelado, sai
+
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = easeInOutQuad(progress);
+
+      const currentScroll = startScroll + (targetScroll - startScroll) * easeProgress;
+      window.scrollTo(0, currentScroll);
+
+      if (progress < 1) {
+        requestAnimationFrame(animateScroll);
+      } else {
+        stopScrollAnimation();
+      }
+    }
+
+    requestAnimationFrame(animateScroll);
+  }
+
+  window.addEventListener('scroll', () => {
+    updateSequence();
+
+    const currentScrollY = window.scrollY || window.pageYOffset;
+    const scrollingDown = currentScrollY > lastScrollY;
+    lastScrollY = currentScrollY;
+
+    if (hasAutoScrolled || isAutoScrolling) {
+      // Resetar a flag se o usuário subir acima da seção lookbook
+      if (currentScrollY < lookbookSection.offsetTop - window.innerHeight) {
+        hasAutoScrolled = false;
+      }
+      return;
+    }
+
+    if (scrollingDown) {
+      const rect = lookbookSection.getBoundingClientRect();
+      // Inicia a auto-rolagem suave quando o topo do bloco estiver entrando no campo de visão (viewport)
+      // e garante que a seção ainda não foi totalmente percorrida
+      if (rect.top <= 150 && rect.bottom > window.innerHeight) {
+        triggerAutoScroll();
+      }
+    }
+  });
+
   window.addEventListener('resize', updateSequence);
   
   // Executar renderização inicial após carregamento completo
