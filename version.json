@@ -1,5 +1,5 @@
 {
-  "version": "1.0.7",
-  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.7/Sophia.Store.Painel.Setup.1.0.7.exe",
-  "notes": "Removida opção de pagamento online (Cartão/Pix) do carrinho de compras, mantendo apenas a finalização de pedido direta via WhatsApp."
+  "version": "1.0.8",
+  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.8/Sophia.Store.Painel.Setup.1.0.8.exe",
+  "notes": "Restaurada a tela de carregamento (loader) anterior baseada no estilo de texto clássico e minimalista."
 }

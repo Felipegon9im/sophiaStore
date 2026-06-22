@@ -51,11 +51,17 @@
     transition: opacity 0.8s ease, visibility 0.8s ease;
   }
   #loader.hidden { opacity: 0; visibility: hidden; }
-  .loader-logo-img {
-    height: 160px;
-    width: auto;
-    object-fit: contain;
+  .loader-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3rem; color: var(--white);
+    letter-spacing: 0.3em;
     animation: fadeInUp 1s ease forwards;
+  }
+  .loader-sub {
+    font-size: 0.65rem; letter-spacing: 0.5em;
+    color: var(--gold); text-transform: uppercase;
+    margin-top: 0.5rem;
+    animation: fadeInUp 1s ease 0.3s both;
   }
   .loader-bar {
     width: 200px; height: 1px;
@@ -1587,7 +1593,8 @@
 
 <!-- Loader -->
 <div id="loader">
-  <img src="logo.png" class="loader-logo-img" alt="Sophia Elegance Store">
+  <div class="loader-logo">Sophia</div>
+  <div class="loader-sub">Elegance Store</div>
   <div class="loader-bar"></div>
 </div>
 
