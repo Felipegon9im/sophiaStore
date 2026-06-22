@@ -1,5 +1,5 @@
 {
-  "version": "1.0.3",
-  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.3/Sophia.Store.Painel.Setup.1.0.3.exe",
-  "notes": "Adicionado controle dinâmico de grade de tamanhos por tipo de categoria (Adulto, Infantil e Diversos/Único)."
+  "version": "1.0.4",
+  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.4/Sophia.Store.Painel.Setup.1.0.4.exe",
+  "notes": "Sincronização imediata de estoque do painel de controle com o Bling ao editar quantidades na aba de Gestão de Estoque."
 }

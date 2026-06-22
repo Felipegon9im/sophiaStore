@@ -2553,8 +2553,8 @@ function updateStock(id, size, val) {
   if (p) {
     p.stock[size] = parseInt(val) || 0;
     saveProductsLocal();
-    toast('Estoque atualizado. Sincronizando...', 'info');
-    syncStockToSheets(id, p.stock);
+    toast('Estoque atualizado. Sincronizando com Supabase e Bling...', 'info');
+    syncToSheets(p);
     renderInventory();
     updateSidebarBadges();
   }
@@ -3744,20 +3744,8 @@ async function syncOrderToSupabase(order) {
 async function syncSingleProduct(id) {
   const p = products.find(x => x.id === id);
   if (!p) return;
-  if (!config.sheetsConnected || !config.appsScriptUrl) {
-    toast('Configure o Apps Script em Configurações primeiro', 'error'); return;
-  }
-  try {
-    const res  = await fetch(config.appsScriptUrl, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'save', product: p }),
-    });
-    const data = await res.json();
-    if (data.success) toast('↑ Produto sincronizado com Sheets!', 'success');
-    else toast('Erro: ' + (data.error || ''), 'error');
-  } catch (e) {
-    toast('Erro de conexão: ' + e.message, 'error');
-  }
+  toast('Sincronizando com Supabase e Bling...', 'info');
+  await syncToSheets(p);
 }
 
 async function exportToSheets(type = 'produtos') {
