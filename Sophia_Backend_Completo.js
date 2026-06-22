@@ -333,6 +333,43 @@ function doPost(e) {
       }
     }
     
+    if (requestData.action === 'testStockUpdate') {
+      const blingId = requestData.blingId;
+      const quantity = requestData.quantity;
+      const token = getValidBlingToken();
+      
+      const depositId = getBlingDepositId(token);
+      if (!depositId) {
+        return jsonResponse({ success: false, error: "Nenhum depósito encontrado no Bling." });
+      }
+      
+      const payload = {
+        "produto": { "id": parseInt(blingId) },
+        "deposito": { "id": parseInt(depositId) },
+        "operacao": "B",
+        "quantidade": parseFloat(quantity) || 0,
+        "observacoes": "Sincronizado via Sophia Painel (Test)"
+      };
+      
+      const response = UrlFetchApp.fetch("https://api.bling.com.br/v3/estoques", {
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer " + token,
+          "Accept": "1.0",
+          "Content-Type": "application/json"
+        },
+        "payload": JSON.stringify(payload),
+        "muteHttpExceptions": true
+      });
+      
+      return jsonResponse({
+        success: response.getResponseCode() === 200 || response.getResponseCode() === 201,
+        code: response.getResponseCode(),
+        depositId: depositId,
+        body: response.getContentText()
+      });
+    }
+
     // =====================================
     // 3. SINCRONIZAR PRODUTO NO BLING
     // =====================================
