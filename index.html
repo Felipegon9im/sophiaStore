@@ -1173,23 +1173,7 @@
     color: var(--dark); font-weight: 700; margin-bottom: 0.5rem; display: block;
   }
   
-  .detail-colors {
-    margin-bottom: 1.25rem;
-  }
-  
-  .color-options {
-    display: flex; gap: 0.5rem;
-  }
-  
-  .color-circle {
-    width: 26px; height: 26px; border-radius: 50%; border: 2px solid white;
-    outline: 1.5px solid #e5e7eb; cursor: pointer; transition: all 0.2s;
-  }
-  
-  .color-circle.active, .color-circle:hover {
-    outline: 2px solid var(--pink);
-  }
-  
+
   .detail-sizes { margin-bottom: 1.25rem; }
   
   .size-header-wrap {
@@ -2035,14 +2019,7 @@
         
         <p class="detail-desc" id="detail-modal-desc">Descrição do produto.</p>
         
-        <!-- Color Option Selector -->
-        <div class="detail-colors">
-          <span class="detail-label">Cores Disponíveis</span>
-          <div class="color-options" id="detail-modal-colors">
-            <!-- Injected dynamically via JS -->
-          </div>
-        </div>
-        
+
         <!-- Size Selector -->
         <div class="detail-sizes">
           <div class="size-header-wrap">
@@ -2848,50 +2825,6 @@ function openProductDetail(id, event) {
       img.style.transformOrigin = angle.origin;
     };
     thumbWrap.appendChild(item);
-  });
-
-  // 2. Dynamic Color Selectors (color change filter effect)
-  const colorWrap = document.getElementById('detail-modal-colors');
-  colorWrap.innerHTML = '';
-  
-  let colorOptions = [];
-  const cat = (product.cat || '').toLowerCase();
-  if (cat.includes('vestido') || cat.includes('macacão') || cat.includes('conjunto')) {
-    colorOptions = [
-      { name: 'Dourado Elegance', color: '#D4AF6A', filter: 'none' },
-      { name: 'Preto Clássico', color: '#1a0a12', filter: 'brightness(0.35) contrast(1.1) grayscale(1)' },
-      { name: 'Rosa Suave', color: '#F472B6', filter: 'hue-rotate(-45deg) saturate(1.2) brightness(0.95)' }
-    ];
-  } else if (cat.includes('blusa') || cat.includes('cropped') || cat.includes('camisa') || cat.includes('cardigan') || cat.includes('casaco')) {
-    colorOptions = [
-      { name: 'Rosa Sophia', color: '#E91E8C', filter: 'none' },
-      { name: 'Branco Off', color: '#F9FAFB', filter: 'brightness(1.2) saturate(0.2) contrast(0.9)' },
-      { name: 'Nude Terroso', color: '#C87A53', filter: 'hue-rotate(240deg) saturate(0.7) brightness(1.1)' }
-    ];
-  } else {
-    colorOptions = [
-      { name: 'Rosa Padrão', color: '#E91E8C', filter: 'none' },
-      { name: 'Elegante Gold', color: '#D4AF6A', filter: 'hue-rotate(60deg) brightness(1.1)' },
-      { name: 'Preto Noite', color: '#1a0a12', filter: 'brightness(0.3) grayscale(1)' }
-    ];
-  }
-  
-  colorOptions.forEach((col, idx) => {
-    const circle = document.createElement('div');
-    circle.className = 'color-circle' + (idx === 0 ? ' active' : '');
-    circle.style.backgroundColor = col.color;
-    circle.title = col.name;
-    circle.onclick = () => {
-      document.querySelectorAll('.color-circle').forEach(el => el.classList.remove('active'));
-      circle.classList.add('active');
-      img.style.filter = col.filter;
-      
-      // Sync thumbnails filters
-      document.querySelectorAll('.thumbnail-item img').forEach(thumbImg => {
-        thumbImg.style.filter = col.filter;
-      });
-    };
-    colorWrap.appendChild(circle);
   });
 
   // 3. Sizing selectors depending on stock
