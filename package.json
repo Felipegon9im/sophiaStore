@@ -1,6 +1,6 @@
 {
   "name": "sophia-elegance-store-admin",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "Painel Administrativo Desktop da Sophia Elegance Store",
   "main": "main.js",
   "scripts": {

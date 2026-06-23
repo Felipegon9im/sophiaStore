@@ -2077,7 +2077,6 @@
             <div class="payment-badge">Mastercard</div>
             <div class="payment-badge">Elo</div>
             <div class="payment-badge">Hipercard</div>
-            <div class="payment-badge">Boleto</div>
           </div>
         </div>
         
@@ -2355,6 +2354,25 @@ let selectedSize = '';
 
 // Converter produto do formato Admin → formato Loja
 function adminToStoreProduct(p) {
+  let defaultStock = { pp: 1, p: 1, m: 1, g: 1, gg: 1 };
+  if (p && p.cat) {
+    const catLower = p.cat.toLowerCase();
+    const categoryObj = categoriesData.find(c => c.name.toLowerCase() === catLower);
+    let catType = 'adulto';
+    if (categoryObj && categoryObj.type) {
+      catType = categoryObj.type;
+    } else {
+      const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(p.cat);
+      if (isKids) catType = 'infantil';
+    }
+
+    if (catType === 'infantil') {
+      defaultStock = { '1': 1, '2': 1, '3': 1, '4': 1, '6': 1, '8': 1, '10': 1, '12': 1, '14': 1, '16': 1 };
+    } else if (catType === 'diversos') {
+      defaultStock = { 'unico': 1 };
+    }
+  }
+
   return {
     id:       p.id,
     name:     p.name,
@@ -2365,7 +2383,7 @@ function adminToStoreProduct(p) {
     img:      p.imgUrl || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&q=80',
     colors:   ['#E91E8C', '#FFF', '#1a0a12'],
     desc:     p.desc || '',
-    stock:    p.stock || { pp:1, p:1, m:1, g:1, gg:1 },
+    stock:    p.stock || defaultStock,
     shopeeUrl: p.shopeeUrl || '',
     tiktokUrl: p.tiktokUrl || '',
   };
@@ -2411,7 +2429,7 @@ async function loadProductsFromSheets() {
         cost: parseFloat(p.cost) || 0,
         price: parseFloat(p.price) || 0,
         salePrice: p.sale_price ? parseFloat(p.sale_price) : null,
-        stock: p.stock || {pp:0, p:0, m:0, g:0, gg:0},
+        stock: p.stock,
         status: p.status || 'Ativo',
         featured: p.featured ? 'Sim' : 'Não',
         imgUrl: p.img_url || '',
@@ -2581,11 +2599,29 @@ window.shareProduct = function(id, e) {
 }
 
 // ── CART ──
+// ── CART ──
 function addToCart(id) {
   const product = productsData.find(p => p.id === id);
-  const existing = cartItems.find(i => i.id === id);
-  if (existing) existing.qty++;
-  else cartItems.push({ ...product, qty: 1 });
+  if (!product) return;
+  
+  // Obter tamanho padrão com base na categoria
+  const categoryObj = categoriesData.find(c => c.name.toLowerCase() === (product.cat || '').toLowerCase());
+  let catType = 'adulto';
+  if (categoryObj && categoryObj.type) catType = categoryObj.type;
+  const defSize = catType === 'diversos' ? 'unico' : 'p';
+  
+  const cartId = product.id + '-' + defSize;
+  const existing = cartItems.find(i => i.cartId === cartId);
+  if (existing) {
+    existing.qty++;
+  } else {
+    cartItems.push({
+      ...product,
+      cartId: cartId,
+      name: `${product.name} (${defSize.toUpperCase()})`,
+      qty: 1
+    });
+  }
   updateCart();
   openCart();
 }
@@ -2613,22 +2649,22 @@ function updateCart() {
           <div style="font-size:.7rem;color:var(--gray);margin:.25rem 0">${item.cat}</div>
           <div style="font-size:.9rem;color:var(--pink);font-weight:500">R$ ${item.price.toFixed(2).replace('.',',')}</div>
           <div style="display:flex;align-items:center;gap:.75rem;margin-top:.5rem">
-            <button onclick="changeQty(${item.id},-1)" style="width:26px;height:26px;border:1px solid #e5e7eb;background:none;font-size:.8rem">-</button>
+            <button onclick="changeQty('${item.cartId}',-1)" style="width:26px;height:26px;border:1px solid #e5e7eb;background:none;font-size:.8rem">-</button>
             <span style="font-size:.8rem">${item.qty}</span>
-            <button onclick="changeQty(${item.id},1)" style="width:26px;height:26px;border:1px solid #e5e7eb;background:none;font-size:.8rem">+</button>
+            <button onclick="changeQty('${item.cartId}',1)" style="width:26px;height:26px;border:1px solid #e5e7eb;background:none;font-size:.8rem">+</button>
           </div>
         </div>
-        <button onclick="removeFromCart(${item.id})" style="background:none;border:none;color:var(--gray);font-size:1.1rem;padding:.25rem">✕</button>
+        <button onclick="removeFromCart('${item.cartId}')" style="background:none;border:none;color:var(--gray);font-size:1.1rem;padding:.25rem">✕</button>
       </div>
     `).join('');
   }
 }
-function changeQty(id, delta) {
-  const item = cartItems.find(i => i.id === id);
-  if (item) { item.qty += delta; if (item.qty <= 0) removeFromCart(id); else updateCart(); }
+function changeQty(cartId, delta) {
+  const item = cartItems.find(i => i.cartId === cartId);
+  if (item) { item.qty += delta; if (item.qty <= 0) removeFromCart(cartId); else updateCart(); }
 }
-function removeFromCart(id) {
-  cartItems = cartItems.filter(i => i.id !== id);
+function removeFromCart(cartId) {
+  cartItems = cartItems.filter(i => i.cartId !== cartId);
   updateCart();
 }
 function openCart() {
