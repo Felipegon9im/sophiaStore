@@ -648,14 +648,13 @@
   /* ── LOOKBOOK SCROLL SEQUENCE ── */
   #lookbook {
     position: relative;
-    height: 300vh;
+    height: 100vh;
     background: #000;
     margin: 0;
     padding: 0;
   }
   .scroll-sequence-container {
-    position: sticky;
-    top: 0;
+    position: relative;
     height: 100vh;
     width: 100%;
     overflow: hidden;
@@ -1852,7 +1851,7 @@
     <canvas id="sequence-canvas"></canvas>
     <div class="sequence-overlay">
       <p>Conceito Sophia</p>
-      <span>Role para explorar <span style="animation: scrollBounce 2s infinite; display: inline-block;">↓</span></span>
+      <span>Looks Exclusivos <span style="display: inline-block; color: var(--gold);">✨</span></span>
     </div>
   </div>
 </section>
@@ -3142,7 +3141,7 @@ function filterSearch(val) {
     drawImage(firstImage);
   };
 
-  // Carregar keyframes progressivamente em segundo plano (a cada 5 frames) para suavizar a rolagem rápida
+  // Carregar keyframes progressivamente em segundo plano (a cada 5 frames) para otimização inicial
   setTimeout(() => {
     for (let i = 0; i < totalFrames; i += 5) {
       if (i === 0) continue;
@@ -3154,13 +3153,28 @@ function filterSearch(val) {
     }
   }, 1000);
 
+  // Pré-carrega uma janela de frames à frente da reprodução atual para evitar gargalos na rede
+  const preloadWindow = 15;
+  function preloadAhead(currentIndex) {
+    for (let i = 1; i <= preloadWindow; i++) {
+      const nextIdx = (currentIndex + i) % totalFrames;
+      if (!imageCache[nextIdx]) {
+        const img = new Image();
+        img.src = framePaths[nextIdx];
+        img.onload = () => {
+          imageCache[nextIdx] = img;
+        };
+      }
+    }
+  }
+
   function getFrameImage(index, callback) {
     if (imageCache[index]) {
-      callback(imageCache[index], index);
+      callback(imageCache[index]);
       return;
     }
     
-    // Fallback: busca o frame cacheado mais próximo para evitar tela piscando ou em branco
+    // Fallback: desenha o frame cacheado mais próximo para evitar piscadas
     let closestIndex = -1;
     let minDiff = Infinity;
     for (const cachedIdx in imageCache) {
@@ -3172,152 +3186,96 @@ function filterSearch(val) {
     }
     
     if (closestIndex !== -1) {
-      callback(imageCache[closestIndex], closestIndex);
+      callback(imageCache[closestIndex]);
     }
     
     const img = new Image();
     img.src = framePaths[index];
     img.onload = () => {
       imageCache[index] = img;
-      callback(img, index);
+      callback(img);
     };
   }
 
   function drawImage(img) {
     if (!img) return;
-    
-    // Ajustar a resolução interna do canvas para bater com o tamanho nativo do frame
     if (canvas.width !== img.naturalWidth || canvas.height !== img.naturalHeight) {
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
     }
-    
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.drawImage(img, 0, 0);
   }
 
   const lookbookSection = document.getElementById('lookbook');
-  const overlay = lookbookSection.querySelector('.sequence-overlay');
-  let currentTargetIndex = 0;
+  let currentFrame = 0;
+  let isPlaying = false;
+  let animationFrameId = null;
+  let lastFrameTime = 0;
+  const fps = 30; // Taxa de quadros ideal para o lookbook
+  const frameInterval = 1000 / fps;
 
-  function updateSequence() {
-    const rect = lookbookSection.getBoundingClientRect();
-    const sectionHeight = rect.height;
-    const viewportHeight = window.innerHeight;
-    
-    const scrolled = -rect.top;
-    const maxScroll = sectionHeight - viewportHeight;
-    
-    if (scrolled >= 0 && scrolled <= maxScroll) {
-      const scrollPercent = scrolled / maxScroll;
-      const frameIndex = Math.min(totalFrames - 1, Math.floor(scrollPercent * totalFrames));
+  function playSequence(timestamp) {
+    if (!isPlaying) return;
+
+    if (!lastFrameTime) lastFrameTime = timestamp;
+    const elapsed = timestamp - lastFrameTime;
+
+    if (elapsed >= frameInterval) {
+      // Ajusta o tempo do frame para manter velocidade constante
+      lastFrameTime = timestamp - (elapsed % frameInterval);
       
-      currentTargetIndex = frameIndex;
-      getFrameImage(frameIndex, (img, loadedIndex) => {
-        // Apenas desenha se o frame carregado ainda for relevante para a rolagem atual
-        if (Math.abs(currentTargetIndex - loadedIndex) < 6) {
-          drawImage(img);
+      // Carregar os próximos frames à frente para evitar engasgos
+      preloadAhead(currentFrame);
+
+      getFrameImage(currentFrame, (img) => {
+        drawImage(img);
+      });
+
+      currentFrame = (currentFrame + 1) % totalFrames;
+    }
+
+    animationFrameId = requestAnimationFrame(playSequence);
+  }
+
+  function startAutoplay() {
+    if (isPlaying) return;
+    isPlaying = true;
+    lastFrameTime = 0;
+    animationFrameId = requestAnimationFrame(playSequence);
+  }
+
+  function stopAutoplay() {
+    isPlaying = false;
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+  }
+
+  // Inicializar IntersectionObserver para controlar o autoplay baseado na visibilidade
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          startAutoplay();
+        } else {
+          stopAutoplay();
         }
       });
-      
-      if (overlay) {
-        const opacity = 1 - (scrollPercent * 3.3);
-        overlay.style.opacity = Math.max(0, opacity);
-      }
-    }
+    }, { threshold: 0.1 });
+    observer.observe(lookbookSection);
+  } else {
+    // Fallback para navegadores sem suporte
+    startAutoplay();
   }
 
-  let hasAutoScrolled = false;
-  let isAutoScrolling = false;
-  let lastScrollY = window.scrollY || window.pageYOffset;
-
-  function triggerAutoScroll() {
-    if (isAutoScrolling) return;
-    
-    isAutoScrolling = true;
-    hasAutoScrolled = true;
-
-    // Desabilitar temporariamente o scroll suave nativo para evitar conflito com a animação programática
-    const originalScrollBehavior = document.documentElement.style.scrollBehavior;
-    document.documentElement.style.scrollBehavior = 'auto';
-
-    const startScroll = window.scrollY || window.pageYOffset;
-    const targetScroll = lookbookSection.offsetTop + lookbookSection.offsetHeight - window.innerHeight;
-    const duration = 5000; // 5 segundos para passar suavemente pelos 240 frames
-    const startTime = performance.now();
-
-    const cancelEvents = ['wheel', 'touchmove', 'keydown', 'mousedown'];
-    
-    function stopScrollAnimation() {
-      isAutoScrolling = false;
-      document.documentElement.style.scrollBehavior = originalScrollBehavior;
-      cleanupListeners();
-    }
-
-    function cleanupListeners() {
-      cancelEvents.forEach(evt => {
-        window.removeEventListener(evt, stopScrollAnimation, { passive: true });
-      });
-    }
-
-    cancelEvents.forEach(evt => {
-      window.addEventListener(evt, stopScrollAnimation, { passive: true });
+  window.addEventListener('resize', () => {
+    // Redesenhar o frame atual no canvas redimensionado
+    getFrameImage(currentFrame === 0 ? 0 : currentFrame - 1, (img) => {
+      drawImage(img);
     });
-
-    // Função de suavização
-    function easeInOutQuad(t) {
-      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    }
-
-    function animateScroll(currentTime) {
-      if (!isAutoScrolling) return; // Se foi cancelado, sai
-
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easeProgress = easeInOutQuad(progress);
-
-      const currentScroll = startScroll + (targetScroll - startScroll) * easeProgress;
-      window.scrollTo(0, currentScroll);
-
-      if (progress < 1) {
-        requestAnimationFrame(animateScroll);
-      } else {
-        stopScrollAnimation();
-      }
-    }
-
-    requestAnimationFrame(animateScroll);
-  }
-
-  window.addEventListener('scroll', () => {
-    updateSequence();
-
-    const currentScrollY = window.scrollY || window.pageYOffset;
-    const scrollingDown = currentScrollY > lastScrollY;
-    lastScrollY = currentScrollY;
-
-    if (hasAutoScrolled || isAutoScrolling) {
-      // Resetar a flag se o usuário subir acima da seção lookbook
-      if (currentScrollY < lookbookSection.offsetTop - window.innerHeight) {
-        hasAutoScrolled = false;
-      }
-      return;
-    }
-
-    if (scrollingDown) {
-      const rect = lookbookSection.getBoundingClientRect();
-      // Inicia a auto-rolagem suave quando o topo do bloco estiver entrando no campo de visão (viewport)
-      // e garante que a seção ainda não foi totalmente percorrida
-      if (rect.top <= 150 && rect.bottom > window.innerHeight) {
-        triggerAutoScroll();
-      }
-    }
   });
-
-  window.addEventListener('resize', updateSequence);
-  
-  // Executar renderização inicial após carregamento completo
-  setTimeout(updateSequence, 100);
 })();
 </script>
 </body>
