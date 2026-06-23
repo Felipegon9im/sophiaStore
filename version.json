@@ -1,5 +1,5 @@
 {
-  "version": "1.0.16",
-  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.16/Sophia.Store.Painel.Setup.1.0.16.exe",
-  "notes": "Adicionado recurso de reprodução automática (autoplay) contínua da sequência de frames no lookbook."
+  "version": "1.0.17",
+  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.17/Sophia.Store.Painel.Setup.1.0.17.exe",
+  "notes": "Adicionado ícone plano oficial (flat icon) e favicon personalizado na vitrine e no painel administrativo."
 }
