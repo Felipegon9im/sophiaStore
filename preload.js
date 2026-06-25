@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('whatsappAPI', {
   
   startSession: () => ipcRenderer.send('whatsapp-start'),
   logout: () => ipcRenderer.send('whatsapp-logout'),
+  resetSession: () => ipcRenderer.send('whatsapp-reset'),
+  onResetDone: (callback) => ipcRenderer.on('whatsapp-reset-done', callback),
   sendCampaign: (data) => ipcRenderer.send('whatsapp-send-campaign', data),
   getGroups: () => ipcRenderer.invoke('whatsapp-get-groups')
 });

@@ -77,11 +77,45 @@ function getExecutablePath() {
   return undefined;
 }
 
+function logWp(msg) {
+  try {
+    const logPath = path.join(app.getPath('userData'), 'whatsapp-debug.log');
+    const line = `[${new Date().toISOString()}] ${msg}\n`;
+    fs.appendFileSync(logPath, line);
+  } catch(e) {
+    console.error("Failed to write to whatsapp-debug.log:", e);
+  }
+}
+
+function killWhatsAppProcesses() {
+  return new Promise((resolve) => {
+    logWp("Attempting to kill WhatsApp Chrome zombie processes...");
+    const cmd = `powershell -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*whatsapp-session*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`;
+    exec(cmd, (err, stdout, stderr) => {
+      if (err) {
+        logWp("Error killing WhatsApp processes: " + err.message);
+      } else {
+        logWp("WhatsApp Chrome zombie processes killed successfully.");
+      }
+      resolve();
+    });
+  });
+}
+
 function setupWhatsAppIPC() {
-  ipcMain.on('whatsapp-start', () => {
-    if (whatsappClient) return;
+  ipcMain.on('whatsapp-start', async () => {
+    logWp("whatsapp-start received.");
+    if (whatsappClient) {
+      logWp("whatsappClient already exists, skipping initialization.");
+      return;
+    }
+
+    // Proactively kill any orphaned browser instances locking our profile
+    await killWhatsAppProcesses();
 
     const chromePath = getExecutablePath();
+    logWp("Chrome Path found: " + chromePath);
+
     const puppeteerOpts = {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-extensions']
@@ -90,40 +124,60 @@ function setupWhatsAppIPC() {
       puppeteerOpts.executablePath = chromePath;
     }
 
-    whatsappClient = new Client({
-      authStrategy: new LocalAuth({ dataPath: path.join(app.getPath('userData'), 'whatsapp-session') }),
-      puppeteer: puppeteerOpts
-    });
+    logWp("Creating whatsapp Client instance...");
+    try {
+      whatsappClient = new Client({
+        authStrategy: new LocalAuth({ dataPath: path.join(app.getPath('userData'), 'whatsapp-session') }),
+        puppeteer: puppeteerOpts
+      });
+      logWp("Client instance created successfully.");
+    } catch(err) {
+      logWp("Client creation error: " + err.message + "\n" + err.stack);
+      return;
+    }
 
     whatsappClient.on('qr', async (qr) => {
+      logWp("Client Event: qr received.");
       try {
         const qrDataUrl = await qrcode.toDataURL(qr);
         if (mainWindow) mainWindow.webContents.send('whatsapp-qr', qrDataUrl);
-      } catch (e) {}
+      } catch (e) {
+        logWp("Error converting QR to data URL: " + e.message);
+      }
     });
 
     whatsappClient.on('ready', () => {
+      logWp("Client Event: ready.");
       if (mainWindow) mainWindow.webContents.send('whatsapp-ready');
     });
 
     whatsappClient.on('authenticated', () => {
+      logWp("Client Event: authenticated.");
       if (mainWindow) mainWindow.webContents.send('whatsapp-authenticated');
     });
 
     whatsappClient.on('disconnected', (reason) => {
+      logWp("Client Event: disconnected. Reason: " + reason);
       if (mainWindow) mainWindow.webContents.send('whatsapp-disconnected', reason);
-      whatsappClient.destroy();
+      whatsappClient.destroy().catch(e => logWp("Error destroying client on disconnect: " + e.message));
       whatsappClient = null;
     });
 
     whatsappClient.on('auth_failure', (msg) => {
+      logWp("Client Event: auth_failure. Msg: " + msg);
       if (mainWindow) mainWindow.webContents.send('whatsapp-auth-failure', msg);
     });
 
-    whatsappClient.initialize().catch(err => {
-      console.error("Erro ao inicializar Whatsapp:", err);
-      if (mainWindow) mainWindow.webContents.send('whatsapp-disconnected', err.message || 'Erro de inicializacao');
-    });
+    logWp("Initializing client...");
+    whatsappClient.initialize()
+      .then(() => {
+        logWp("whatsappClient.initialize() promise resolved.");
+      })
+      .catch(err => {
+        logWp("whatsappClient.initialize() promise rejected: " + err.message + "\n" + err.stack);
+        console.error("Erro ao inicializar Whatsapp:", err);
+        if (mainWindow) mainWindow.webContents.send('whatsapp-disconnected', err.message || 'Erro de inicializacao');
+      });
   });
 
   ipcMain.on('whatsapp-logout', async () => {
@@ -131,7 +185,41 @@ function setupWhatsAppIPC() {
       try {
         await whatsappClient.logout();
       } catch(e) {}
+      try {
+        await whatsappClient.destroy();
+      } catch(e) {}
+      whatsappClient = null;
     }
+    await killWhatsAppProcesses();
+    const sessionPath = path.join(app.getPath('userData'), 'whatsapp-session');
+    try {
+      if (fs.existsSync(sessionPath)) {
+        fs.rmSync(sessionPath, { recursive: true, force: true });
+      }
+    } catch(e) {
+      console.error("Erro ao deletar sessao no logout:", e);
+      logWp("Error removing session files on logout: " + e.message);
+    }
+  });
+
+  ipcMain.on('whatsapp-reset', async () => {
+    if (whatsappClient) {
+      try {
+        await whatsappClient.destroy();
+      } catch(e) {}
+      whatsappClient = null;
+    }
+    await killWhatsAppProcesses();
+    const sessionPath = path.join(app.getPath('userData'), 'whatsapp-session');
+    try {
+      if (fs.existsSync(sessionPath)) {
+        fs.rmSync(sessionPath, { recursive: true, force: true });
+      }
+    } catch(e) {
+      console.error("Erro ao resetar sessao do WhatsApp:", e);
+      logWp("Error removing session files on reset: " + e.message);
+    }
+    if (mainWindow) mainWindow.webContents.send('whatsapp-reset-done');
   });
 
   ipcMain.on('whatsapp-send-campaign', async (event, data) => {

@@ -1056,6 +1056,7 @@
         </div>
         <div style="display:flex;gap:0.75rem">
           <button class="btn btn-secondary" onclick="exportToSheets()">📊 Exportar Sheets</button>
+          <button class="btn btn-secondary" onclick="openBulkModal()">📦 Cadastro em Massa</button>
           <button class="btn btn-primary" onclick="openModal('new')">+ Novo Produto</button>
         </div>
       </div>
@@ -1070,7 +1071,7 @@
           </select>
           <select onchange="filterStatus(this.value)" style="min-width:140px">
             <option value="">Todos os status</option>
-            <option>Ativo</option><option>Inativo</option><option>Estoque Baixo</option>
+            <option>Ativo</option><option>Inativo</option><option>Estoque Baixo</option><option>Rascunho</option>
           </select>
           <span style="font-size:0.75rem;color:var(--gray-400)" id="product-count">87 produtos</span>
         </div>
@@ -1081,7 +1082,6 @@
           <table>
             <thead>
               <tr>
-                <th style="width:40px"><input type="checkbox" id="select-all" onchange="selectAll(this)"></th>
                 <th>Produto</th><th>Categoria</th><th>Preço</th>
                 <th>Estoque</th><th>Status</th><th>Canais / Fotos</th><th>Ações</th>
               </tr>
@@ -1155,7 +1155,7 @@
                 <img id="wp-qr-img" src="" style="display: none; max-width: 256px; border-radius: 8px;" />
               </div>
               
-              <button class="btn btn-primary" style="margin: 0 auto;" onclick="startWhatsappSession()"><span class="icon">🔄</span> Gerar Novo QR Code</button>
+              <button class="btn btn-primary" style="margin: 0 auto;" onclick="resetWhatsappSession()"><span class="icon">🔄</span> Gerar Novo QR Code</button>
             </div>
           </div>
 
@@ -2064,6 +2064,55 @@
   </div>
 </div>
 
+<!-- Bulk Modal -->
+<div id="bulk-modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+  <div class="modal" style="width:640px; border-radius:12px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); max-height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-header">
+      <span class="modal-title" style="font-size: 1rem; font-weight: 600; color: var(--dark); display: flex; align-items: center; gap: 0.5rem;">
+        <span>📦</span> Cadastro em Massa de Rascunhos
+      </span>
+      <button class="modal-close" onclick="closeBulkModal()">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+      <div class="form-group">
+        <label style="font-size: 0.72rem; font-weight: 500; color: var(--gray-600);">Categoria Padrão para os Rascunhos</label>
+        <select id="bulk-default-category" style="width: 100%; height:38px; border-radius:6px; border:1px solid var(--gray-200); padding: 0 0.75rem; font-family:'Inter'; font-size:0.8rem; outline:none; transition:border-color 0.2s; background:var(--white);"></select>
+      </div>
+      
+      <!-- Drag & Drop Zone -->
+      <div id="bulk-upload-zone" onclick="if (!bulkImporting) document.getElementById('bulk-file-input').click()" style="border: 2px dashed var(--pink); border-radius: 8px; padding: 2.5rem 1.5rem; text-align: center; background: var(--pink-pale); cursor: pointer; transition: all 0.2s;">
+        <span style="font-size: 2.2rem; display: block; margin-bottom: 0.5rem;">📷</span>
+        <h4 style="margin: 0.25rem 0; color: var(--pink-deep); font-weight:600; font-size: 0.95rem;">Arraste as imagens aqui</h4>
+        <p style="font-size: 0.75rem; color: var(--gray-500); margin: 0.25rem 0 0 0;">ou clique para selecionar do seu computador</p>
+        <p style="font-size: 0.65rem; color: var(--gray-400); margin-top: 0.25rem;">(Múltiplas imagens JPG, PNG - automático para Rascunho)</p>
+        <input type="file" id="bulk-file-input" multiple accept="image/*" style="display: none" onchange="handleBulkFilesSelected(this.files)">
+      </div>
+      
+      <!-- Selected Images List and Progress -->
+      <div id="bulk-preview-container" style="display: none; border-top: 1px solid var(--gray-100); padding-top: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <h4 style="font-size: 0.85rem; font-weight: 600; color: var(--dark); margin: 0;">Imagens Selecionadas (<span id="bulk-selected-count">0</span>)</h4>
+          <button class="btn btn-secondary btn-sm" id="bulk-clear-all-btn" onclick="clearBulkQueue()" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; height: auto;">Limpar Lista</button>
+        </div>
+        
+        <!-- Batch progress stats -->
+        <div id="bulk-progress-bar-wrap" style="height: 8px; background: var(--gray-100); border-radius: 4px; overflow: hidden; margin-bottom: 0.5rem; display: none;">
+          <div id="bulk-progress-bar-fill" style="height: 100%; width: 0%; background: linear-gradient(135deg, var(--pink), var(--pink-deep)); transition: width 0.3s;"></div>
+        </div>
+        <div id="bulk-progress-text" style="font-size: 0.75rem; color: var(--gray-500); margin-bottom: 1rem; font-weight: 500; display: none;"></div>
+
+        <div id="bulk-preview-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 220px; overflow-y: auto; padding-right: 0.25rem; border: 1px solid var(--gray-100); border-radius: 6px; padding: 0.5rem; background: var(--gray-50);">
+          <!-- Preview items dynamic list -->
+        </div>
+      </div>
+    </div>
+    <div style="padding: 1.25rem 1.5rem; border-top: 1px solid var(--gray-100); display: flex; justify-content: flex-end; gap: 0.75rem; background: white; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; position: sticky; bottom: 0;">
+      <button class="btn btn-secondary" id="bulk-close-btn" onclick="closeBulkModal()">Fechar</button>
+      <button class="btn btn-primary" id="bulk-start-btn" onclick="startBulkImport()" disabled>🚀 Iniciar Importação</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal -->
 <div id="modal-overlay">
   <div class="modal">
@@ -2461,7 +2510,6 @@ function renderProducts(filter='') {
     const margin = p.cost ? Math.round((p.price - p.cost)/p.price*100) : '-';
     return `
     <tr>
-      <td><input type="checkbox" class="row-check" value="${p.id}"></td>
       <td>
         <div class="td-product">
           <img src="${p.imgUrl}" class="td-thumb" alt="${p.name}" onerror="this.style.background='var(--pink-pale)'">
@@ -3163,10 +3211,9 @@ function filterStatus(v) {
   const list = products.filter(p => p.status === v);
   document.getElementById('products-table').innerHTML = list.map(p => {
     const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
-    return `<tr><td></td><td><div class="td-product"><img src="${p.imgUrl}" class="td-thumb"><div><div class="td-name">${p.name}</div><div class="td-sku">${p.sku}</div></div></div></td><td>${p.cat}</td><td>R$ ${p.price.toFixed(2).replace('.',',')}</td><td>${total}</td><td>${statusBadge(p.status)}</td><td>☁️</td><td></td></tr>`;
+    return `<tr><td><div class="td-product"><img src="${p.imgUrl}" class="td-thumb"><div><div class="td-name">${p.name}</div><div class="td-sku">${p.sku}</div></div></div></td><td>${p.cat}</td><td>R$ ${p.price.toFixed(2).replace('.',',')}</td><td>${total}</td><td>${statusBadge(p.status)}</td><td>☁️</td><td></td></tr>`;
   }).join('');
 }
-function selectAll(cb) { document.querySelectorAll('.row-check').forEach(c => c.checked = cb.checked); }
 function changeOrderStatus(id) { 
   const orderIndex = orders.findIndex(o => o.id === id);
   if (orderIndex === -1) return;
@@ -4156,6 +4203,345 @@ function handleFiles(files) {
   });
 }
 function handleDrop(e) { e.preventDefault(); document.getElementById('upload-zone').classList.remove('dragover'); handleFiles(e.dataTransfer.files); }
+
+// ── CADASTRO EM MASSA JS ──
+let bulkFilesQueue = [];
+let bulkImporting = false;
+
+function openBulkModal() {
+  if (!config.cloudinaryConnected) {
+    toast('Configure e conecte o Cloudinary nas Configurações antes de usar o cadastro em massa!', 'error');
+    return;
+  }
+  if (!config.supabaseConnected || !supabaseClient) {
+    toast('Conecte o Supabase nas Configurações antes de usar o cadastro em massa!', 'error');
+    return;
+  }
+  
+  bulkFilesQueue = [];
+  bulkImporting = false;
+  
+  // Reset elements
+  document.getElementById('bulk-preview-list').innerHTML = '';
+  document.getElementById('bulk-preview-container').style.display = 'none';
+  document.getElementById('bulk-start-btn').disabled = true;
+  document.getElementById('bulk-start-btn').textContent = '🚀 Iniciar Importação';
+  document.getElementById('bulk-close-btn').disabled = false;
+  document.getElementById('bulk-close-btn').textContent = 'Fechar';
+  document.getElementById('bulk-clear-all-btn').disabled = false;
+  document.getElementById('bulk-default-category').disabled = false;
+  document.getElementById('bulk-file-input').value = '';
+  
+  document.getElementById('bulk-progress-bar-wrap').style.display = 'none';
+  document.getElementById('bulk-progress-bar-fill').style.width = '0%';
+  document.getElementById('bulk-progress-text').style.display = 'none';
+  document.getElementById('bulk-progress-text').textContent = '';
+  
+  // Populate category select
+  updateCategorySelects();
+  
+  // Setup drag & drop listeners on bulk zone
+  const zone = document.getElementById('bulk-upload-zone');
+  if (zone && !zone.dataset.listenersBound) {
+    zone.dataset.listenersBound = 'true';
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (bulkImporting) return;
+      zone.style.background = 'var(--pink-pale)';
+      zone.style.borderColor = 'var(--pink-deep)';
+    });
+    zone.addEventListener('dragleave', () => {
+      zone.style.background = 'var(--pink-pale)';
+      zone.style.borderColor = 'var(--pink)';
+    });
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zone.style.background = 'var(--pink-pale)';
+      zone.style.borderColor = 'var(--pink)';
+      if (bulkImporting) return;
+      handleBulkFilesSelected(e.dataTransfer.files);
+    });
+  }
+  
+  document.getElementById('bulk-modal-overlay').style.display = 'flex';
+}
+
+function closeBulkModal() {
+  if (bulkImporting) {
+    toast('Aguarde a conclusão da importação antes de fechar!', 'warning');
+    return;
+  }
+  document.getElementById('bulk-modal-overlay').style.display = 'none';
+}
+
+function handleBulkFilesSelected(files) {
+  if (bulkImporting) return;
+  const list = Array.from(files).filter(file => file.type.startsWith('image/'));
+  if (list.length === 0) return;
+  
+  bulkFilesQueue = [...bulkFilesQueue, ...list];
+  document.getElementById('bulk-selected-count').textContent = bulkFilesQueue.length;
+  document.getElementById('bulk-preview-container').style.display = 'block';
+  document.getElementById('bulk-start-btn').disabled = false;
+  
+  renderBulkPreviews();
+}
+
+function renderBulkPreviews() {
+  const listEl = document.getElementById('bulk-preview-list');
+  listEl.innerHTML = '';
+  
+  bulkFilesQueue.forEach((file, index) => {
+    const item = document.createElement('div');
+    item.className = 'bulk-preview-item';
+    item.style.display = 'flex';
+    item.style.alignItems = 'center';
+    item.style.justifyContent = 'space-between';
+    item.style.padding = '0.5rem 0.75rem';
+    item.style.border = '1px solid var(--gray-200)';
+    item.style.borderRadius = '6px';
+    item.style.background = 'var(--white)';
+    item.style.marginBottom = '0.35rem';
+    item.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
+    
+    const imgUrl = URL.createObjectURL(file);
+    
+    item.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <img src="${imgUrl}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onload="URL.revokeObjectURL('${imgUrl}')">
+        <div>
+          <div style="font-size: 0.78rem; font-weight: 500; color: var(--dark); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${file.name}</div>
+          <div style="font-size: 0.65rem; color: var(--gray-400)">${(file.size / (1024 * 1024)).toFixed(2)} MB</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span class="bulk-item-status" style="font-size: 0.7rem; color: var(--gray-500); font-weight:500;" id="bulk-status-${index}">Pendente</span>
+        <button onclick="removeBulkFile(${index})" style="background: none; border: none; cursor: pointer; color: var(--gray-400); font-size: 1.1rem; display: flex; align-items: center;" class="bulk-remove-btn" title="Remover da lista">✕</button>
+      </div>
+    `;
+    listEl.appendChild(item);
+  });
+}
+
+function removeBulkFile(index) {
+  if (bulkImporting) return;
+  bulkFilesQueue.splice(index, 1);
+  document.getElementById('bulk-selected-count').textContent = bulkFilesQueue.length;
+  if (bulkFilesQueue.length === 0) {
+    document.getElementById('bulk-preview-container').style.display = 'none';
+    document.getElementById('bulk-start-btn').disabled = true;
+  } else {
+    renderBulkPreviews();
+  }
+}
+
+function clearBulkQueue() {
+  if (bulkImporting) return;
+  bulkFilesQueue = [];
+  document.getElementById('bulk-selected-count').textContent = '0';
+  document.getElementById('bulk-preview-container').style.display = 'none';
+  document.getElementById('bulk-start-btn').disabled = true;
+  document.getElementById('bulk-file-input').value = '';
+}
+
+async function startBulkImport() {
+  if (bulkImporting || bulkFilesQueue.length === 0) return;
+  
+  bulkImporting = true;
+  
+  // Disable modal controls
+  document.getElementById('bulk-start-btn').disabled = true;
+  document.getElementById('bulk-start-btn').textContent = '⚙️ Processando...';
+  document.getElementById('bulk-close-btn').disabled = true;
+  document.getElementById('bulk-close-btn').textContent = 'Processando...';
+  document.getElementById('bulk-clear-all-btn').disabled = true;
+  document.getElementById('bulk-default-category').disabled = true;
+  
+  // Hide remove buttons
+  document.querySelectorAll('.bulk-remove-btn').forEach(btn => btn.style.display = 'none');
+  
+  // Show progress elements
+  document.getElementById('bulk-progress-bar-wrap').style.display = 'block';
+  document.getElementById('bulk-progress-text').style.display = 'block';
+  
+  const totalFiles = bulkFilesQueue.length;
+  let successCount = 0;
+  let errorCount = 0;
+  
+  // Calculate base ID sequence
+  let currentMaxId = Math.max(0, ...products.map(p => p.id));
+  const category = document.getElementById('bulk-default-category').value;
+  
+  // Determine category type and stock structure
+  const categoryObj = categories.find(c => c.name.toLowerCase() === (category || '').toLowerCase());
+  let catType = 'adulto';
+  if (categoryObj && categoryObj.type) {
+    catType = categoryObj.type;
+  } else {
+    const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(category || '');
+    if (isKids) catType = 'infantil';
+  }
+  
+  const defaultStock = catType === 'infantil' 
+    ? { "1": 0, "2": 0, "3": 0, "4": 0, "6": 0, "8": 0, "10": 0, "12": 0, "14": 0, "16": 0 }
+    : catType === 'diversos'
+      ? { "unico": 0 }
+      : { pp: 0, p: 0, m: 0, g: 0, gg: 0 };
+      
+  for (let i = 0; i < totalFiles; i++) {
+    const file = bulkFilesQueue[i];
+    const statusSpan = document.getElementById(`bulk-status-${i}`);
+    
+    // Update progress bar & text
+    const progressPercent = Math.round((i / totalFiles) * 100);
+    document.getElementById('bulk-progress-bar-fill').style.width = `${progressPercent}%`;
+    document.getElementById('bulk-progress-text').innerHTML = `Processando item <strong>${i+1} de ${totalFiles}</strong>: ${file.name}`;
+    
+    // Step 1: Upload to Cloudinary
+    statusSpan.textContent = '☁️ Enviando imagem...';
+    statusSpan.style.color = 'var(--info)';
+    
+    let url = null;
+    try {
+      url = await uploadToCloudinary(file);
+    } catch(err) {
+      console.error(err);
+    }
+    
+    if (!url) {
+      statusSpan.textContent = '❌ Erro no upload';
+      statusSpan.style.color = 'var(--danger)';
+      errorCount++;
+      continue;
+    }
+    
+    // Step 2: Save to Supabase
+    statusSpan.textContent = '💾 Gravando no banco...';
+    statusSpan.style.color = 'var(--warning)';
+    
+    const newId = ++currentMaxId;
+    const cloudId = url.split('/').slice(-2).join('/').replace(/\.[^.]+$/, '');
+    const nameClean = file.name.replace(/\.[^.]+$/, '').substring(0, 50);
+    
+    const prodData = {
+      id: newId,
+      name: `Rascunho - ${nameClean}`,
+      sku: `RAS-${String(newId).padStart(3, '0')}`,
+      cat: category,
+      brand: '',
+      cost: 0,
+      price: 0,
+      salePrice: null,
+      desc: '',
+      gtin: '',
+      weightNet: 0,
+      weightGross: 0,
+      width: 0,
+      height: 0,
+      depth: 0,
+      stock: defaultStock,
+      status: 'Rascunho',
+      featured: 'Não',
+      imgUrl: url,
+      cloudId: cloudId,
+      blingId: '',
+      blingFormat: 'S',
+      blingType: 'P',
+      blingUnit: 'UN',
+      blingCondition: 1,
+      blingProduction: 'P',
+      blingExpiration: '',
+      blingFreeShipping: false,
+      blingGtinTributario: '',
+      blingVolumes: 1,
+      blingItemsBox: 1,
+      blingUnitMeasure: 2,
+      blingCategoryId: '',
+      blingLinkExterno: '',
+      blingVideoUrl: '',
+      blingDescShort: '',
+      blingDescComp: '',
+      blingObservacoes: '',
+      blingTags: ''
+    };
+    
+    try {
+      const payload = {
+        id: parseInt(prodData.id),
+        name: prodData.name,
+        sku: prodData.sku || '',
+        cat: prodData.cat || '',
+        brand: prodData.brand || '',
+        cost: parseFloat(prodData.cost) || 0,
+        price: parseFloat(prodData.price) || 0,
+        sale_price: prodData.salePrice ? parseFloat(prodData.salePrice) : null,
+        stock: prodData.stock,
+        status: prodData.status || 'Ativo',
+        featured: prodData.featured === 'Sim',
+        img_url: prodData.imgUrl || '',
+        cloud_id: prodData.cloudId || '',
+        bling_id: prodData.blingId || '',
+        gtin: prodData.gtin || '',
+        weight_net: parseFloat(prodData.weightNet) || 0,
+        weight_gross: parseFloat(prodData.weightGross) || 0,
+        width: parseFloat(prodData.width) || 0,
+        height: parseFloat(prodData.height) || 0,
+        depth: parseFloat(prodData.depth) || 0,
+        bling_format: prodData.blingFormat || 'S',
+        bling_type: prodData.blingType || 'P',
+        bling_unit: prodData.blingUnit || 'UN',
+        bling_condition: prodData.blingCondition !== undefined ? parseInt(prodData.blingCondition) : 1,
+        bling_production: prodData.blingProduction || 'P',
+        bling_expiration: prodData.blingExpiration || '',
+        bling_free_shipping: !!prodData.blingFreeShipping,
+        bling_gtin_tributario: prodData.blingGtinTributario || '',
+        bling_volumes: parseInt(prodData.blingVolumes) || 1,
+        bling_items_box: parseInt(prodData.blingItemsBox) || 1,
+        bling_unit_measure: parseInt(prodData.blingUnitMeasure) || 2,
+        bling_category_id: prodData.blingCategoryId || '',
+        bling_link_externo: prodData.blingLinkExterno || '',
+        bling_video_url: prodData.blingVideoUrl || '',
+        bling_desc_short: prodData.blingDescShort || '',
+        bling_desc_comp: prodData.blingDescComp || '',
+        bling_observacoes: prodData.blingObservacoes || '',
+        bling_tags: prodData.blingTags || ''
+      };
+      
+      const { error } = await supabaseClient.from('produtos').upsert([payload]);
+      if (error) throw error;
+      
+      // Add to local array
+      products.push(prodData);
+      
+      statusSpan.textContent = '✓ Sucesso';
+      statusSpan.style.color = 'var(--success)';
+      successCount++;
+    } catch(err) {
+      console.error(err);
+      statusSpan.textContent = '❌ Erro no banco';
+      statusSpan.style.color = 'var(--danger)';
+      errorCount++;
+    }
+  }
+  
+  // Set progress bar to 100%
+  document.getElementById('bulk-progress-bar-fill').style.width = '100%';
+  document.getElementById('bulk-progress-text').innerHTML = `Importação concluída! <strong>${successCount}</strong> rascunhos criados, <strong>${errorCount}</strong> falhas.`;
+  
+  // Save locally and re-render listings
+  saveProductsLocal();
+  renderProducts();
+  renderDashboard();
+  
+  // Re-enable close button and finish
+  bulkImporting = false;
+  document.getElementById('bulk-close-btn').disabled = false;
+  document.getElementById('bulk-close-btn').textContent = 'Fechar';
+  document.getElementById('bulk-start-btn').textContent = '🚀 Importação Concluída';
+  
+  toast(`Cadastro em massa concluído! Sucessos: ${successCount}, Falhas: ${errorCount}`, 'success');
+}
+
 
 // ── SUPABASE CONNECT ──
 function connectSupabase() {
@@ -5219,6 +5605,12 @@ function updateCategorySelects() {
     const current = modalSel.value;
     modalSel.innerHTML = names.map(n => `<option${n===current?' selected':''}>${n}</option>`).join('');
   }
+  // Select do modal de bulk upload
+  const bulkSel = document.getElementById('bulk-default-category');
+  if (bulkSel) {
+    const current = bulkSel.value;
+    bulkSel.innerHTML = names.map(n => `<option${n===current?' selected':''}>${n}</option>`).join('');
+  }
 }
 
 function renderCategories() {
@@ -5855,7 +6247,7 @@ function exportToPDF(type) {
 }
 
 // ── SYSTEM UPDATE LOGIC ──
-let appVersion = '1.0.0';
+let appVersion = '1.0.22';
 
 // Compara duas versões semver (retorna true se newVer > oldVer)
 function isNewerVersion(newVer, oldVer) {
@@ -5999,6 +6391,12 @@ if (window.systemAPI) {
 
 // WHATSAPP API EVENTS
 if (window.whatsappAPI) {
+  window.whatsappAPI.onResetDone(() => {
+    toast('Sessão limpa com sucesso. Iniciando WhatsApp...', 'info');
+    appendWpLog('> Sessão limpa. Reiniciando...');
+    if (window.whatsappAPI) window.whatsappAPI.startSession();
+  });
+
   window.whatsappAPI.onQrCode((e, qr) => {
     document.getElementById('wp-disconnected-view').style.display = 'block';
     document.getElementById('wp-connected-view').style.display = 'none';
@@ -6312,6 +6710,15 @@ function startWhatsappSession() {
   document.getElementById('qr-loading-text').innerText = 'Iniciando serviço do WhatsApp...';
   document.getElementById('wp-qr-img').style.display = 'none';
   if (window.whatsappAPI) window.whatsappAPI.startSession();
+}
+
+function resetWhatsappSession() {
+  if (confirm('Deseja limpar a sessão atual e gerar um novo QR Code?')) {
+    document.getElementById('qr-loading-text').style.display = 'block';
+    document.getElementById('qr-loading-text').innerText = 'Limpando sessão e reiniciando...';
+    document.getElementById('wp-qr-img').style.display = 'none';
+    if (window.whatsappAPI) window.whatsappAPI.resetSession();
+  }
 }
 
 function whatsappLogout() {

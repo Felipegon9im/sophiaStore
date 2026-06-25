@@ -1,5 +1,5 @@
 {
-  "version": "1.0.18",
-  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.18/Sophia.Store.Painel.Setup.1.0.18.exe",
-  "notes": "Removido boleto das formas de pagamento e corrigida a adição de itens à sacola (com suporte a tamanhos e estoque dinâmico)."
+  "version": "1.0.22",
+  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.22/Sophia.Store.Painel.Setup.1.0.22.exe",
+  "notes": "Adicionado encerramento forçado de processos fantasmas (zombies) do Chrome para evitar travamento físico de arquivos da sessão do WhatsApp."
 }
