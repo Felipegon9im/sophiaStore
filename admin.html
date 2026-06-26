@@ -3242,11 +3242,11 @@ function changeOrderStatus(id) {
       const wppNum = prompt("Confirme o WhatsApp do cliente (Ex: 5548999999999)", "5511999999999");
       if (wppNum && window.whatsappAPI) {
         const msg = `Olá, ${order.customer}! 📦\\nÓtimas notícias: o seu pedido *${order.id}* acabou de ser *Enviado*! 🎉\\n\\nAgradecemos a preferência pela Sophia Store!`;
-        window.whatsappAPI.sendCampaign([{ phone: wppNum, name: order.customer }], msg, 'sophia_wpp_instance')
-          .then(res => {
-            if(res.success) toast('Notificação enviada com sucesso pelo WhatsApp!', 'success');
-            else toast('Erro ao disparar WhatsApp: ' + res.error, 'error');
-          });
+        window.whatsappAPI.sendCampaign({
+          numbers: [wppNum],
+          message: msg
+        });
+        toast('Notificação enviada com sucesso pelo WhatsApp!', 'success');
       } else {
         toast('Notificação não enviada. API offline ou cancelado.', 'warning');
       }
@@ -6320,7 +6320,7 @@ function exportToPDF(type) {
 }
 
 // ── SYSTEM UPDATE LOGIC ──
-let appVersion = '1.0.23';
+let appVersion = '1.0.24';
 
 // Compara duas versões semver (retorna true se newVer > oldVer)
 function isNewerVersion(newVer, oldVer) {

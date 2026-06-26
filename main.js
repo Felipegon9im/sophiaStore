@@ -102,6 +102,80 @@ function killWhatsAppProcesses() {
   });
 }
 
+async function resolveRegisteredChatId(number) {
+  if (number.endsWith('@g.us')) {
+    return { chatId: number, isRegistered: true };
+  }
+  
+  // Clean digits (keep only numbers)
+  let clean = number.replace(/\D/g, '');
+  if (clean.length === 0) {
+    return { chatId: number, isRegistered: false };
+  }
+
+  // If no country code, add 55 (Brazil)
+  if (!clean.startsWith('55') && (clean.length === 10 || clean.length === 11)) {
+    clean = '55' + clean;
+  }
+
+  // If not Brazilian, query directly
+  if (!clean.startsWith('55')) {
+    try {
+      const res = await whatsappClient.getNumberId(clean);
+      if (res) {
+        return { chatId: res._serialized, isRegistered: true };
+      }
+    } catch (e) {}
+    return { chatId: clean + '@c.us', isRegistered: false };
+  }
+
+  // Brazilian number (starts with 55)
+  const areaCode = clean.substring(2, 4);
+  const rest = clean.substring(4);
+
+  // Case 1: 13 digits (starts with 55, has 9 after area code)
+  if (clean.length === 13 && rest.startsWith('9')) {
+    try {
+      let res = await whatsappClient.getNumberId(clean);
+      if (res) return { chatId: res._serialized, isRegistered: true };
+    } catch (e) {}
+
+    // Fallback: try 12 digits (remove the 9)
+    const withoutNine = '55' + areaCode + rest.substring(1);
+    try {
+      let res = await whatsappClient.getNumberId(withoutNine);
+      if (res) return { chatId: res._serialized, isRegistered: true };
+    } catch (e) {}
+    
+    return { chatId: clean + '@c.us', isRegistered: false };
+  }
+  
+  // Case 2: 12 digits (starts with 55, no 9 after area code)
+  if (clean.length === 12) {
+    try {
+      let res = await whatsappClient.getNumberId(clean);
+      if (res) return { chatId: res._serialized, isRegistered: true };
+    } catch (e) {}
+
+    // Fallback: try 13 digits (add the 9)
+    const withNine = '55' + areaCode + '9' + rest;
+    try {
+      let res = await whatsappClient.getNumberId(withNine);
+      if (res) return { chatId: res._serialized, isRegistered: true };
+    } catch (e) {}
+
+    return { chatId: clean + '@c.us', isRegistered: false };
+  }
+
+  // Default fallback query
+  try {
+    const res = await whatsappClient.getNumberId(clean);
+    if (res) return { chatId: res._serialized, isRegistered: true };
+  } catch (e) {}
+  
+  return { chatId: clean + '@c.us', isRegistered: false };
+}
+
 function setupWhatsAppIPC() {
   ipcMain.on('whatsapp-start', async () => {
     logWp("whatsapp-start received.");
@@ -254,24 +328,15 @@ function setupWhatsAppIPC() {
       let chatId = number;
       let isRegistered = true;
       
-      if (!number.endsWith('@g.us') && !number.endsWith('@c.us')) {
-        let cleanNumber = number.replace(/\D/g, '');
-        if (cleanNumber.length > 0) {
-          if (!cleanNumber.startsWith('55') && cleanNumber.length <= 11) {
-            cleanNumber = '55' + cleanNumber;
-          }
-          try {
-            const registeredId = await whatsappClient.getNumberId(cleanNumber);
-            if (registeredId) {
-              chatId = registeredId._serialized;
-            } else {
-              isRegistered = false;
-              chatId = cleanNumber + '@c.us';
-            }
-          } catch (e) {
-            chatId = cleanNumber + '@c.us';
-          }
-        }
+      try {
+        const resolved = await resolveRegisteredChatId(number);
+        chatId = resolved.chatId;
+        isRegistered = resolved.isRegistered;
+        logWp(`Resolved number: ${number} -> ChatId: ${chatId}, Registered: ${isRegistered}`);
+      } catch (e) {
+        logWp(`Error resolving ID for ${number}: ${e.message}`);
+        chatId = number.replace(/\D/g, '') + '@c.us';
+        isRegistered = false;
       }
       
       let statusStr = 'error';
@@ -286,7 +351,9 @@ function setupWhatsAppIPC() {
           }
           successCount++;
           statusStr = 'ok';
-        } catch (err) {}
+        } catch (err) {
+          logWp(`Error sending message to ${chatId}: ${err.message}\n${err.stack}`);
+        }
       }
       
       if (mainWindow) {
