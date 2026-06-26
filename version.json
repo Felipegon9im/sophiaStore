@@ -1,5 +1,5 @@
 {
-  "version": "1.0.28",
-  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.28/Sophia.Store.Painel.Setup.1.0.28.exe",
-  "notes": "Adicionado suporte a publicação direta de produtos para canais integrados (Shopee, TikTok, etc.) de dentro do painel."
+  "version": "1.0.29",
+  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.29/Sophia.Store.Painel.Setup.1.0.29.exe",
+  "notes": "Adicionado alertas de validacao e requisitos minimos de cadastro de produtos para exportacao Shopee/TikTok Shop."
 }

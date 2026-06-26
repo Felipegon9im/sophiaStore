@@ -3166,7 +3166,49 @@ function openExportChannelsModal(productId) {
 
   document.getElementById('export-product-name').textContent = product.name;
   document.getElementById('export-modal-overlay').style.display = 'flex';
-  document.getElementById('export-feedback-area').style.display = 'none';
+  
+  // Shopee & TikTok Shop validation checks
+  const validationAlerts = [];
+  const skuRegex = /^[a-zA-Z0-9_-]+$/;
+  if (!product.sku) {
+    validationAlerts.push('SKU é obrigatório.');
+  } else if (!skuRegex.test(product.sku)) {
+    validationAlerts.push(`SKU "${product.sku}" contém caracteres especiais inválidos.`);
+  }
+  const desc = (product.blingDescShort || product.desc || '').trim();
+  if (desc.length < 15) {
+    validationAlerts.push('Descrição deve conter no mínimo 15 caracteres.');
+  }
+  if (!product.brand || product.brand.trim() === '') {
+    validationAlerts.push('Marca/Coleção é obrigatória (caso não possua, digite "Sem Marca").');
+  }
+  if ((parseFloat(product.weightGross) || 0) <= 0) {
+    validationAlerts.push('Peso Bruto deve ser maior que 0.');
+  }
+  if ((parseFloat(product.width) || 0) <= 0 || (parseFloat(product.height) || 0) <= 0 || (parseFloat(product.depth) || 0) <= 0) {
+    validationAlerts.push('Dimensões (L, A, P) devem ser maiores que 0.');
+  } else if (parseFloat(product.width) > 70 || parseFloat(product.height) > 70 || parseFloat(product.depth) > 70) {
+    validationAlerts.push('As dimensões não podem ultrapassar 70 cm para envio Shopee.');
+  }
+  if (!product.imgUrl || product.imgUrl.trim() === '') {
+    validationAlerts.push('Deve conter pelo menos 1 imagem.');
+  }
+
+  const feedbackArea = document.getElementById('export-feedback-area');
+  if (validationAlerts.length > 0) {
+    feedbackArea.style.display = 'block';
+    feedbackArea.style.background = '#fffaf0';
+    feedbackArea.style.color = '#c05621';
+    feedbackArea.style.border = '1px solid #dd6b20';
+    feedbackArea.style.borderRadius = '6px';
+    feedbackArea.style.padding = '0.75rem';
+    feedbackArea.style.fontSize = '0.75rem';
+    feedbackArea.style.lineHeight = '1.4';
+    feedbackArea.innerHTML = `<strong>⚠️ Requisitos para Shopee/TikTok Pendentes:</strong><br><ul style="margin: 0.25rem 0 0 1rem; padding: 0">${validationAlerts.map(a => `<li>${a}</li>`).join('')}</ul>`;
+  } else {
+    feedbackArea.style.display = 'none';
+  }
+
   document.getElementById('btn-execute-export').disabled = false;
   
   // Reset list
@@ -6624,7 +6666,7 @@ function exportToPDF(type) {
 }
 
 // ── SYSTEM UPDATE LOGIC ──
-let appVersion = '1.0.28';
+let appVersion = '1.0.29';
 
 // Compara duas versões semver (retorna true se newVer > oldVer)
 function isNewerVersion(newVer, oldVer) {
