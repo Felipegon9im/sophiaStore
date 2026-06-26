@@ -382,6 +382,7 @@ function doPost(e) {
         const errorMsg = (blingRes && blingRes.error) ? blingRes.error : "Falha desconhecida ao enviar produto ao Bling";
         return jsonResponse({ success: false, error: errorMsg });
       }
+    }
     // =====================================
     // 4. OBTER CANAIS DE VENDA DO BLING
     // =====================================
