@@ -1669,6 +1669,9 @@
             <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;margin-top:0.4rem;font-size:0.7rem">
               <input type="checkbox" id="bl-export-products" checked> Exportar novos produtos para o Bling
             </label>
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;margin-top:0.4rem;font-size:0.7rem">
+              <input type="checkbox" id="bl-sound-alerts" checked onchange="localStorage.setItem('blSoundAlerts', this.checked)"> Tocar alerta sonoro para novos pedidos
+            </label>
           </div>
         </div>
 
@@ -3462,18 +3465,47 @@ async function loadFromSheets(silent = false) {
     const { data: oData, error: oError } = await supabaseClient.from('pedidos').select('*').order('created_at', { ascending: false });
     if (oError) throw oError;
     if (oData) {
-      orders = oData.map(o => ({
-        id: o.id,
-        number: o.number || '',
-        customer: o.customer || 'Desconhecido',
-        products: o.products || '',
-        total: parseFloat(o.total) || 0,
-        payment: 'Nuvem',
-        status: o.status || 'Aberto',
-        source: o.source || 'Bling ERP',
-        date: o.created_at ? new Date(o.created_at).toLocaleDateString('pt-BR') : ''
-      }));
+      const existingIds = new Set(orders.map(o => o.id));
+      let newOrdersCount = 0;
+      let hasBlingOrder = false;
+
+      const mappedOrders = oData.map(o => {
+        const orderId = o.id;
+        const source = o.source || 'Bling ERP';
+        
+        // Se já existiam pedidos salvos localmente e este ID não consta na lista
+        if (existingIds.size > 0 && !existingIds.has(orderId)) {
+          newOrdersCount++;
+          // Consideramos pedido do Bling se a origem não for 'Caixa' (PDV local)
+          if (source !== 'Caixa') {
+            hasBlingOrder = true;
+            addIntegrationLog(`[Notificação] Novo pedido detectado via Bling/Plataformas: ${orderId} (${o.customer || 'Desconhecido'}) - R$ ${(parseFloat(o.total) || 0).toFixed(2)}`, 'success');
+          }
+        }
+        
+        return {
+          id: o.id,
+          number: o.number || '',
+          customer: o.customer || 'Desconhecido',
+          products: o.products || '',
+          total: parseFloat(o.total) || 0,
+          payment: 'Nuvem',
+          status: o.status || 'Aberto',
+          source: source,
+          date: o.created_at ? new Date(o.created_at).toLocaleDateString('pt-BR') : ''
+        };
+      });
+
+      orders = mappedOrders;
       try { localStorage.setItem('sophia_orders', JSON.stringify(orders)); } catch(_) {}
+      
+      if (newOrdersCount > 0) {
+        if (hasBlingOrder) {
+          toast(`🛍️ ${newOrdersCount} novo(s) pedido(s) importado(s) via Bling!`, 'success');
+          playNotificationSound();
+        }
+        renderDashboard();
+      }
       renderOrders();
     }
 
@@ -4807,6 +4839,12 @@ function loadIntegrationsPage() {
 
   // Load credential inputs
   document.getElementById('bl-access-token').value = localStorage.getItem('blingToken') || '';
+  
+  // Load blSoundAlerts preference
+  const blSoundCheckbox = document.getElementById('bl-sound-alerts');
+  if (blSoundCheckbox) {
+    blSoundCheckbox.checked = localStorage.getItem('blSoundAlerts') !== 'false';
+  }
 
   // Render sales splits
   updateChannelSalesStat();
@@ -4939,6 +4977,40 @@ function syncMarketplaces() {
   }, 1500);
 }
 
+function playNotificationSound() {
+  if (localStorage.getItem('blSoundAlerts') === 'false') return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const audioCtx = new AudioContext();
+    
+    // Play a pleasant double-chime (E5 followed by A5)
+    const playNote = (frequency, startTime, duration) => {
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.value = frequency;
+      
+      gainNode.gain.setValueAtTime(0, startTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05); // Fade in
+      gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration); // Fade out
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+    
+    const now = audioCtx.currentTime;
+    playNote(659.25, now, 0.35); // E5
+    playNote(880.00, now + 0.12, 0.5); // A5
+  } catch (error) {
+    console.error("Erro ao tocar som de notificação:", error);
+  }
+}
+
 function mockNewMarketplaceOrder() {
   const blConnected = localStorage.getItem('blingConnected') === 'true';
 
@@ -4993,6 +5065,7 @@ function mockNewMarketplaceOrder() {
   renderOrders();
   renderProducts();
 
+  playNotificationSound();
   toast(`🛍️ Nova venda externa (${marketplace}) via Bling!`, 'success');
 }
 
@@ -6247,7 +6320,7 @@ function exportToPDF(type) {
 }
 
 // ── SYSTEM UPDATE LOGIC ──
-let appVersion = '1.0.22';
+let appVersion = '1.0.23';
 
 // Compara duas versões semver (retorna true se newVer > oldVer)
 function isNewerVersion(newVer, oldVer) {
@@ -7087,6 +7160,13 @@ document.addEventListener('DOMContentLoaded', () => {
       renderScheduledCampaigns();
     }
   }, 30000); // Checa a cada 30s
+
+  // 7. Iniciar Sincronização Automática de Pedidos e Estoque (Bling/Supabase)
+  setInterval(() => {
+    if (config.supabaseConnected && supabaseClient) {
+      loadFromSheets(true); // Sincroniza em background silenciosamente
+    }
+  }, 20000); // Roda a cada 20 segundos
 
 })();
 </script>

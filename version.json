@@ -1,5 +1,5 @@
 {
-  "version": "1.0.22",
-  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.22/Sophia.Store.Painel.Setup.1.0.22.exe",
-  "notes": "Adicionado encerramento forçado de processos fantasmas (zombies) do Chrome para evitar travamento físico de arquivos da sessão do WhatsApp."
+  "version": "1.0.23",
+  "url": "https://github.com/Felipegon9im/sophiaStore/releases/download/v1.0.23/Sophia.Store.Painel.Setup.1.0.23.exe",
+  "notes": "Adicionado alerta sonoro de notificação para novos pedidos importados do Bling ERP e das plataformas conectadas."
 }
