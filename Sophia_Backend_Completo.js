@@ -382,6 +382,75 @@ function doPost(e) {
         const errorMsg = (blingRes && blingRes.error) ? blingRes.error : "Falha desconhecida ao enviar produto ao Bling";
         return jsonResponse({ success: false, error: errorMsg });
       }
+    // =====================================
+    // 4. OBTER CANAIS DE VENDA DO BLING
+    // =====================================
+    if (requestData.action === 'getBlingChannels') {
+      const token = getValidBlingToken();
+      if (!token) return jsonResponse({ success: false, error: "Token Bling inválido ou expirado." });
+      
+      const response = UrlFetchApp.fetch("https://api.bling.com.br/Api/v3/canais-de-venda", {
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer " + token,
+          "Accept": "application/json"
+        },
+        "muteHttpExceptions": true
+      });
+      
+      const resCode = response.getResponseCode();
+      const resText = response.getContentText();
+      
+      if (resCode === 200) {
+        const data = JSON.parse(resText);
+        return jsonResponse({ success: true, data: data.data || [] });
+      } else {
+        return jsonResponse({ success: false, error: "Erro Bling API (" + resCode + "): " + resText });
+      }
+    }
+
+    // =====================================
+    // 5. EXPORTAR PRODUTO PARA CANAL
+    // =====================================
+    if (requestData.action === 'exportProductToBlingChannel') {
+      const token = getValidBlingToken();
+      if (!token) return jsonResponse({ success: false, error: "Token Bling inválido ou expirado." });
+      
+      const payload = {
+        "produto": {
+          "id": parseInt(requestData.blingProductId)
+        },
+        "loja": {
+          "id": parseInt(requestData.channelId)
+        }
+      };
+      
+      const response = UrlFetchApp.fetch("https://api.bling.com.br/Api/v3/produtos/lojas", {
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        "payload": JSON.stringify(payload),
+        "muteHttpExceptions": true
+      });
+      
+      const resCode = response.getResponseCode();
+      const resText = response.getContentText();
+      
+      if (resCode === 200 || resCode === 201) {
+        return jsonResponse({ success: true });
+      } else {
+        let msg = resText;
+        try {
+          const parsed = JSON.parse(resText);
+          if (parsed.error && parsed.error.description) {
+            msg = parsed.error.description;
+          }
+        } catch(_) {}
+        return jsonResponse({ success: false, error: msg });
+      }
     }
     
     return jsonResponse({ success: false, error: "Ação POST não suportada." });
