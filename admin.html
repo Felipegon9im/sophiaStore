@@ -2598,7 +2598,7 @@ function renderProducts(filter='') {
         <div style="display:flex;gap:0.35rem">
           <button class="btn btn-sm btn-secondary btn-icon" style="color:#25D366" title="Compartilhar" onclick="openWpShareModal('product',${p.id})">💬</button>
           <button class="btn btn-sm btn-secondary btn-icon" title="Editar" onclick="openModal('edit',${p.id})">✏️</button>
-          <button class="btn btn-sm btn-secondary btn-icon" title="Publicar nas Plataformas" onclick="openExportChannelsModal(${p.id})" style="color:var(--primary)">📤</button>
+          <button class="btn btn-sm btn-icon" title="Publicar nas Plataformas" onclick="openExportChannelsModal(${p.id})" style="background: linear-gradient(135deg, #3182ce, #2b6cb0); color: white; border: none; width: 32px; height: 32px; border-radius: 6px; font-size: 0.95rem; box-shadow: 0 3px 6px rgba(49, 130, 206, 0.3); transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;" onmouseover="this.style.transform='scale(1.15)';" onmouseout="this.style.transform='scale(1)';">📤</button>
           <button class="btn btn-sm btn-secondary btn-icon" title="Duplicar" onclick="duplicateProduct(${p.id})">📋</button>
           <button class="btn btn-sm btn-secondary btn-icon" title="Excluir" onclick="deleteProduct(${p.id})" style="color:var(--danger)">🗑</button>
         </div>
@@ -6666,7 +6666,7 @@ function exportToPDF(type) {
 }
 
 // ── SYSTEM UPDATE LOGIC ──
-let appVersion = '1.0.29';
+let appVersion = '1.0.30';
 
 // Compara duas versões semver (retorna true se newVer > oldVer)
 function isNewerVersion(newVer, oldVer) {
