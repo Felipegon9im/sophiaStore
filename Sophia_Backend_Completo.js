@@ -387,7 +387,7 @@ function doPost(e) {
     if (requestData.action === 'fillProductWithAI') {
       const name = requestData.name;
       const categoriesList = requestData.categoriesList || [];
-      const aiRes = generateProductDetailsWithAI(name, categoriesList);
+      const aiRes = generateProductDetailsWithAI(name, categoriesList, requestData.apiKey);
       return jsonResponse(aiRes);
     }
 
@@ -914,11 +914,10 @@ function jsonResponse(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function generateProductDetailsWithAI(name, categoriesList) {
-  const scriptProperties = PropertiesService.getScriptProperties();
-  const apiKey = scriptProperties.getProperty('GEMINI_API_KEY');
+function generateProductDetailsWithAI(name, categoriesList, passedKey) {
+  const apiKey = passedKey || PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
   if (!apiKey) {
-    return { success: false, error: "GEMINI_API_KEY não configurada nas Script Properties do Google Apps Script." };
+    return { success: false, error: "Chave API do Gemini não configurada. Insira a sua chave nas Configurações do painel da Sophia Store." };
   }
   
   const prompt = "Você é um assistente especialista em e-commerce de moda feminina.\n" +
