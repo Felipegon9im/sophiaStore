@@ -1571,6 +1571,34 @@
           </div>
         </div>
 
+        <!-- Gemini AI -->
+        <div class="config-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+            <span style="font-size:2rem">✨</span>
+            <h3>Inteligência Artificial (Gemini)</h3>
+          </div>
+          <p>Configure a sua chave do <strong>Google Gemini API</strong> para preenchimento inteligente de produtos com IA.</p>
+          <div class="config-status" id="gemini-status">
+            <div class="status-dot disconnected" id="gemini-dot"></div>
+            <span id="gemini-status-text">Não configurada</span>
+          </div>
+          <div class="form-group" style="margin-bottom:1.25rem">
+            <label>Gemini API Key</label>
+            <input type="password" id="gemini-key" placeholder="AIzaSy..." style="width: 100%; border: 1px solid var(--gray-300); border-radius: 6px; height: 38px; padding: 0 0.75rem; font-size: 0.85rem;">
+          </div>
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-primary" onclick="saveGeminiKey()">💾 Salvar Chave</button>
+          </div>
+          <div id="gemini-guide" style="margin-top:1rem;padding:0.75rem;background:var(--pink-pale);border-radius:6px;font-size:0.7rem;line-height:1.8;display:none">
+            <strong style="color:var(--pink)">Como obter a chave de graça:</strong><br>
+            1. Acesse o <a href="https://aistudio.google.com/" target="_blank" style="color:var(--pink)">Google AI Studio</a>.<br>
+            2. Faça login com sua conta do Google.<br>
+            3. Clique em <strong>Get API Key</strong> no menu superior.<br>
+            4. Clique em <strong>Create API Key</strong> e copie a chave gerada.
+          </div>
+          <button onclick="document.getElementById('gemini-guide').style.display=document.getElementById('gemini-guide').style.display==='none'?'block':'none'" style="font-size:0.7rem;color:var(--pink);background:none;border:none;cursor:pointer;margin-top:0.75rem">📖 Como obter a chave?</button>
+        </div>
+
         <!-- WhatsApp -->
         <div class="config-card">
           <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
@@ -4906,7 +4934,8 @@ async function fillWithAI() {
       body: JSON.stringify({
         action: 'fillProductWithAI',
         name: name,
-        categoriesList: categoriesList
+        categoriesList: categoriesList,
+        apiKey: localStorage.getItem('geminiApiKey') || ''
       })
     });
     
@@ -5627,6 +5656,37 @@ function loadConfigForm() {
     document.getElementById('cloudinary-dot').classList.replace('disconnected','connected');
     document.getElementById('cloudinary-status-text').textContent = 'Conectado ✓';
   }
+  
+  // Carregar Gemini API Key
+  const gKey = localStorage.getItem('geminiApiKey');
+  const gKeyInput = document.getElementById('gemini-key');
+  if (gKeyInput) {
+    if (gKey) {
+      gKeyInput.value = gKey;
+      document.getElementById('gemini-dot').classList.replace('disconnected','connected');
+      document.getElementById('gemini-status-text').textContent = 'Configurada ✓';
+    } else {
+      gKeyInput.value = '';
+      document.getElementById('gemini-dot').classList.replace('connected','disconnected');
+      document.getElementById('gemini-status-text').textContent = 'Não configurada';
+    }
+  }
+}
+
+function saveGeminiKey() {
+  const key = document.getElementById('gemini-key').value.trim();
+  if (!key) {
+    localStorage.removeItem('geminiApiKey');
+    document.getElementById('gemini-dot').classList.replace('connected','disconnected');
+    document.getElementById('gemini-status-text').textContent = 'Não configurada';
+    toast('Chave removida!', 'warning');
+    return;
+  }
+  
+  localStorage.setItem('geminiApiKey', key);
+  document.getElementById('gemini-dot').classList.replace('disconnected','connected');
+  document.getElementById('gemini-status-text').textContent = 'Configurada ✓';
+  toast('Chave API do Gemini salva com sucesso!', 'success');
 }
 
 function toggleBlingLock(inputId, btn) {
