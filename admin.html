@@ -2241,13 +2241,18 @@
     <div class="modal-body">
       <div id="modal-validation-errors" style="display:none; margin-bottom:1rem; padding:0.75rem; background:#fffaf0; border:1px solid #dd6b20; border-radius:6px; color:#c05621; font-size:0.75rem; line-height:1.4"></div>
       <div class="form-grid">
-        <div class="form-group">
+        <div class="form-group full">
           <label>Nome do Produto *</label>
-          <input type="text" id="f-name" placeholder="Ex: Vestido Floral Midi">
+          <div style="display:flex; gap:0.5rem">
+            <input type="text" id="f-name" placeholder="Ex: Vestido Floral Midi" style="flex:1">
+            <button class="btn btn-secondary" onclick="fillWithAI()" id="btn-fill-ai" style="padding:0 1rem; display:flex; align-items:center; gap:0.25rem; white-space:nowrap; background:var(--pink-pale); color:var(--pink); border-color:var(--pink); cursor:pointer; font-weight: 600; font-size: 0.78rem;">
+              ✨ Preencher com IA
+            </button>
+          </div>
         </div>
         <div class="form-group">
           <label>SKU</label>
-          <input type="text" id="f-sku" placeholder="Ex: VFM-001" readonly style="background:var(--gray-100)">
+          <input type="text" id="f-sku" placeholder="Ex: VFM-001">
         </div>
         <div class="form-group">
           <label>Categoria *</label>
@@ -4879,6 +4884,75 @@ function applyLogisticPreset(key) {
   document.getElementById('f-height').value = preset.height;
 }
 
+async function fillWithAI() {
+  const nameInput = document.getElementById('f-name');
+  const name = nameInput.value.trim();
+  if (!name) {
+    toast('Digite o Nome do Produto primeiro para a IA usar como referência!', 'warning');
+    return;
+  }
+  
+  const btn = document.getElementById('btn-fill-ai');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '✨ Carregando...';
+  
+  // Obter categorias registradas dinamicamente
+  const categoriesList = categories.map(c => c.name);
+  
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'fillProductWithAI',
+        name: name,
+        categoriesList: categoriesList
+      })
+    });
+    
+    const result = await response.json();
+    if (result.success && result.data) {
+      const data = result.data;
+      
+      // Preencher campos básicos
+      if (data.sku) document.getElementById('f-sku').value = data.sku;
+      if (data.cat) {
+        document.getElementById('f-category').value = data.cat;
+        document.getElementById('f-category').dispatchEvent(new Event('change'));
+      }
+      if (data.brand) document.getElementById('f-brand').value = data.brand;
+      if (data.desc) document.getElementById('f-desc').value = data.desc;
+      
+      // Preencher campos do Bling
+      if (data.weightNet !== undefined) document.getElementById('f-weight-net').value = data.weightNet;
+      if (data.weightGross !== undefined) document.getElementById('f-weight-gross').value = data.weightGross;
+      if (data.width !== undefined) document.getElementById('f-width').value = data.width;
+      if (data.height !== undefined) document.getElementById('f-height').value = data.height;
+      if (data.depth !== undefined) document.getElementById('f-depth').value = data.depth;
+      
+      // Preencher campos de marketplaces
+      if (data.blingDescShort) document.getElementById('f-bling-desc-short').value = data.blingDescShort;
+      if (data.blingDescShort) document.getElementById('f-bling-desc-comp').value = data.blingDescComp || data.desc;
+      
+      // Preencher atributos adicionais se existirem no form
+      if (data.attrGender) document.getElementById('f-attr-gender').value = data.attrGender;
+      if (data.attrColor) document.getElementById('f-attr-color').value = data.attrColor;
+      if (data.attrMaterial) document.getElementById('f-attr-material').value = data.attrMaterial;
+      if (data.attrAgeGroup) document.getElementById('f-attr-age-group').value = data.attrAgeGroup;
+      
+      toast('✨ Dados do produto preenchidos com IA com sucesso!', 'success');
+    } else {
+      toast('Erro ao preencher com IA: ' + (result.error || 'Erro desconhecido'), 'error');
+    }
+  } catch (error) {
+    console.error('Erro na requisição IA:', error);
+    toast('Erro de conexão ao preencher com IA.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
 // Armazena URLs enviadas ao Cloudinary para o produto atual
 let pendingImgUrls = [];
 
@@ -4888,6 +4962,12 @@ function openModal(mode, id) {
   const logisticPresetEl = document.getElementById('f-logistic-preset');
   if (logisticPresetEl) logisticPresetEl.value = '';
   document.getElementById('modal-title').textContent = mode==='new' ? 'Novo Produto' : 'Editar Produto';
+
+  // Populate category options list dynamically
+  const catSelect = document.getElementById('f-category');
+  if (catSelect) {
+    catSelect.innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  }
   if (mode === 'edit' && id) {
     const p = products.find(x => x.id === id);
     if (p) {

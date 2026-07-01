@@ -383,6 +383,14 @@ function doPost(e) {
         return jsonResponse({ success: false, error: errorMsg });
       }
     }
+
+    if (requestData.action === 'fillProductWithAI') {
+      const name = requestData.name;
+      const categoriesList = requestData.categoriesList || [];
+      const aiRes = generateProductDetailsWithAI(name, categoriesList);
+      return jsonResponse(aiRes);
+    }
+
     // =====================================
     // 4. OBTER CANAIS DE VENDA DO BLING
     // =====================================
@@ -904,4 +912,68 @@ function salvarBlingTokens(data) {
 function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function generateProductDetailsWithAI(name, categoriesList) {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const apiKey = scriptProperties.getProperty('GEMINI_API_KEY');
+  if (!apiKey) {
+    return { success: false, error: "GEMINI_API_KEY não configurada nas Script Properties do Google Apps Script." };
+  }
+  
+  const prompt = "Você é um assistente especialista em e-commerce de moda feminina.\n" +
+    "Com base no nome/título do produto abaixo, gere os dados cadastrais sugeridos em formato JSON estrito.\n" +
+    "Título do produto: \"" + name + "\"\n" +
+    "Categorias permitidas: " + JSON.stringify(categoriesList) + "\n\n" +
+    "Instruções para o JSON:\n" +
+    "- \"sku\": gere um SKU limpo e único em letras maiúsculas baseado no nome (ex: VEST-MIDI-PRETO-01).\n" +
+    "- \"cat\": escolha exatamente uma das categorias permitidas. Se nenhuma se adequar, tente escolher a mais próxima ou \"Vestidos\" / \"Blusas\" / \"Calças\".\n" +
+    "- \"brand\": use \"Sophia Elegance\" ou sugira uma se o nome contiver outra.\n" +
+    "- \"desc\": gere uma descrição rica, elegante e persuasiva para e-commerce (2 parágrafos destacando caimento e conforto).\n" +
+    "- \"blingDescShort\": resumo simples de 1 linha.\n" +
+    "- \"weightNet\": peso líquido em kg (ex: 0.2 para blusas, 0.35 para vestidos, etc. Apenas número).\n" +
+    "- \"weightGross\": peso bruto em kg (um pouco maior que o líquido, ex: 0.25 para blusas. Apenas número).\n" +
+    "- \"width\": largura física da embalagem/produto dobrado em cm (Apenas número).\n" +
+    "- \"height\": altura da embalagem em cm (Apenas número).\n" +
+    "- \"depth\": profundidade da embalagem em cm (Apenas número).\n" +
+    "- \"attrGender\": \"Feminino\".\n" +
+    "- \"attrColor\": a cor principal identificada no nome (ex: \"Preto\", \"Azul\", \"Floral\", etc. Se não houver, deixe em branco).\n" +
+    "- \"attrMaterial\": tecido sugerido com base no título ou tipo (ex: \"Crepe\", \"Linho\", \"Viscose\", \"Algodão\").\n" +
+    "- \"attrAgeGroup\": \"Adulto\".\n\n" +
+    "Retorne APENAS o JSON válido, sem markdown ou explicações.";
+
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+  const payload = {
+    "contents": [{
+      "parts": [{
+        "text": prompt
+      }]
+    }],
+    "generationConfig": {
+      "responseMimeType": "application/json"
+    }
+  };
+  
+  try {
+    const response = UrlFetchApp.fetch(url, {
+      "method": "POST",
+      "contentType": "application/json",
+      "payload": JSON.stringify(payload),
+      "muteHttpExceptions": true
+    });
+    
+    const resCode = response.getResponseCode();
+    const resText = response.getContentText();
+    
+    if (resCode === 200) {
+      const resJson = JSON.parse(resText);
+      const content = resJson.candidates[0].content.parts[0].text;
+      const parsedData = JSON.parse(content);
+      return { success: true, data: parsedData };
+    } else {
+      return { success: false, error: "Erro na API do Gemini (Código " + resCode + "): " + resText };
+    }
+  } catch (e) {
+    return { success: false, error: "Exception ao chamar Gemini: " + e.toString() };
+  }
 }
