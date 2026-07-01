@@ -4929,8 +4929,9 @@ async function fillWithAI() {
   const categoriesList = categories.map(c => c.name);
   
   try {
-    const response = await fetch(GAS_URL, {
+    const response = await fetch(config.appsScriptUrl, {
       method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         action: 'fillProductWithAI',
         name: name,
