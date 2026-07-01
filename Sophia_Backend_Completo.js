@@ -390,7 +390,7 @@ function doPost(e) {
       const token = getValidBlingToken();
       if (!token) return jsonResponse({ success: false, error: "Token Bling inválido ou expirado." });
       
-      const response = UrlFetchApp.fetch("https://api.bling.com.br/Api/v3/canais-de-venda", {
+      const response = UrlFetchApp.fetch("https://api.bling.com.br/v3/canais-venda", {
         "method": "GET",
         "headers": {
           "Authorization": "Bearer " + token,
@@ -417,16 +417,24 @@ function doPost(e) {
       const token = getValidBlingToken();
       if (!token) return jsonResponse({ success: false, error: "Token Bling inválido ou expirado." });
       
-      const payload = {
+      let payload = {
         "produto": {
           "id": parseInt(requestData.blingProductId)
         },
         "loja": {
           "id": parseInt(requestData.channelId)
+        },
+        "codigo": requestData.sku || "",
+        "preco": {
+          "preco": parseFloat(requestData.price) || 0
         }
       };
       
-      const response = UrlFetchApp.fetch("https://api.bling.com.br/Api/v3/produtos/lojas", {
+      if (requestData.salePrice) {
+        payload.preco.precoPromocional = parseFloat(requestData.salePrice);
+      }
+      
+      let response = UrlFetchApp.fetch("https://api.bling.com.br/v3/produtos/lojas", {
         "method": "POST",
         "headers": {
           "Authorization": "Bearer " + token,
@@ -437,8 +445,38 @@ function doPost(e) {
         "muteHttpExceptions": true
       });
       
-      const resCode = response.getResponseCode();
-      const resText = response.getContentText();
+      let resCode = response.getResponseCode();
+      let resText = response.getContentText();
+      
+      // Se falhar, tenta com a estrutura Flat (idProduto / idLoja)
+      if (resCode !== 200 && resCode !== 201) {
+        const payloadFlat = {
+          "idProduto": parseInt(requestData.blingProductId),
+          "idLoja": parseInt(requestData.channelId),
+          "codigo": requestData.sku || "",
+          "preco": parseFloat(requestData.price) || 0
+        };
+        if (requestData.salePrice) {
+          payloadFlat.precoPromocional = parseFloat(requestData.salePrice);
+        }
+        
+        const responseFlat = UrlFetchApp.fetch("https://api.bling.com.br/v3/produtos/lojas", {
+          "method": "POST",
+          "headers": {
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          "payload": JSON.stringify(payloadFlat),
+          "muteHttpExceptions": true
+        });
+        
+        const resCodeFlat = responseFlat.getResponseCode();
+        if (resCodeFlat === 200 || resCodeFlat === 201) {
+          resCode = resCodeFlat;
+          resText = responseFlat.getContentText();
+        }
+      }
       
       if (resCode === 200 || resCode === 201) {
         return jsonResponse({ success: true });
@@ -446,8 +484,17 @@ function doPost(e) {
         let msg = resText;
         try {
           const parsed = JSON.parse(resText);
-          if (parsed.error && parsed.error.description) {
-            msg = parsed.error.description;
+          if (parsed.error) {
+            let details = parsed.error.description || parsed.error.message || '';
+            if (parsed.error.fields && Array.isArray(parsed.error.fields)) {
+              const fieldErrors = parsed.error.fields.map(f => {
+                const name = f.field || f.element || f.campo || 'campo';
+                const msgText = f.msg || f.message || f.mensagem || f.description || 'erro de validação';
+                return `${name}: ${msgText}`;
+              }).join(', ');
+              details += ` [Detalhes: ${fieldErrors}]`;
+            }
+            msg = details;
           }
         } catch(_) {}
         return jsonResponse({ success: false, error: msg });
@@ -526,16 +573,47 @@ function pushProductToBling(product) {
     };
     
     if (hasImage) {
-      var finalImgUrl = product.imgUrl;
-      if (finalImgUrl.toLowerCase().indexOf('.webp') > -1) {
-        finalImgUrl = finalImgUrl.replace(/\.webp/gi, '.jpg');
-      }
-      payload.midia.imagens.imagensURL.push({
-        "link": finalImgUrl
+      var imageUrls = product.imgUrl.split(',').map(function(u) { return u.trim(); }).filter(function(u) { return u !== ''; });
+      imageUrls.forEach(function(url) {
+        var finalImgUrl = url;
+        if (finalImgUrl.toLowerCase().indexOf('.webp') > -1) {
+          finalImgUrl = finalImgUrl.replace(/\.webp/gi, '.jpg');
+        }
+        payload.midia.imagens.imagensURL.push({
+          "link": finalImgUrl
+        });
       });
     }
   }
   
+  if (product.blingFormat === 'V' && product.stock) {
+    payload.variacoes = [];
+    for (var sz in product.stock) {
+      var qty = parseInt(product.stock[sz]) || 0;
+      var szUpper = sz.toUpperCase();
+      payload.variacoes.push({
+        "nome": product.name + " - " + szUpper,
+        "codigo": (product.sku || String(product.id)) + "-" + szUpper,
+        "preco": parseFloat(product.price) || 0,
+        "tipo": "P",
+        "formato": "S",
+        "pesoBruto": parseFloat(product.weightGross) || 0,
+        "pesoLiquido": parseFloat(product.weightNet) || 0,
+        "dimensoes": {
+          "largura": parseFloat(product.width) || 0,
+          "altura": parseFloat(product.height) || 0,
+          "profundidade": parseFloat(product.depth) || 0,
+          "unidadeMedida": parseInt(product.blingUnitMeasure) || 2
+        },
+        "variacao": {
+          "nome": "Tamanho",
+          "opcao": szUpper
+        },
+        "estoque": qty
+      });
+    }
+  }
+
   let url = "https://api.bling.com.br/v3/produtos";
   let method = "POST";
   
@@ -556,10 +634,28 @@ function pushProductToBling(product) {
       "muteHttpExceptions": true
     });
     
-    const resText = response.getContentText();
-    const responseCode = response.getResponseCode();
+    let resText = response.getContentText();
+    let responseCode = response.getResponseCode();
+    
+    if (responseCode === 404 && method === "PUT") {
+      url = "https://api.bling.com.br/v3/produtos";
+      method = "POST";
+      const retryResponse = UrlFetchApp.fetch(url, {
+        "method": method,
+        "headers": {
+          "Authorization": "Bearer " + token,
+          "Accept": "1.0",
+          "Content-Type": "application/json"
+        },
+        "payload": JSON.stringify(payload),
+        "muteHttpExceptions": true
+      });
+      resText = retryResponse.getContentText();
+      responseCode = retryResponse.getResponseCode();
+    }
+    
     if (responseCode === 200 || responseCode === 201 || responseCode === 204) {
-      let blingId = product.blingId;
+      let blingId = method === "POST" ? "" : product.blingId;
       
       if (responseCode !== 204 && resText) {
         try {
@@ -582,14 +678,30 @@ function pushProductToBling(product) {
         }
         updateBlingStock(blingId, totalStock, token);
         
-        // 2. Vincular com a Shopee
-        linkProductToStore(blingId, product, token);
+        // 2. Vincular com a Shopee (Desabilitado automático, feito via painel)
+        // linkProductToStore(blingId, product, token);
       }
       
       return { success: true, data: { id: blingId } };
     } else {
       Logger.log("Erro ao pushProductToBling: " + resText);
-      return { success: false, error: "Bling API Error (Code " + responseCode + "): " + resText };
+      let errMsg = "Bling API Error (Code " + responseCode + "): " + resText;
+      try {
+        const parsed = JSON.parse(resText);
+        if (parsed.error) {
+          let details = parsed.error.description || parsed.error.message || '';
+          if (parsed.error.fields && Array.isArray(parsed.error.fields)) {
+            const fieldErrors = parsed.error.fields.map(f => {
+              const name = f.field || f.element || f.campo || 'campo';
+              const msgText = f.msg || f.message || f.mensagem || f.description || 'erro';
+              return `${name}: ${msgText}`;
+            }).join(', ');
+            details += ` [Detalhes: ${fieldErrors}]`;
+          }
+          if (details) errMsg = details;
+        }
+      } catch(_) {}
+      return { success: false, error: errMsg };
     }
   } catch (e) {
     Logger.log("Exception ao pushProductToBling: " + e.toString());

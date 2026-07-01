@@ -868,9 +868,17 @@
 
     <div class="nav-section-label">Loja</div>
     <div class="nav-item" onclick="showPage('products', this)">
-      <svg class="sidebar-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.37 8.91l-8.17-2.04a2 2 0 0 0-1.92.51l-4.5 4.5a2 2 0 0 0-.58 1.41V20a2 2 0 0 0 2 2h10.42a2 2 0 0 0 1.95-1.57l1.9-8a2 2 0 0 0-1.1-2.52z"></path><path d="M4 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      <svg class="sidebar-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.37 8.91l-8.17-2.04a2 2 0 0 0-1.92.51l-4.5 4.5a2 2 0 0 0-.58 1.41V20a2 2 0 0 0 2 2h10.42a2 2 0 0 0 1.95-1.57l1.9-8a2 2 0 0 0-1.1-2.52z"></path><path d="M4 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M4 8v12M20 8v12"></path></svg>
       <span class="nav-text">Produtos</span>
       <span class="nav-badge" id="badge-products">0</span>
+    </div>
+    <div class="nav-item" onclick="showPage('publications', this)">
+      <svg class="sidebar-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><rect x="12" y="9" width="6" height="6" rx="1"></rect><circle cx="6" cy="12" r="2"></circle></svg>
+      <span class="nav-text">Publicações</span>
+    </div>
+    <div class="nav-item" onclick="showPage('bling-webview', this)">
+      <svg class="sidebar-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+      <span class="nav-text">Bling ERP</span>
     </div>
     <div class="nav-item" onclick="showPage('categories', this)">
       <svg class="sidebar-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
@@ -1055,7 +1063,7 @@
           <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Gerencie todo o seu catálogo de peças</p>
         </div>
         <div style="display:flex;gap:0.75rem">
-          <button class="btn btn-secondary" onclick="exportToSheets()">📊 Exportar Sheets</button>
+          <button class="btn btn-secondary" onclick="showPage('bling-webview', document.querySelector('[onclick*=\'bling-webview\']'))">📂 Abrir Bling ERP</button>
           <button class="btn btn-secondary" onclick="openBulkModal()">📦 Cadastro em Massa</button>
           <button class="btn btn-primary" onclick="openModal('new')">+ Novo Produto</button>
         </div>
@@ -1092,6 +1100,76 @@
       </div>
     </div>
 
+    <!-- PUBLICATIONS PAGE -->
+    <div class="page-section" id="page-publications">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem;font-weight:700;color:var(--dark)">Painel de Publicação de Marketplaces</h1>
+          <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.2rem">Acompanhe e controle a publicação de seus produtos nos marketplaces Shopee, TikTok Shop e Mercado Livre.</p>
+        </div>
+        <div>
+          <button class="btn btn-secondary" onclick="syncAllPublicationsStatus()">🔄 Atualizar Status Geral</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="panel" style="margin-bottom:1.25rem">
+        <div style="padding:1rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+          <input type="text" placeholder="🔍  Buscar por SKU ou Nome..." style="flex:1;min-width:200px" id="pub-search-input" oninput="filterPublicationsTable()">
+          <select id="pub-channel-filter" onchange="filterPublicationsTable()" style="min-width:160px">
+            <option value="">Todos os canais</option>
+            <option value="shopee">Shopee</option>
+            <option value="tiktok">TikTok Shop</option>
+            <option value="mercadolivre">Mercado Livre</option>
+          </select>
+          <select id="pub-status-filter" onchange="filterPublicationsTable()" style="min-width:160px">
+            <option value="">Todos os status</option>
+            <option value="Publicado">Publicado/Sucesso</option>
+            <option value="Erro">Erro</option>
+            <option value="Não publicado">Não publicado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Shopee</th>
+                <th>TikTok Shop</th>
+                <th>Mercado Livre</th>
+                <th>Última Publicação</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="publications-table-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- BLING WEBVIEW PAGE -->
+    <div class="page-section" id="page-bling-webview" style="height: calc(100vh - 120px)">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+        <div>
+          <h1 style="font-size:1.4rem; font-weight:700; color:var(--dark)">Bling ERP Integrado</h1>
+          <p style="font-size:0.78rem; color:var(--gray-400); margin-top:0.2rem">Gerencie exportações e sincronizações multiloja no painel do Bling sem sair do Sophia Store.</p>
+        </div>
+        <div style="display:flex; gap:0.5rem">
+          <button class="btn btn-secondary" onclick="document.getElementById('bling-webview-iframe').reload()">🔄 Recarregar Página</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('bling-webview-iframe').goBack()">⬅️ Voltar</button>
+        </div>
+      </div>
+      
+      <div style="height: calc(100% - 70px); background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.05); border:1px solid var(--gray-100)">
+        <webview id="bling-webview-iframe" src="https://www.bling.com.br/produtos.php#list" partition="persist:bling" allowpopups style="width:100%; height:100%"></webview>
+      </div>
+    </div>
+
     <!-- INVENTORY PAGE -->
     <div class="page-section" id="page-inventory">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
@@ -1101,6 +1179,18 @@
         </div>
         <button class="btn btn-primary" onclick="syncSheets()">🔄 Sync Google Sheets</button>
       </div>
+      
+      <!-- Filters -->
+      <div class="panel" style="margin-bottom:1.25rem">
+        <div style="padding:1rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+          <input type="text" placeholder="🔍  Buscar produto..." id="inventory-search" style="flex:1;min-width:200px" oninput="renderInventory()">
+          <select id="inventory-cat-filter" onchange="renderInventory()" style="min-width:160px">
+            <option value="">Todas as categorias</option>
+          </select>
+          <span style="font-size:0.75rem;color:var(--gray-400)" id="inventory-count">0 produtos</span>
+        </div>
+      </div>
+      
       <div class="panel">
         <div class="table-wrap">
           <table>
@@ -2121,27 +2211,22 @@
   </div>
 </div>
 
-<!-- Export Channels Modal -->
-<div id="export-modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
-  <div class="modal" style="width:420px; border-radius:12px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); max-height: 90vh; display: flex; flex-direction: column;">
-    <div class="modal-header" style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--gray-100); display:flex; justify-content:space-between; align-items:center;">
-      <span class="modal-title" style="font-size:1rem; font-weight:600; color:var(--dark)">Publicar nas Plataformas</span>
-      <button class="modal-close" onclick="closeExportModal()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--gray-400)">✕</button>
+
+
+<!-- Publication Progress Modal -->
+<div id="publication-progress-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(5px)">
+  <div class="modal" style="width:400px; border-radius:12px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); padding: 1.5rem; display:flex; flex-direction:column; gap:1.25rem; background:white">
+    <div style="text-align:center">
+      <h3 style="font-size:1.1rem; font-weight:600; color:var(--dark); margin:0" id="pub-progress-title">Publicando Produto...</h3>
+      <p style="font-size:0.8rem; color:var(--gray-500); margin-top:0.25rem" id="pub-progress-subtitle">Aguarde a conclusão da esteira de integração.</p>
     </div>
-    <div class="modal-body" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; overflow-y:auto;">
-      <p style="font-size:0.8rem; color:var(--gray-600); line-height:1.5; margin:0">
-        Selecione os canais de venda integrados ao seu **Bling ERP** para publicar o produto <strong style="color:var(--pink)" id="export-product-name"></strong>:
-      </p>
-      
-      <div id="export-channels-list" style="display:flex; flex-direction:column; gap:0.75rem; border:1px solid var(--gray-100); border-radius:8px; padding:0.75rem; background:var(--gray-50); max-height:220px; overflow-y:auto">
-        <div style="font-size:0.8rem; color:var(--gray-400); text-align:center; padding:1rem">Carregando canais de venda...</div>
-      </div>
-      
-      <div id="export-feedback-area" style="display:none; padding:0.75rem; border-radius:6px; font-size:0.75rem; line-height:1.5"></div>
+    
+    <div style="display:flex; flex-direction:column; gap:0.75rem" id="pub-progress-steps">
+      <!-- Steps will be rendered here dynamically -->
     </div>
-    <div style="padding:1.25rem 1.5rem; border-top:1px solid var(--gray-100); display:flex; justify-content:flex-end; gap:0.75rem; background:white; border-bottom-left-radius:12px; border-bottom-right-radius:12px">
-      <button class="btn btn-secondary" id="btn-cancel-export" onclick="closeExportModal()">Cancelar</button>
-      <button class="btn btn-primary" id="btn-execute-export" onclick="executeExport()">📤 Publicar Produto</button>
+    
+    <div style="text-align:center; display:none" id="pub-progress-finished-area">
+      <button class="btn btn-primary" onclick="closePubProgressOverlay()" style="width:100%">Concluir</button>
     </div>
   </div>
 </div>
@@ -2154,6 +2239,7 @@
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
+      <div id="modal-validation-errors" style="display:none; margin-bottom:1rem; padding:0.75rem; background:#fffaf0; border:1px solid #dd6b20; border-radius:6px; color:#c05621; font-size:0.75rem; line-height:1.4"></div>
       <div class="form-grid">
         <div class="form-group">
           <label>Nome do Produto *</label>
@@ -2389,6 +2475,49 @@
             <option>Não</option><option>Sim</option>
           </select>
         </div>
+
+        <!-- Tabela de Medidas & Atributos -->
+        <div class="form-group full" style="border-top: 1px solid var(--gray-200); padding-top: 1rem; margin-top: 0.5rem">
+          <label style="font-weight: 600; color: var(--primary)">📏 Atributos & Guia de Tamanhos (Opcionais)</label>
+        </div>
+        <div class="form-group">
+          <label>Gênero</label>
+          <select id="f-attr-gender">
+            <option value="">Não especificado</option>
+            <option value="Feminino">Feminino</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Unissex">Unissex</option>
+            <option value="Infantil">Infantil</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cor Principal</label>
+          <input type="text" id="f-attr-color" placeholder="Ex: Rosa, Azul, Preto">
+        </div>
+        <div class="form-group">
+          <label>Material / Tecido</label>
+          <input type="text" id="f-attr-material" placeholder="Ex: Jeans, Viscose, Linho">
+        </div>
+        <div class="form-group">
+          <label>Faixa Etária</label>
+          <select id="f-attr-age-group">
+            <option value="">Não especificado</option>
+            <option value="Adulto">Adulto</option>
+            <option value="Infantil">Infantil</option>
+            <option value="Bebe">Bebê</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Imagem da Tabela de Medidas</label>
+          <div class="upload-zone" id="size-chart-upload-zone" onclick="document.getElementById('size-chart-file-input').click()" style="padding: 1.25rem 1rem; border-color: var(--gray-300);">
+            <input type="file" id="size-chart-file-input" accept="image/*" onchange="handleSizeChartFile(this.files)" style="display:none">
+            <div class="upload-icon" style="font-size: 1.5rem; margin-bottom: 0.25rem;">📏</div>
+            <div class="upload-text" style="font-size: 0.75rem;">Clique para carregar a tabela de medidas</div>
+          </div>
+          <div id="size-chart-preview" style="margin-top:0.5rem; display:flex; gap:0.5rem; align-items:center;"></div>
+        </div>
+
+
       </div>
     </div>
     <div class="modal-footer">
@@ -2478,7 +2607,7 @@ function showPage(name, el) {
   document.getElementById('breadcrumb').textContent = {
     dashboard:'Dashboard', products:'Produtos', inventory:'Estoque',
     orders:'Vendas e Pedidos', customers:'Clientes', suppliers:'Fornecedores', reports:'Relatórios', config:'Configurações',
-    integrations:'Integrações', caixa:'Frente de Caixa', campaigns:'Campanhas WhatsApp'
+    integrations:'Integrações', caixa:'Frente de Caixa', campaigns:'Campanhas WhatsApp', publications:'Publicações', 'bling-webview':'Bling ERP'
   }[name] || name;
   renderPage(name);
 }
@@ -2490,6 +2619,7 @@ function renderPage(name) {
   if (name === 'orders')       renderOrders();
   if (name === 'customers')    renderCustomers();
   if (name === 'categories')   renderCategories();
+  if (name === 'publications') renderPublicationsTable();
   if (name === 'config') {
     loadConfigForm();
     loadStoreInfoUI();
@@ -2569,7 +2699,7 @@ function renderProducts(filter='') {
     <tr>
       <td>
         <div class="td-product">
-          <img src="${p.imgUrl}" class="td-thumb" alt="${p.name}" onerror="this.style.background='var(--pink-pale)'">
+          <img src="${getFirstImageUrl(p.imgUrl)}" class="td-thumb" alt="${p.name}" onerror="this.style.background='var(--pink-pale)'">
           <div>
             <div class="td-name">${p.name}</div>
             <div class="td-sku">${p.sku}</div>
@@ -2598,7 +2728,7 @@ function renderProducts(filter='') {
         <div style="display:flex;gap:0.35rem">
           <button class="btn btn-sm btn-secondary btn-icon" style="color:#25D366" title="Compartilhar" onclick="openWpShareModal('product',${p.id})">💬</button>
           <button class="btn btn-sm btn-secondary btn-icon" title="Editar" onclick="openModal('edit',${p.id})">✏️</button>
-          <button class="btn btn-sm btn-icon" title="Publicar nas Plataformas" onclick="openExportChannelsModal(${p.id})" style="background: linear-gradient(135deg, #3182ce, #2b6cb0); color: white; border: none; width: 32px; height: 32px; border-radius: 6px; font-size: 0.95rem; box-shadow: 0 3px 6px rgba(49, 130, 206, 0.3); transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;" onmouseover="this.style.transform='scale(1.15)';" onmouseout="this.style.transform='scale(1)';">📤</button>
+          <button class="btn btn-sm btn-icon" title="Ver no Bling ERP" onclick="showPage('bling-webview', document.querySelector('[onclick*=\'bling-webview\']'))" style="background: linear-gradient(135deg, #dd6b20, #c05621); color: white; border: none; width: 32px; height: 32px; border-radius: 6px; font-size: 0.95rem; box-shadow: 0 3px 6px rgba(221, 107, 32, 0.3); transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;" onmouseover="this.style.transform='scale(1.15)';" onmouseout="this.style.transform='scale(1)';">🅱️</button>
           <button class="btn btn-sm btn-secondary btn-icon" title="Duplicar" onclick="duplicateProduct(${p.id})">📋</button>
           <button class="btn btn-sm btn-secondary btn-icon" title="Excluir" onclick="deleteProduct(${p.id})" style="color:var(--danger)">🗑</button>
         </div>
@@ -2608,9 +2738,231 @@ function renderProducts(filter='') {
   updateSidebarBadges();
 }
 
+function renderPublicationsTable() {
+  const searchInput = document.getElementById('pub-search-input').value.toLowerCase().trim();
+  const channelFilter = document.getElementById('pub-channel-filter').value;
+  const statusFilter = document.getElementById('pub-status-filter').value;
+  
+  let list = products;
+  
+  // Search filter
+  if (searchInput) {
+    list = list.filter(p => p.name.toLowerCase().includes(searchInput) || p.sku.toLowerCase().includes(searchInput));
+  }
+  
+  // Channel & Status filters
+  if (channelFilter || statusFilter) {
+    list = list.filter(p => {
+      const shopee = p.marketplaceStatus?.shopee || { status: 'Não publicado' };
+      const tiktok = p.marketplaceStatus?.tiktok || { status: 'Não publicado' };
+      const ml = p.marketplaceStatus?.mercadolivre || { status: 'Não publicado' };
+      
+      if (channelFilter) {
+        const item = channelFilter === 'shopee' ? shopee : channelFilter === 'tiktok' ? tiktok : ml;
+        if (statusFilter) {
+          return item.status === statusFilter;
+        }
+        return item.status !== 'Não publicado';
+      }
+      
+      if (statusFilter) {
+        return shopee.status === statusFilter || tiktok.status === statusFilter || ml.status === statusFilter;
+      }
+      
+      return true;
+    });
+  }
+  
+  const container = document.getElementById('publications-table-body');
+  if (!container) return;
+  
+  if (list.length === 0) {
+    container.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center; padding: 2rem; color: var(--gray-400)">
+          Nenhum produto encontrado com os filtros selecionados.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  container.innerHTML = list.map(p => {
+    const shopee = p.marketplaceStatus?.shopee || { status: 'Não publicado', code: '', errors: '', date: '' };
+    const tiktok = p.marketplaceStatus?.tiktok || { status: 'Não publicado', code: '', errors: '', date: '' };
+    const ml = p.marketplaceStatus?.mercadolivre || { status: 'Não publicado', code: '', errors: '', date: '' };
+    
+    // Find last publication date
+    const dates = [shopee.date, tiktok.date, ml.date].filter(d => !!d);
+    const lastDate = dates.length > 0 ? dates[dates.length - 1] : '-';
+    
+    return `
+      <tr>
+        <td>
+          <div class="td-product">
+            <img src="${getFirstImageUrl(p.imgUrl)}" class="td-thumb" alt="${p.name}" onerror="this.style.background='var(--pink-pale)'">
+            <div>
+              <div class="td-name" style="font-weight:600">${p.name}</div>
+              <div class="td-sku" style="font-size:0.7rem">${p.sku}</div>
+            </div>
+          </div>
+        </td>
+        <td>${formatMktStatusBadge('shopee', shopee, p.id)}</td>
+        <td>${formatMktStatusBadge('tiktok', tiktok, p.id)}</td>
+        <td>${formatMktStatusBadge('mercadolivre', ml, p.id)}</td>
+        <td><span style="font-size:0.75rem; color:var(--gray-500)">${lastDate}</span></td>
+        <td>
+          <div style="display:flex;gap:0.35rem">
+            <button class="btn btn-sm btn-secondary btn-icon" title="Atualizar Status" onclick="syncSingleProductStatus(${p.id})">🔄</button>
+            <button class="btn btn-sm btn-secondary btn-icon" title="Publicar Novamente" onclick="republishProduct(${p.id})">📤</button>
+            <button class="btn btn-sm btn-secondary btn-icon" title="Editar Cadastro" onclick="openModal('edit',${p.id})">✏️</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function formatMktStatusBadge(channel, statusObj, productId) {
+  let badgeClass = 'badge-gray';
+  let label = 'Não Publicado';
+  let icon = '⚪';
+  
+  if (statusObj.status === 'Publicado') {
+    badgeClass = 'badge-success';
+    label = 'Publicado';
+    icon = '🟢';
+  } else if (statusObj.status === 'Erro') {
+    badgeClass = 'badge-danger';
+    label = 'Erro';
+    icon = '🔴';
+  } else if (statusObj.status === 'Pendente') {
+    badgeClass = 'badge-warning';
+    label = 'Pendente';
+    icon = '🟡';
+  }
+  
+  let html = `<div style="display:flex; flex-direction:column; gap:0.2rem">
+    <div style="display:flex; align-items:center; gap:0.25rem">
+      <span class="badge ${badgeClass}" style="display:inline-flex; align-items:center; gap:0.2rem">
+        <span>${icon}</span>
+        <span>${label}</span>
+      </span>
+    </div>`;
+    
+  if (statusObj.status === 'Publicado' && statusObj.code) {
+    html += `<div style="font-size:0.65rem; color:var(--gray-500); font-family:monospace">Cód: ${statusObj.code}</div>`;
+  } else if (statusObj.status === 'Erro' && statusObj.errors) {
+    let field = 'f-name';
+    const err = statusObj.errors.toLowerCase();
+    if (err.includes('sku')) field = 'f-sku';
+    else if (err.includes('marca') || err.includes('brand')) field = 'f-brand';
+    else if (err.includes('peso') || err.includes('weight')) field = 'f-weight-gross';
+    else if (err.includes('dimens') || err.includes('largura') || err.includes('altura') || err.includes('profundidade')) field = 'f-width';
+    else if (err.includes('descri') || err.includes('curta')) field = 'f-bling-desc-short';
+    else if (err.includes('imagem') || err.includes('foto')) field = 'upload-zone';
+    
+    html += `<div style="font-size:0.65rem; color:var(--danger); line-height:1.2; max-width:180px">
+      ${statusObj.errors} 
+      <a href="javascript:void(0)" onclick="fixProductError(${productId}, '${field}')" style="color:#dd6b20; text-decoration:underline; font-weight:600; margin-left:0.25rem">Corrigir</a>
+    </div>`;
+  }
+  
+  html += `</div>`;
+  return html;
+}
+
+function filterPublicationsTable() {
+  renderPublicationsTable();
+}
+
+function fixProductError(productId, fieldId) {
+  openModal('edit', productId);
+  setTimeout(() => {
+    scrollToField(fieldId);
+  }, 100);
+}
+
+async function republishProduct(productId) {
+  const p = products.find(prod => prod.id === productId);
+  if (!p) return;
+  
+  const shopee = p.marketplaceStatus?.shopee?.status !== 'Não publicado';
+  const tiktok = p.marketplaceStatus?.tiktok?.status !== 'Não publicado';
+  const ml = p.marketplaceStatus?.mercadolivre?.status !== 'Não publicado';
+  
+  let targets = { shopee, tiktok, mercadolivre: ml };
+  if (!shopee && !tiktok && !ml) {
+    targets = { shopee: true, tiktok: true, mercadolivre: false };
+  }
+  
+  toast(`📤 Republicando SKU ${p.sku}...`, 'info');
+  await runPublishingPipeline(p, targets);
+}
+
+async function syncSingleProductStatus(productId) {
+  const p = products.find(prod => prod.id === productId);
+  if (!p || !p.blingId) {
+    toast('Produto ainda não foi enviado ao Bling.', 'warning');
+    return;
+  }
+  
+  toast(`🔄 Atualizando status no Bling...`, 'info');
+  const shopee = p.marketplaceStatus?.shopee?.status === 'Publicado' || p.marketplaceStatus?.shopee?.status === 'Erro';
+  const tiktok = p.marketplaceStatus?.tiktok?.status === 'Publicado' || p.marketplaceStatus?.tiktok?.status === 'Erro';
+  const ml = p.marketplaceStatus?.mercadolivre?.status === 'Publicado' || p.marketplaceStatus?.mercadolivre?.status === 'Erro';
+  
+  await runPublishingPipeline(p, { shopee, tiktok, mercadolivre: ml });
+  toast('🔄 Status atualizado!', 'success');
+}
+
+async function syncAllPublicationsStatus() {
+  const integratedProducts = products.filter(p => !!p.blingId);
+  if (integratedProducts.length === 0) {
+    toast('Nenhum produto integrado com Bling para atualizar.', 'warning');
+    return;
+  }
+  
+  toast(`🔄 Sincronizando status de ${integratedProducts.length} produtos...`, 'info');
+  for (const p of integratedProducts) {
+    const shopee = p.marketplaceStatus?.shopee?.status === 'Publicado' || p.marketplaceStatus?.shopee?.status === 'Erro';
+    const tiktok = p.marketplaceStatus?.tiktok?.status === 'Publicado' || p.marketplaceStatus?.tiktok?.status === 'Erro';
+    const ml = p.marketplaceStatus?.mercadolivre?.status === 'Publicado' || p.marketplaceStatus?.mercadolivre?.status === 'Erro';
+    
+    await runPublishingPipeline(p, { shopee, tiktok, mercadolivre: ml });
+  }
+  toast('✅ Status geral sincronizado!', 'success');
+}
+
 // ── INVENTORY ──
 function renderInventory() {
-  document.getElementById('inventory-table').innerHTML = products.map(p => {
+  const catFilter = document.getElementById('inventory-cat-filter');
+  if (catFilter) {
+    const currentVal = catFilter.value;
+    catFilter.innerHTML = '<option value="">Todas as categorias</option>' + 
+      categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    if (Array.from(catFilter.options).some(o => o.value === currentVal)) {
+      catFilter.value = currentVal;
+    }
+  }
+
+  const search = document.getElementById('inventory-search')?.value.toLowerCase().trim() || '';
+  const selectedCat = document.getElementById('inventory-cat-filter')?.value || '';
+  
+  let list = products;
+  if (search) {
+    list = list.filter(p => p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search));
+  }
+  if (selectedCat) {
+    list = list.filter(p => p.cat === selectedCat);
+  }
+  
+  const elCount = document.getElementById('inventory-count');
+  if (elCount) {
+    elCount.textContent = `${list.length} produtos`;
+  }
+
+  document.getElementById('inventory-table').innerHTML = list.map(p => {
     const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
     const low = total < 5;
     
@@ -2674,7 +3026,7 @@ function renderInventory() {
     <tr>
       <td>
         <div style="display:flex;align-items:center;gap:.75rem">
-          <img src="${p.imgUrl}" style="width:40px;height:48px;object-fit:cover;border-radius:4px" onerror="this.style.background='var(--pink-pale)'">
+          <img src="${getFirstImageUrl(p.imgUrl)}" style="width:40px;height:48px;object-fit:cover;border-radius:4px" onerror="this.style.background='var(--pink-pale)'">
           <div><div style="font-weight:500;font-size:.8rem">${p.name}</div><div style="font-size:.65rem;color:var(--gray-400)">${p.sku}</div></div>
         </div>
       </td>
@@ -3147,192 +3499,13 @@ function statusBadge(s) {
   return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
 }
 
+function getFirstImageUrl(urlStr) {
+  if (!urlStr) return '';
+  return urlStr.split(',')[0].trim();
+}
+
 // ── MODAL ──
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
-
-// ── EXPORT CHANNELS MODAL LOGIC ──
-let exportProductId = null;
-let blingChannelsList = [];
-
-function openExportChannelsModal(productId) {
-  exportProductId = productId;
-  const product = products.find(p => p.id === productId);
-  if (!product) return;
-
-  if (!product.blingId) {
-    toast('⚠️ Este produto não está sincronizado com o Bling. Salve o produto para gerar o Bling ID primeiro.', 'warning');
-    return;
-  }
-
-  document.getElementById('export-product-name').textContent = product.name;
-  document.getElementById('export-modal-overlay').style.display = 'flex';
-  
-  // Shopee & TikTok Shop validation checks
-  const validationAlerts = [];
-  const skuRegex = /^[a-zA-Z0-9_-]+$/;
-  if (!product.sku) {
-    validationAlerts.push('SKU é obrigatório.');
-  } else if (!skuRegex.test(product.sku)) {
-    validationAlerts.push(`SKU "${product.sku}" contém caracteres especiais inválidos.`);
-  }
-  const desc = (product.blingDescShort || product.desc || '').trim();
-  if (desc.length < 15) {
-    validationAlerts.push('Descrição deve conter no mínimo 15 caracteres.');
-  }
-  if (!product.brand || product.brand.trim() === '') {
-    validationAlerts.push('Marca/Coleção é obrigatória (caso não possua, digite "Sem Marca").');
-  }
-  if ((parseFloat(product.weightGross) || 0) <= 0) {
-    validationAlerts.push('Peso Bruto deve ser maior que 0.');
-  }
-  if ((parseFloat(product.width) || 0) <= 0 || (parseFloat(product.height) || 0) <= 0 || (parseFloat(product.depth) || 0) <= 0) {
-    validationAlerts.push('Dimensões (L, A, P) devem ser maiores que 0.');
-  } else if (parseFloat(product.width) > 70 || parseFloat(product.height) > 70 || parseFloat(product.depth) > 70) {
-    validationAlerts.push('As dimensões não podem ultrapassar 70 cm para envio Shopee.');
-  }
-  if (!product.imgUrl || product.imgUrl.trim() === '') {
-    validationAlerts.push('Deve conter pelo menos 1 imagem.');
-  }
-
-  const feedbackArea = document.getElementById('export-feedback-area');
-  if (validationAlerts.length > 0) {
-    feedbackArea.style.display = 'block';
-    feedbackArea.style.background = '#fffaf0';
-    feedbackArea.style.color = '#c05621';
-    feedbackArea.style.border = '1px solid #dd6b20';
-    feedbackArea.style.borderRadius = '6px';
-    feedbackArea.style.padding = '0.75rem';
-    feedbackArea.style.fontSize = '0.75rem';
-    feedbackArea.style.lineHeight = '1.4';
-    feedbackArea.innerHTML = `<strong>⚠️ Requisitos para Shopee/TikTok Pendentes:</strong><br><ul style="margin: 0.25rem 0 0 1rem; padding: 0">${validationAlerts.map(a => `<li>${a}</li>`).join('')}</ul>`;
-  } else {
-    feedbackArea.style.display = 'none';
-  }
-
-  document.getElementById('btn-execute-export').disabled = false;
-  
-  // Reset list
-  const listContainer = document.getElementById('export-channels-list');
-  listContainer.innerHTML = '<div style="font-size:0.8rem;color:var(--gray-400);text-align:center;padding:1rem">Carregando canais de venda...</div>';
-
-  if (!config.blingConnected || !config.appsScriptUrl) {
-    listContainer.innerHTML = '<div style="font-size:0.8rem;color:var(--danger);text-align:center;padding:1rem">Erro: Configure e conecte o Bling nas Configurações.</div>';
-    return;
-  }
-
-  // Fetch channels from Bling via Apps Script
-  fetch(config.appsScriptUrl, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'getBlingChannels' })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success && Array.isArray(data.data)) {
-      blingChannelsList = data.data;
-      if (blingChannelsList.length === 0) {
-        listContainer.innerHTML = '<div style="font-size:0.8rem;color:var(--gray-400);text-align:center;padding:1rem">Nenhum canal de venda ativo integrado no Bling.</div>';
-      } else {
-        listContainer.innerHTML = blingChannelsList.map(ch => {
-          return `
-            <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem;cursor:pointer;padding:0.25rem 0">
-              <input type="checkbox" class="export-channel-checkbox" value="${ch.id}">
-              <span>${ch.nome} <span style="font-size:0.65rem;color:var(--gray-400)">(${ch.tipoIntegracao || ''})</span></span>
-            </label>
-          `;
-        }).join('');
-      }
-    } else {
-      listContainer.innerHTML = `<div style="font-size:0.8rem;color:var(--danger);text-align:center;padding:1rem">Erro ao listar canais: ${data.error || 'Erro desconhecido'}</div>`;
-    }
-  })
-  .catch(err => {
-    listContainer.innerHTML = `<div style="font-size:0.8rem;color:var(--danger);text-align:center;padding:1rem">Erro de rede: ${err.message}</div>`;
-  });
-}
-
-function closeExportModal() {
-  document.getElementById('export-modal-overlay').style.display = 'none';
-}
-
-function executeExport() {
-  const checkedBoxes = document.querySelectorAll('.export-channel-checkbox:checked');
-  if (checkedBoxes.length === 0) {
-    toast('Selecione ao menos um canal para exportar!', 'warning');
-    return;
-  }
-
-  const product = products.find(p => p.id === exportProductId);
-  if (!product || !product.blingId) return;
-
-  const feedbackArea = document.getElementById('export-feedback-area');
-  feedbackArea.style.display = 'block';
-  feedbackArea.style.background = 'var(--gray-100)';
-  feedbackArea.style.color = 'var(--gray-700)';
-  feedbackArea.style.border = '1px solid var(--gray-200)';
-  feedbackArea.innerHTML = 'Publicando produto nos canais selecionados...';
-  
-  document.getElementById('btn-execute-export').disabled = true;
-  document.getElementById('btn-cancel-export').disabled = true;
-
-  const promises = Array.from(checkedBoxes).map(cb => {
-    const channelId = cb.value;
-    const channelName = blingChannelsList.find(c => String(c.id) === String(channelId))?.nome || 'Canal';
-    
-    return fetch(config.appsScriptUrl, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'exportProductToBlingChannel',
-        blingProductId: product.blingId,
-        channelId: channelId
-      })
-    })
-    .then(res => res.json())
-    .then(resData => {
-      if (resData.success) {
-        addIntegrationLog(`[Bling] Produto "${product.name}" exportado com sucesso para canal ${channelName}`, 'success');
-        return { channelName, success: true };
-      } else {
-        addIntegrationLog(`[Bling] Falha ao exportar produto "${product.name}" para canal ${channelName}: ${resData.error}`, 'error');
-        return { channelName, success: false, error: resData.error };
-      }
-    })
-    .catch(err => {
-      addIntegrationLog(`[Bling] Erro de conexão ao exportar "${product.name}" para canal ${channelName}: ${err.message}`, 'error');
-      return { channelName, success: false, error: err.message };
-    });
-  });
-
-  Promise.all(promises)
-  .then(results => {
-    const successItems = results.filter(r => r.success);
-    const failItems = results.filter(r => !r.success);
-
-    document.getElementById('btn-execute-export').disabled = false;
-    document.getElementById('btn-cancel-export').disabled = false;
-
-    if (failItems.length === 0) {
-      feedbackArea.style.background = 'var(--success-pale)';
-      feedbackArea.style.color = 'var(--success)';
-      feedbackArea.style.border = '1px solid var(--success)';
-      feedbackArea.innerHTML = `<strong>Sucesso!</strong> Publicado em: ${successItems.map(s => s.channelName).join(', ')}`;
-      toast('✅ Publicado com sucesso nos canais selecionados!', 'success');
-    } else {
-      feedbackArea.style.background = 'var(--pink-pale)';
-      feedbackArea.style.color = 'var(--pink-deep)';
-      feedbackArea.style.border = '1px solid var(--pink)';
-      
-      let html = '<strong>Resultado da exportação:</strong><br>';
-      if (successItems.length > 0) {
-        html += `✓ Publicado em: ${successItems.map(s => s.channelName).join(', ')}<br>`;
-      }
-      failItems.forEach(f => {
-        html += `✗ Falha em ${f.channelName}: ${f.error}<br>`;
-      });
-      feedbackArea.innerHTML = html;
-      toast('⚠️ Algumas publicações falharam. Veja os detalhes no painel.', 'warning');
-    }
-  });
-}
 
 // ── SAVE PRODUCT ──
 async function saveProduct() {
@@ -3345,9 +3518,79 @@ async function saveProduct() {
   const isEdit   = !!editId;
   const existing = isEdit ? products.find(p => String(p.id) === String(editId)) : null;
 
-  // Usar primeira URL do Cloudinary se houver upload novo; senão manter a existente
-  const imgUrl       = pendingImgUrls.length > 0 ? pendingImgUrls[0] : (existing?.imgUrl || '');
-  const cloudId      = imgUrl ? imgUrl.split('/').slice(-2).join('/').replace(/\.[^.]+$/, '') : (existing?.cloudId || '');
+  // Usar lista de imagens do Cloudinary se houver upload; senão manter as existentes
+  const imgUrl       = pendingImgUrls.join(',');
+  const firstUrl     = imgUrl ? imgUrl.split(',')[0] : '';
+  const cloudId      = firstUrl ? firstUrl.split('/').slice(-2).join('/').replace(/\.[^.]+$/, '') : (existing?.cloudId || '');
+
+  // 1. Validação Estrita de Dados (Canais/Bling)
+  const validationErrors = [];
+  const sku = document.getElementById('f-sku').value.trim();
+  const skuRegex = /^[a-zA-Z0-9_-]+$/;
+  if (!sku) {
+    validationErrors.push({ field: 'f-sku', message: 'SKU é obrigatório para integração.' });
+  } else if (!skuRegex.test(sku)) {
+    validationErrors.push({ field: 'f-sku', message: 'SKU inválido (apenas letras, números, - e _).' });
+  }
+  
+  if (!document.getElementById('f-brand').value.trim()) {
+    validationErrors.push({ field: 'f-brand', message: 'Marca/Coleção é obrigatória.' });
+  }
+  
+  const weightGross = parseFloat(document.getElementById('f-weight-gross').value) || 0;
+  if (weightGross <= 0) {
+    validationErrors.push({ field: 'f-weight-gross', message: 'Peso Bruto deve ser maior que zero.' });
+  }
+  
+  const w = parseFloat(document.getElementById('f-width').value) || 0;
+  const h = parseFloat(document.getElementById('f-height').value) || 0;
+  const d = parseFloat(document.getElementById('f-depth').value) || 0;
+  if (w <= 0 || h <= 0 || d <= 0) {
+    validationErrors.push({ field: 'f-width', message: 'Dimensões devem ser maiores que zero.' });
+  } else if (w > 70 || h > 70 || d > 70) {
+    validationErrors.push({ field: 'f-width', message: 'Dimensões não podem ultrapassar 70 cm para Shopee.' });
+  }
+  
+  const descShort = document.getElementById('f-bling-desc-short').value.trim();
+  if (descShort.length < 15) {
+    validationErrors.push({ field: 'f-bling-desc-short', message: 'Descrição Curta deve ter no mínimo 15 caracteres.' });
+  }
+  
+  if (!imgUrl) {
+    validationErrors.push({ field: 'upload-zone', message: 'Precisa de pelo menos uma imagem cadastrada.' });
+  }
+
+  const errContainer = document.getElementById('modal-validation-errors');
+  if (validationErrors.length > 0) {
+    errContainer.style.display = 'block';
+    errContainer.innerHTML = `<strong>⚠️ Erros de Validação dos Marketplaces:</strong><br><ul style="margin:0.25rem 0 0 1rem; padding:0">${validationErrors.map(e => `
+      <li style="margin-bottom:0.25rem; display: flex; align-items: center; justify-content: space-between;">
+        <span>• ${e.message}</span> 
+        <button class="btn btn-secondary btn-sm" onclick="scrollToField('${e.field}')" style="font-size:0.65rem; padding:0.1rem 0.35rem; line-height:1; height:auto">Corrigir</button>
+      </li>
+    `).join('')}</ul>`;
+    errContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+  errContainer.style.display = 'none';
+
+  // Carregar status das publicações existente ou criar padrão
+  let mktStatus = existing?.marketplaceStatus;
+  if (!mktStatus) {
+    if (existing?.blingObservacoes) {
+      try {
+        const parsedObs = JSON.parse(existing.blingObservacoes);
+        if (parsedObs.marketplaceStatus) mktStatus = parsedObs.marketplaceStatus;
+      } catch(_) {}
+    }
+  }
+  if (!mktStatus) {
+    mktStatus = {
+      shopee: { status: 'Não publicado', code: '', errors: '', date: '' },
+      tiktok: { status: 'Não publicado', code: '', errors: '', date: '' },
+      mercadolivre: { status: 'Não publicado', code: '', errors: '', date: '' }
+    };
+  }
 
   const prodData = {
     id:        isEdit ? existing.id : (products.length + 1),
@@ -3374,7 +3617,6 @@ async function saveProduct() {
           st[sz] = parseInt(input.value) || 0;
         });
       } else {
-        // Fallback para quando o formulário ainda não foi totalmente renderizado com a classe nova
         st.pp = parseInt(document.getElementById('f-pp')?.value) || 0;
         st.p = parseInt(document.getElementById('f-p')?.value) || 0;
         st.m = parseInt(document.getElementById('f-m')?.value) || 0;
@@ -3406,6 +3648,14 @@ async function saveProduct() {
     blingDescComp: document.getElementById('f-bling-desc-comp').value.trim(),
     blingObservacoes: document.getElementById('f-bling-observacoes').value.trim(),
     blingTags: document.getElementById('f-bling-tags').value.trim(),
+    
+    // Novos campos de Atributos e Tabela de Medidas
+    attrGender: document.getElementById('f-attr-gender').value,
+    attrColor: document.getElementById('f-attr-color').value.trim(),
+    attrMaterial: document.getElementById('f-attr-material').value.trim(),
+    attrAgeGroup: document.getElementById('f-attr-age-group').value,
+    sizeChartUrl: pendingSizeChartUrl,
+    marketplaceStatus: mktStatus
   };
 
   if (isEdit) {
@@ -3417,20 +3667,19 @@ async function saveProduct() {
 
   saveProductsLocal();
   closeModal();
-  toast((isEdit ? '✏️ Produto atualizado!' : '✅ Produto criado!') + ' Sincronizando...', 'success');
+  toast((isEdit ? '✏️ Produto atualizado!' : '✅ Produto criado!'), 'success');
 
-  // Sincronizar com marketplaces em background se mapeado
-  const blConnected = localStorage.getItem('blingConnected') === 'true';
+  runPublishingPipeline(prodData);
+}
 
-  if (blConnected && document.getElementById('bl-sync-stock')?.checked !== false) {
-    setTimeout(() => {
-      addIntegrationLog(`[Bling] SKU ${prodData.sku} atualizado automaticamente via cadastro. Estoque Central: ${Object.values(prodData.stock).reduce((a,b)=>a+b,0)} un.`, 'system');
-    }, 500);
+function scrollToField(fieldId) {
+  const el = document.getElementById(fieldId);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.focus();
+    el.style.outline = '2px solid var(--warning, #dd6b20)';
+    setTimeout(() => { el.style.outline = ''; }, 2500);
   }
-
-  await syncToSheets(prodData);
-  renderProducts();
-  renderDashboard();
 }
 
 function deleteProduct(id) {
@@ -3484,7 +3733,7 @@ function filterStatus(v) {
   const list = products.filter(p => p.status === v);
   document.getElementById('products-table').innerHTML = list.map(p => {
     const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
-    return `<tr><td><div class="td-product"><img src="${p.imgUrl}" class="td-thumb"><div><div class="td-name">${p.name}</div><div class="td-sku">${p.sku}</div></div></div></td><td>${p.cat}</td><td>R$ ${p.price.toFixed(2).replace('.',',')}</td><td>${total}</td><td>${statusBadge(p.status)}</td><td>☁️</td><td></td></tr>`;
+    return `<tr><td><div class="td-product"><img src="${getFirstImageUrl(p.imgUrl)}" class="td-thumb"><div><div class="td-name">${p.name}</div><div class="td-sku">${p.sku}</div></div></div></td><td>${p.cat}</td><td>R$ ${p.price.toFixed(2).replace('.',',')}</td><td>${total}</td><td>${statusBadge(p.status)}</td><td>☁️</td><td></td></tr>`;
   }).join('');
 }
 function changeOrderStatus(id) { 
@@ -3600,7 +3849,15 @@ async function syncToSheets(product) {
       bling_video_url: product.blingVideoUrl || '',
       bling_desc_short: product.blingDescShort || '',
       bling_desc_comp: product.blingDescComp || '',
-      bling_observacoes: product.blingObservacoes || '',
+      bling_observacoes: JSON.stringify({
+        attrGender: product.attrGender || '',
+        attrColor: product.attrColor || '',
+        attrMaterial: product.attrMaterial || '',
+        attrAgeGroup: product.attrAgeGroup || '',
+        sizeChartUrl: product.sizeChartUrl || '',
+        marketplaceStatus: product.marketplaceStatus || null,
+        customObs: product.blingObservacoes || ''
+      }),
       bling_tags: product.blingTags || ''
     };
 
@@ -3671,46 +3928,76 @@ async function loadFromSheets(silent = false) {
     const { data: pData, error: pError } = await supabaseClient.from('produtos').select('*');
     if (pError) throw pError;
     if (pData) {
-      products = pData.map(p => ({
-        id: p.id,
-        name: p.name,
-        sku: p.sku || '',
-        cat: p.cat || '',
-        cost: parseFloat(p.cost) || 0,
-        price: parseFloat(p.price) || 0,
-        salePrice: p.sale_price ? parseFloat(p.sale_price) : null,
-        stock: p.stock || {pp:0, p:0, m:0, g:0, gg:0},
-        status: p.status || 'Ativo',
-        featured: p.featured ? 'Sim' : 'Não',
-        imgUrl: p.img_url || '',
-        cloudId: p.cloud_id || '',
-        blingId: p.bling_id || '',
-        brand: p.brand || '',
-        gtin: p.gtin || '',
-        weightNet: p.weight_net !== undefined ? parseFloat(p.weight_net) : 0,
-        weightGross: p.weight_gross !== undefined ? parseFloat(p.weight_gross) : 0,
-        width: p.width !== undefined ? parseFloat(p.width) : 0,
-        height: p.height !== undefined ? parseFloat(p.height) : 0,
-        depth: p.depth !== undefined ? parseFloat(p.depth) : 0,
-        blingFormat: p.bling_format || 'S',
-        blingType: p.bling_type || 'P',
-        blingUnit: p.bling_unit || 'UN',
-        blingCondition: p.bling_condition !== undefined ? parseInt(p.bling_condition) : 1,
-        blingProduction: p.bling_production || 'P',
-        blingExpiration: p.bling_expiration || '',
-        blingFreeShipping: p.bling_free_shipping || false,
-        blingGtinTributario: p.bling_gtin_tributario || '',
-        blingVolumes: p.bling_volumes !== undefined ? parseInt(p.bling_volumes) : 1,
-        blingItemsBox: p.bling_items_box !== undefined ? parseInt(p.bling_items_box) : 1,
-        blingUnitMeasure: p.bling_unit_measure !== undefined ? parseInt(p.bling_unit_measure) : 2,
-        blingCategoryId: p.bling_category_id || '',
-        blingLinkExterno: p.bling_link_externo || '',
-        blingVideoUrl: p.bling_video_url || '',
-        blingDescShort: p.bling_desc_short || '',
-        blingDescComp: p.bling_desc_comp || '',
-        blingObservacoes: p.bling_observacoes || '',
-        blingTags: p.bling_tags || ''
-      }));
+      products = pData.map(p => {
+        let attrGender = '';
+        let attrColor = '';
+        let attrMaterial = '';
+        let attrAgeGroup = '';
+        let sizeChartUrl = '';
+        let mktStatus = null;
+        let originalObs = p.bling_observacoes || '';
+        
+        if (p.bling_observacoes && p.bling_observacoes.trim().startsWith('{')) {
+          try {
+            const parsed = JSON.parse(p.bling_observacoes);
+            attrGender = parsed.attrGender || '';
+            attrColor = parsed.attrColor || '';
+            attrMaterial = parsed.attrMaterial || '';
+            attrAgeGroup = parsed.attrAgeGroup || '';
+            sizeChartUrl = parsed.sizeChartUrl || '';
+            mktStatus = parsed.marketplaceStatus || null;
+            originalObs = parsed.customObs || '';
+          } catch(e) {}
+        }
+        
+        return {
+          id: p.id,
+          name: p.name,
+          sku: p.sku || '',
+          cat: p.cat || '',
+          cost: parseFloat(p.cost) || 0,
+          price: parseFloat(p.price) || 0,
+          salePrice: p.sale_price ? parseFloat(p.sale_price) : null,
+          stock: p.stock || {pp:0, p:0, m:0, g:0, gg:0},
+          status: p.status || 'Ativo',
+          featured: p.featured ? 'Sim' : 'Não',
+          imgUrl: p.img_url || '',
+          cloudId: p.cloud_id || '',
+          blingId: p.bling_id || '',
+          brand: p.brand || '',
+          gtin: p.gtin || '',
+          weightNet: p.weight_net !== undefined ? parseFloat(p.weight_net) : 0,
+          weightGross: p.weight_gross !== undefined ? parseFloat(p.weight_gross) : 0,
+          width: p.width !== undefined ? parseFloat(p.width) : 0,
+          height: p.height !== undefined ? parseFloat(p.height) : 0,
+          depth: p.depth !== undefined ? parseFloat(p.depth) : 0,
+          blingFormat: p.bling_format || 'S',
+          blingType: p.bling_type || 'P',
+          blingUnit: p.bling_unit || 'UN',
+          blingCondition: p.bling_condition !== undefined ? parseInt(p.bling_condition) : 1,
+          blingProduction: p.bling_production || 'P',
+          blingExpiration: p.bling_expiration || '',
+          blingFreeShipping: p.bling_free_shipping || false,
+          blingGtinTributario: p.bling_gtin_tributario || '',
+          blingVolumes: p.bling_volumes !== undefined ? parseInt(p.bling_volumes) : 1,
+          blingItemsBox: p.bling_items_box !== undefined ? parseInt(p.bling_items_box) : 1,
+          blingUnitMeasure: p.bling_unit_measure !== undefined ? parseInt(p.bling_unit_measure) : 2,
+          blingCategoryId: p.bling_category_id || '',
+          blingLinkExterno: p.bling_link_externo || '',
+          blingVideoUrl: p.bling_video_url || '',
+          blingDescShort: p.bling_desc_short || '',
+          blingDescComp: p.bling_desc_comp || '',
+          blingObservacoes: originalObs,
+          blingTags: p.bling_tags || '',
+          
+          attrGender,
+          attrColor,
+          attrMaterial,
+          attrAgeGroup,
+          sizeChartUrl,
+          marketplaceStatus: mktStatus
+        };
+      });
       saveProductsLocal();
       renderProducts();
     }
@@ -4312,6 +4599,149 @@ async function uploadToCloudinary(file) {
   }
 }
 
+let pendingSizeChartUrl = '';
+
+function handleSizeChartFile(files) {
+  const preview = document.getElementById('size-chart-preview');
+  if (files.length === 0) return;
+  const file = files[0];
+  const reader = new FileReader();
+  reader.onload = async e => {
+    preview.innerHTML = `<div class="preview-item" style="width:60px;height:60px;position:relative;border:1px solid var(--gray-200);border-radius:4px;overflow:hidden"><img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:white">Enviando...</div></div>`;
+    toast('⬆️ Enviando tabela de medidas ao Cloudinary...', 'info');
+    const url = await uploadToCloudinary(file);
+    if (url) {
+      pendingSizeChartUrl = url;
+      preview.innerHTML = `<div class="preview-item" style="width:60px;height:60px;position:relative;border:1px solid var(--gray-200);border-radius:4px;overflow:hidden"><img src="${url}" style="width:100%;height:100%;object-fit:cover"><button class="preview-remove" onclick="this.parentNode.remove(); pendingSizeChartUrl='';" style="position:absolute;top:2px;right:2px;background:var(--danger);color:white;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button></div>`;
+      toast('☁️ Tabela de medidas salva no Cloudinary!', 'success');
+    } else {
+      preview.innerHTML = '';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runPublishingPipeline(product) {
+  const overlay = document.getElementById('publication-progress-overlay');
+  const stepsContainer = document.getElementById('pub-progress-steps');
+  const finishedArea = document.getElementById('pub-progress-finished-area');
+  
+  document.getElementById('pub-progress-title').textContent = 'Sincronizando Bling ERP...';
+  document.getElementById('pub-progress-subtitle').textContent = 'Cadastrando produto e variações no Bling.';
+  
+  overlay.style.display = 'flex';
+  finishedArea.style.display = 'none';
+  
+  const steps = [{ id: 'bling', text: 'Criar/Atualizar Produto no Bling ERP' }];
+  
+  stepsContainer.innerHTML = steps.map(s => `
+    <div id="step-${s.id}" style="display:flex; flex-direction:column; gap:0.25rem; font-size:0.8rem; color:var(--gray-600); padding: 0.5rem; background:var(--gray-50); border-radius:6px">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <span>${s.text}</span>
+        <span class="status-icon">⏳</span>
+      </div>
+    </div>
+  `).join('');
+  
+  if (!product.marketplaceStatus) {
+    product.marketplaceStatus = {
+      shopee: { status: 'Não publicado', code: '', errors: '', date: '' },
+      tiktok: { status: 'Não publicado', code: '', errors: '', date: '' },
+      mercadolivre: { status: 'Não publicado', code: '', errors: '', date: '' }
+    };
+  }
+  
+  updateStepUI('bling', 'loading');
+  let blingId = product.blingId;
+  let success = false;
+  
+  try {
+    const res = await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'syncBlingProduct', product })
+    });
+    const resData = await res.json();
+    if (resData.success && resData.blingId) {
+      blingId = String(resData.blingId);
+      product.blingId = blingId;
+      const idx = products.findIndex(p => p.id === product.id);
+      if (idx > -1) products[idx].blingId = blingId;
+      saveProductsLocal();
+      updateStepUI('bling', 'success');
+      success = true;
+    } else {
+      updateStepUI('bling', 'error', resData.error || 'Erro ao salvar no Bling.');
+    }
+  } catch (err) {
+    updateStepUI('bling', 'error', err.message);
+  }
+  
+  if (!success) {
+    finishedArea.style.display = 'block';
+    return;
+  }
+  
+  product.blingObservacoes = JSON.stringify({
+    attrGender: product.attrGender || '',
+    attrColor: product.attrColor || '',
+    attrMaterial: product.attrMaterial || '',
+    attrAgeGroup: product.attrAgeGroup || '',
+    sizeChartUrl: product.sizeChartUrl || '',
+    marketplaceStatus: product.marketplaceStatus || null,
+    customObs: product.blingObservacoes || ''
+  });
+  
+  const idx = products.findIndex(p => p.id === product.id);
+  if (idx > -1) {
+    products[idx] = product;
+  }
+  saveProductsLocal();
+  await syncToSheets(product);
+  
+  renderProducts();
+  if (typeof renderPublicationsTable === 'function') renderPublicationsTable();
+  
+  finishedArea.style.display = 'block';
+}
+
+function updateStepUI(stepId, status, errorMsg = '') {
+  const stepEl = document.getElementById(`step-${stepId}`);
+  if (!stepEl) return;
+  const iconEl = stepEl.querySelector('.status-icon');
+  
+  if (status === 'loading') {
+    iconEl.innerHTML = '<span class="status-spinner" style="display:inline-block;animation:spin 1s linear infinite">⏳</span>';
+    stepEl.style.background = 'var(--white)';
+  } else if (status === 'success') {
+    iconEl.innerHTML = '✅';
+    stepEl.style.background = '#e6fffa';
+    stepEl.style.color = '#319795';
+    stepEl.style.border = '1px solid #b2f5ea';
+  } else if (status === 'error') {
+    iconEl.innerHTML = '❌';
+    stepEl.style.background = '#fff5f5';
+    stepEl.style.color = '#e53e3e';
+    stepEl.style.border = '1px solid #fed7d7';
+    
+    // Append error details if not already present
+    let detailEl = stepEl.querySelector('.error-detail');
+    if (!detailEl) {
+      detailEl = document.createElement('div');
+      detailEl.className = 'error-detail';
+      detailEl.style.fontSize = '0.7rem';
+      detailEl.style.color = 'var(--danger)';
+      detailEl.style.marginTop = '0.2rem';
+      stepEl.appendChild(detailEl);
+    }
+    detailEl.textContent = errorMsg;
+  }
+}
+
+function closePubProgressOverlay() {
+  document.getElementById('publication-progress-overlay').style.display = 'none';
+}
+
 // Função auxiliar para retornar a lista de tamanhos do produto com base no tipo da categoria
 function getProductSizesList(product) {
   let catType = 'adulto';
@@ -4496,11 +4926,32 @@ function openModal(mode, id) {
       document.getElementById('f-bling-desc-comp').value = p.blingDescComp || '';
       document.getElementById('f-bling-observacoes').value = p.blingObservacoes || '';
       document.getElementById('f-bling-tags').value = p.blingTags || '';
-      // Se já tem imagem, mostrar no preview
+      
+      // Carregar atributos e tabela de medidas
+      document.getElementById('f-attr-gender').value = p.attrGender || '';
+      document.getElementById('f-attr-color').value = p.attrColor || '';
+      document.getElementById('f-attr-material').value = p.attrMaterial || '';
+      document.getElementById('f-attr-age-group').value = p.attrAgeGroup || '';
+      pendingSizeChartUrl = p.sizeChartUrl || '';
+      const sizeChartPreview = document.getElementById('size-chart-preview');
+      if (p.sizeChartUrl) {
+        sizeChartPreview.innerHTML = `<div class="preview-item" style="width:60px;height:60px;position:relative;border:1px solid var(--gray-200);border-radius:4px;overflow:hidden"><img src="${p.sizeChartUrl}" style="width:100%;height:100%;object-fit:cover"><button class="preview-remove" onclick="this.parentNode.remove(); pendingSizeChartUrl='';" style="position:absolute;top:2px;right:2px;background:var(--danger);color:white;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button></div>`;
+      } else {
+        sizeChartPreview.innerHTML = '';
+      }
+
+
+
+      // Se já tem imagens, mostrar no preview
       if (p.imgUrl) {
-        pendingImgUrls = [p.imgUrl];
+        pendingImgUrls = p.imgUrl.split(',').map(u => u.trim()).filter(u => u !== '');
         const preview = document.getElementById('upload-preview');
-        preview.innerHTML = `<div class="preview-item"><img src="${p.imgUrl}"><button class="preview-remove" onclick="this.parentNode.remove(); pendingImgUrls=[];">✕</button></div>`;
+        preview.innerHTML = pendingImgUrls.map(url => `
+          <div class="preview-item">
+            <img src="${url}">
+            <button class="preview-remove" onclick="this.parentNode.remove(); pendingImgUrls=pendingImgUrls.filter(u=>u!=='${url}');">✕</button>
+          </div>
+        `).join('');
       }
       // Guardar id sendo editado
       document.getElementById('modal-overlay').dataset.editId = id;
@@ -4543,6 +4994,17 @@ function openModal(mode, id) {
     document.getElementById('f-bling-desc-comp').value = '';
     document.getElementById('f-bling-observacoes').value = '';
     document.getElementById('f-bling-tags').value = '';
+    
+    // Reset novos atributos e guia de tamanhos
+    document.getElementById('f-attr-gender').value = '';
+    document.getElementById('f-attr-color').value = '';
+    document.getElementById('f-attr-material').value = '';
+    document.getElementById('f-attr-age-group').value = '';
+    pendingSizeChartUrl = '';
+    document.getElementById('size-chart-preview').innerHTML = '';
+
+
+
     document.getElementById('modal-overlay').dataset.editId = '';
   }
   document.getElementById('modal-overlay').classList.add('open');
@@ -5485,7 +5947,7 @@ function renderPosProducts(list) {
 
     return `
       <div class="pos-prod-card" onclick="addToPosCartDefault(${p.id})">
-        <img src="${p.imgUrl || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=80&q=60'}" class="pos-prod-thumb" alt="${p.name}" onerror="this.src='https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=80&q=60'">
+        <img src="${getFirstImageUrl(p.imgUrl) || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=80&q=60'}" class="pos-prod-thumb" alt="${p.name}" onerror="this.src='https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=80&q=60'">
         <div class="pos-prod-title" title="${p.name}">${p.name}</div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
           <span class="pos-prod-price">R$ ${p.price.toFixed(2).replace('.', ',')}</span>
@@ -5537,7 +5999,7 @@ function addToPosCart(productId, size) {
       name: p.name,
       sku: p.sku,
       price: p.price,
-      imgUrl: p.imgUrl,
+      imgUrl: getFirstImageUrl(p.imgUrl),
       size: sizeKey,
       qty: 1
     });
