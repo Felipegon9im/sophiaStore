@@ -3789,6 +3789,9 @@ async function saveProduct() {
   const name = document.getElementById('f-name').value.trim();
   if (!name) { toast('Nome é obrigatório', 'error'); return; }
 
+  const category = document.getElementById('f-category').value;
+  if (!category) { toast('Selecione uma categoria para o produto', 'error'); return; }
+
   const price    = parseFloat(document.getElementById('f-price').value) || 0;
   const cost     = parseFloat(document.getElementById('f-cost').value)  || 0;
   const editId   = document.getElementById('modal-overlay').dataset.editId;
@@ -5147,6 +5150,16 @@ function updateSizeInputs(category, stockObj = null) {
   const container = document.getElementById('size-stock-container');
   if (!container) return;
 
+  if (!category) {
+    container.innerHTML = `
+      <div style="grid-column: 1/-1; text-align:center; padding:2rem; border:1px dashed var(--gray-300); border-radius:8px; color:var(--gray-500); background:var(--gray-50); width:100%">
+        <span style="font-size:1.5rem; display:block; margin-bottom:0.5rem">📂</span>
+        <p style="font-size:0.85rem; font-weight:500; margin:0">Selecione uma categoria acima para carregar a grade de tamanhos deste produto.</p>
+      </div>
+    `;
+    return;
+  }
+
   const catType = getCategoryType(category, categories);
 
   let sizes = [];
@@ -5366,7 +5379,8 @@ function openModal(mode, id) {
   // Populate category options list dynamically
   const catSelect = document.getElementById('f-category');
   if (catSelect) {
-    catSelect.innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    catSelect.innerHTML = '<option value="">Selecione uma categoria...</option>' + 
+      categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
   }
   if (mode === 'edit' && id) {
     const p = products.find(x => x.id === id);
@@ -5440,9 +5454,8 @@ function openModal(mode, id) {
   } else {
     document.getElementById('f-name').value = '';
     document.getElementById('f-sku').value = 'AUTO-' + String(products.length+1).padStart(3,'0');
-    document.getElementById('f-category').value = 'Vestidos';
-    const defaultCatObj = categories.find(c => c.name.toLowerCase() === 'vestidos');
-    document.getElementById('f-brand').value = (defaultCatObj && defaultCatObj.defaultBrand) ? defaultCatObj.defaultBrand : '';
+    document.getElementById('f-category').value = '';
+    document.getElementById('f-brand').value = '';
     document.getElementById('f-cost').value = '';
     document.getElementById('f-price').value = '';
     document.getElementById('f-sale-price').value = '';
@@ -5456,7 +5469,7 @@ function openModal(mode, id) {
     document.getElementById('f-status').value = 'Ativo';
     document.getElementById('f-featured').value = 'Não';
     
-    updateSizeInputs('Vestidos', { pp: 0, p: 0, m: 0, g: 0, gg: 0 });
+    updateSizeInputs('', null);
     document.getElementById('f-bling-id').value = '';
     document.getElementById('f-bling-format').value = 'S';
     document.getElementById('f-bling-type').value = 'P';
@@ -8388,8 +8401,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const catSelect = document.getElementById('f-category');
   if (catSelect) {
     catSelect.addEventListener('change', (e) => {
-      const categoryObj = categories.find(c => String(c.name).trim().toLowerCase() === String(e.target.value || '').trim().toLowerCase());
-      const catType = getCategoryType(e.target.value, categories);
+      const categoryVal = e.target.value;
+      if (!categoryVal) {
+        updateSizeInputs('', null);
+        return;
+      }
+
+      const categoryObj = categories.find(c => String(c.name).trim().toLowerCase() === String(categoryVal).trim().toLowerCase());
+      const catType = getCategoryType(categoryVal, categories);
 
       // Auto fill brand from category default if present
       if (categoryObj && categoryObj.defaultBrand) {
@@ -8406,7 +8425,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         defaultStock = { pp: 0, p: 0, m: 0, g: 0, gg: 0 };
       }
-      updateSizeInputs(e.target.value, defaultStock);
+      updateSizeInputs(categoryVal, defaultStock);
     });
   }
 });
