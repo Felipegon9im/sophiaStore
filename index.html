@@ -2548,8 +2548,13 @@ function renderProducts(filter = 'Todos', query = '') {
   }
 
   const renderCard = (p) => {
-    // Generate dynamic sizes preview based on actual stock
-    const inStockSizes = Object.keys(p.stock || {}).filter(sz => p.stock[sz] > 0);
+    const inStockSizes = Object.keys(p.stock || {}).filter(sz => {
+      const val = p.stock[sz];
+      if (val && typeof val === 'object') {
+        return Object.values(val).reduce((a, b) => a + (parseInt(b) || 0), 0) > 0;
+      }
+      return (parseInt(val) || 0) > 0;
+    });
     const sizesHtml = inStockSizes.length > 0 
       ? inStockSizes.map(sz => `<span class="size-preview-badge">${sz.toUpperCase()}</span>`).join('')
       : `<span class="size-preview-badge" style="color:var(--pink); background:var(--pink-pale); border-color:rgba(233,30,140,0.15)">Esgotado</span>`;
