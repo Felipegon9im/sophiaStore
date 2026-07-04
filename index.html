@@ -2439,6 +2439,10 @@ function adminToStoreProduct(p) {
     }
   }
 
+  const firstImgUrl = (p.imgUrl && typeof p.imgUrl === 'string') 
+    ? p.imgUrl.split(',').map(u => u.trim()).filter(u => u !== '')[0] 
+    : '';
+
   return {
     id:       p.id,
     name:     p.name,
@@ -2446,7 +2450,7 @@ function adminToStoreProduct(p) {
     price:    p.salePrice || p.price,
     oldPrice: p.salePrice ? p.price : null,
     badge:    p.featured === 'Sim' ? 'new' : (p.salePrice ? 'sale' : null),
-    img:      p.imgUrl || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&q=80',
+    img:      firstImgUrl || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&q=80',
     colors:   ['#E91E8C', '#FFF', '#1a0a12'],
     desc:     p.desc || '',
     stock:    p.stock || defaultStock,
