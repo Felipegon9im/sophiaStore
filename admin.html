@@ -2608,6 +2608,48 @@ function escapeHTML(str) {
     .replace(/'/g, '&#39;');
 }
 
+function getOfficialCategoryName(productCat, categoriesList) {
+  if (!productCat) return 'Outros';
+  const cleanProdCat = String(productCat).trim().toLowerCase();
+  
+  // 1. Tentar correspondência exata
+  const exactMatch = (categoriesList || []).find(c => c && c.name && String(c.name).trim().toLowerCase() === cleanProdCat);
+  if (exactMatch) return exactMatch.name;
+  
+  // 2. Tentar correspondência por palavras-chave
+  const hasCalcaBermuda = /calça|calca|bermuda/i.test(cleanProdCat);
+  const hasFeminina = /feminina|feminino|fem/i.test(cleanProdCat);
+  const hasMasculina = /masculina|masculino|masc/i.test(cleanProdCat);
+  const hasInfantil = /infantil|kids|bebe|bebê|juvenil/i.test(cleanProdCat);
+  
+  const match = (categoriesList || []).find(c => {
+    if (!c || !c.name) return false;
+    const cName = String(c.name).trim().toLowerCase();
+    const cHasCalcaBermuda = /calça|calca|bermuda/i.test(cName);
+    const cHasFeminina = /feminina|feminino|fem/i.test(cName);
+    const cHasMasculina = /masculina|masculino|masc/i.test(cName);
+    const cHasInfantil = /infantil|kids|bebe|bebê|juvenil/i.test(cName);
+    
+    if (hasCalcaBermuda && cHasCalcaBermuda) {
+      if (hasFeminina && cHasFeminina) return true;
+      if (hasMasculina && cHasMasculina) return true;
+    }
+    if (hasInfantil && cHasInfantil) {
+      if (hasFeminina && (/menina/i.test(cName) || /feminina/i.test(cName))) return true;
+      if (hasMasculina && (/menino/i.test(cName) || /masculina/i.test(cName))) return true;
+    }
+    return false;
+  });
+  
+  if (match) return match.name;
+  
+  // 3. Fallback por substring
+  const substringMatch = (categoriesList || []).find(c => c && c.name && (cleanProdCat.includes(String(c.name).trim().toLowerCase()) || String(c.name).trim().toLowerCase().includes(cleanProdCat)));
+  if (substringMatch) return substringMatch.name;
+
+  return productCat;
+}
+
 function getCategoryType(categoryName, categoriesList) {
   if (!categoryName) return 'adulto';
   const cleanName = String(categoryName).trim().toLowerCase();
@@ -5387,7 +5429,7 @@ function openModal(mode, id) {
     if (p) {
       document.getElementById('f-name').value = p.name;
       document.getElementById('f-sku').value = p.sku;
-      document.getElementById('f-category').value = p.cat;
+      document.getElementById('f-category').value = getOfficialCategoryName(p.cat, categories);
       document.getElementById('f-brand').value = p.brand || '';
       document.getElementById('f-cost').value = p.cost;
       document.getElementById('f-price').value = p.price;

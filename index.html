@@ -2394,6 +2394,48 @@ let currentProduct = null;
 let selectedSize = '';
 let selectedColor = '';
 
+function getOfficialCategoryName(productCat, categoriesList) {
+  if (!productCat) return 'Outros';
+  const cleanProdCat = String(productCat).trim().toLowerCase();
+  
+  // 1. Tentar correspondência exata
+  const exactMatch = (categoriesList || []).find(c => c && c.name && String(c.name).trim().toLowerCase() === cleanProdCat);
+  if (exactMatch) return exactMatch.name;
+  
+  // 2. Tentar correspondência por palavras-chave
+  const hasCalcaBermuda = /calça|calca|bermuda/i.test(cleanProdCat);
+  const hasFeminina = /feminina|feminino|fem/i.test(cleanProdCat);
+  const hasMasculina = /masculina|masculino|masc/i.test(cleanProdCat);
+  const hasInfantil = /infantil|kids|bebe|bebê|juvenil/i.test(cleanProdCat);
+  
+  const match = (categoriesList || []).find(c => {
+    if (!c || !c.name) return false;
+    const cName = String(c.name).trim().toLowerCase();
+    const cHasCalcaBermuda = /calça|calca|bermuda/i.test(cName);
+    const cHasFeminina = /feminina|feminino|fem/i.test(cName);
+    const cHasMasculina = /masculina|masculino|masc/i.test(cName);
+    const cHasInfantil = /infantil|kids|bebe|bebê|juvenil/i.test(cName);
+    
+    if (hasCalcaBermuda && cHasCalcaBermuda) {
+      if (hasFeminina && cHasFeminina) return true;
+      if (hasMasculina && cHasMasculina) return true;
+    }
+    if (hasInfantil && cHasInfantil) {
+      if (hasFeminina && (/menina/i.test(cName) || /feminina/i.test(cName))) return true;
+      if (hasMasculina && (/menino/i.test(cName) || /masculina/i.test(cName))) return true;
+    }
+    return false;
+  });
+  
+  if (match) return match.name;
+  
+  // 3. Fallback por substring
+  const substringMatch = (categoriesList || []).find(c => c && c.name && (cleanProdCat.includes(String(c.name).trim().toLowerCase()) || String(c.name).trim().toLowerCase().includes(cleanProdCat)));
+  if (substringMatch) return substringMatch.name;
+
+  return productCat;
+}
+
 function getCategoryType(categoryName, categoriesList) {
   if (!categoryName) return 'adulto';
   const cleanName = String(categoryName).trim().toLowerCase();
@@ -2427,8 +2469,10 @@ function getCategoryType(categoryName, categoriesList) {
 // Converter produto do formato Admin → formato Loja
 function adminToStoreProduct(p) {
   let defaultStock = { pp: 1, p: 1, m: 1, g: 1, gg: 1 };
+  const officialCat = getOfficialCategoryName(p.cat, categoriesData);
+
   if (p && p.cat) {
-    const catType = getCategoryType(p.cat, categoriesData);
+    const catType = getCategoryType(officialCat, categoriesData);
 
     if (catType === 'infantil') {
       defaultStock = { '1': 1, '2': 1, '3': 1, '4': 1, '6': 1, '8': 1, '10': 1, '12': 1, '14': 1, '16': 1 };
@@ -2446,7 +2490,7 @@ function adminToStoreProduct(p) {
   return {
     id:       p.id,
     name:     p.name,
-    cat:      p.cat,
+    cat:      officialCat,
     price:    p.salePrice || p.price,
     oldPrice: p.salePrice ? p.price : null,
     badge:    p.featured === 'Sim' ? 'new' : (p.salePrice ? 'sale' : null),
