@@ -1218,6 +1218,39 @@
     color: var(--gray);
   }
   
+  .color-selector-btn {
+    padding: 0.5rem 1rem;
+    border: 1.5px solid #e5e7eb;
+    background: white;
+    font-size: 0.78rem;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    border-radius: 20px;
+    cursor: pointer;
+    color: var(--dark);
+  }
+  .color-selector-btn:hover {
+    border-color: var(--pink);
+    color: var(--pink);
+  }
+  .color-selector-btn.active {
+    border-color: var(--pink);
+    background: var(--pink-pale);
+    color: var(--pink);
+    box-shadow: 0 4px 12px rgba(233, 30, 140, 0.1);
+  }
+  .color-selector-btn.disabled {
+    opacity: 0.25;
+    pointer-events: none;
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    color: var(--gray);
+  }
+  
   .quantity-selector-section {
     margin-bottom: 1.5rem;
   }
@@ -2020,6 +2053,14 @@
         <p class="detail-desc" id="detail-modal-desc">Descrição do produto.</p>
         
 
+        <!-- Color Selector (if product has multiple colors in stock) -->
+        <div class="detail-colors" id="detail-modal-colors-container" style="display:none; margin-bottom:1.5rem">
+          <span class="detail-label">Selecione a Cor</span>
+          <div class="color-selector-wrap" id="detail-modal-colors" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem">
+            <!-- Injected dynamically via JS -->
+          </div>
+        </div>
+
         <!-- Size Selector -->
         <div class="detail-sizes">
           <div class="size-header-wrap">
@@ -2351,6 +2392,7 @@ let cartItems = [];
 let activeFilter = 'Todos';
 let currentProduct = null;
 let selectedSize = '';
+let selectedColor = '';
 
 // Converter produto do formato Admin → formato Loja
 function adminToStoreProduct(p) {
@@ -2625,22 +2667,58 @@ function addToCart(id) {
     sizeList = ['unico'];
   }
 
-  // Encontrar o primeiro tamanho com estoque disponível
-  let defSize = sizeList.find(sz => product.stock && (product.stock[sz] || 0) > 0);
-  if (!defSize) {
-    defSize = sizeList[0];
+  let selectedSizeStr = '';
+  let selectedColorStr = '';
+  
+  let found = false;
+  for (let i = 0; i < sizeList.length; i++) {
+    const sz = sizeList[i];
+    const val = product.stock ? product.stock[sz] : null;
+    if (val && typeof val === 'object') {
+      const colors = Object.keys(val);
+      const colWithStock = colors.find(col => (parseInt(val[col]) || 0) > 0);
+      if (colWithStock) {
+        selectedSizeStr = sz.toUpperCase();
+        selectedColorStr = colWithStock;
+        found = true;
+        break;
+      }
+    } else {
+      const qty = parseInt(val) || 0;
+      if (qty > 0) {
+        selectedSizeStr = sz.toUpperCase();
+        selectedColorStr = '';
+        found = true;
+        break;
+      }
+    }
+  }
+
+  if (!found) {
+    const firstSz = sizeList[0];
+    selectedSizeStr = firstSz.toUpperCase();
+    const val = product.stock ? product.stock[firstSz] : null;
+    if (val && typeof val === 'object') {
+      selectedColorStr = Object.keys(val)[0] || '';
+    } else {
+      selectedColorStr = '';
+    }
   }
   
-  const selectedSizeStr = defSize.toUpperCase();
-  const cartId = product.id + '-' + selectedSizeStr;
+  const cartId = product.id + (selectedColorStr ? '-' + selectedColorStr : '') + '-' + selectedSizeStr;
   const existing = cartItems.find(i => i.cartId === cartId);
+  
+  const itemName = selectedColorStr 
+    ? `${product.name} (${selectedColorStr} / ${selectedSizeStr})`
+    : `${product.name} (${selectedSizeStr})`;
+
   if (existing) {
     existing.qty++;
   } else {
     cartItems.push({
       ...product,
       cartId: cartId,
-      name: `${product.name} (${selectedSizeStr})`,
+      name: itemName,
       qty: 1
     });
   }
@@ -2886,8 +2964,12 @@ function openProductDetail(id, event) {
   });
 
   // 3. Sizing selectors depending on stock
-  const sizeWrap = document.getElementById('detail-modal-sizes');
-  sizeWrap.innerHTML = '';
+  selectedSize = '';
+  selectedColor = '';
+  const colorsContainer = document.getElementById('detail-modal-colors-container');
+  const colorsWrap = document.getElementById('detail-modal-colors');
+  colorsContainer.style.display = 'none';
+  colorsWrap.innerHTML = '';
   
   const categoryObj = categoriesData.find(c => c.name.toLowerCase() === (product.cat || '').toLowerCase());
   let catType = 'adulto';
@@ -2900,43 +2982,7 @@ function openProductDetail(id, event) {
     else if (isNumeric) catType = 'numerico';
   }
 
-  let sizes = ['pp', 'p', 'm', 'g', 'gg'];
-  if (catType === 'infantil') {
-    sizes = ['1', '2', '3', '4', '6', '8', '10', '12', '14', '16'];
-  } else if (catType === 'numerico') {
-    sizes = ['34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54'];
-  } else if (catType === 'diversos') {
-    sizes = ['unico'];
-  }
-
-  sizes.forEach(sz => {
-    const qty = product.stock ? (product.stock[sz] !== undefined ? product.stock[sz] : 0) : 1;
-    const btn = document.createElement('button');
-    btn.className = 'size-selector-btn';
-    
-    if (sz === 'unico') {
-      btn.textContent = 'TAMANHO ÚNICO';
-    } else if (sz === 'pp' || sz === 'gg' || sz === 'p' || sz === 'm' || sz === 'g') {
-      btn.textContent = sz.toUpperCase();
-    } else if (catType === 'numerico') {
-      btn.textContent = sz;
-    } else {
-      btn.textContent = sz + ' anos';
-    }
-    
-    if (qty <= 0) {
-      btn.classList.add('disabled');
-      btn.title = 'Sem estoque';
-    } else {
-      btn.onclick = () => selectSize(sz, btn);
-      // Auto select if it is unico
-      if (sz === 'unico') {
-        btn.classList.add('active');
-        selectedSize = 'UNICO';
-      }
-    }
-    sizeWrap.appendChild(btn);
-  });
+  renderSizeSelectors(product, catType);
 
   // 4. Render Dynamic Size Chart
   renderSizeChart(product.cat);
@@ -2975,12 +3021,105 @@ function closeProductDetail() {
   document.getElementById('product-detail-modal-overlay').classList.remove('open');
   currentDetailProduct = null;
   selectedSize = '';
+  selectedColor = '';
 }
 
 function selectSize(size, btn) {
   document.querySelectorAll('.size-selector-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedSize = size.toUpperCase();
+  selectedColor = '';
+
+  const colorsContainer = document.getElementById('detail-modal-colors-container');
+  const colorsWrap = document.getElementById('detail-modal-colors');
+  colorsContainer.style.display = 'none';
+  colorsWrap.innerHTML = '';
+
+  if (currentDetailProduct && currentDetailProduct.stock) {
+    const valObj = currentDetailProduct.stock[size];
+    if (valObj && typeof valObj === 'object') {
+      colorsContainer.style.display = 'block';
+      const colors = Object.keys(valObj);
+      colors.forEach(col => {
+        const qty = parseInt(valObj[col]) || 0;
+        const btnCol = document.createElement('button');
+        btnCol.className = 'color-selector-btn';
+        btnCol.textContent = col;
+        if (qty <= 0) {
+          btnCol.classList.add('disabled');
+          btnCol.title = 'Sem estoque';
+        } else {
+          btnCol.onclick = () => {
+            document.querySelectorAll('.color-selector-btn').forEach(b => b.classList.remove('active'));
+            btnCol.classList.add('active');
+            selectedColor = col;
+          };
+          if (!selectedColor && qty > 0) {
+            btnCol.classList.add('active');
+            selectedColor = col;
+          }
+        }
+        colorsWrap.appendChild(btnCol);
+      });
+    }
+  }
+}
+
+function isColorStock(stock) {
+  if (!stock) return false;
+  return Object.values(stock).some(val => val && typeof val === 'object');
+}
+
+function renderSizeSelectors(product, catType) {
+  const sizeWrap = document.getElementById('detail-modal-sizes');
+  sizeWrap.innerHTML = '';
+  
+  let sizes = ['pp', 'p', 'm', 'g', 'gg'];
+  if (catType === 'infantil') {
+    sizes = ['1', '2', '3', '4', '6', '8', '10', '12', '14', '16'];
+  } else if (catType === 'numerico') {
+    sizes = ['34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54'];
+  } else if (catType === 'diversos') {
+    sizes = ['unico'];
+  }
+  
+  sizes.forEach(sz => {
+    let qty = 0;
+    if (product.stock) {
+      const val = product.stock[sz];
+      if (val && typeof val === 'object') {
+        qty = Object.values(val).reduce((a, b) => a + (parseInt(b) || 0), 0);
+      } else {
+        qty = parseInt(val) || 0;
+      }
+    }
+    
+    const btn = document.createElement('button');
+    btn.className = 'size-selector-btn';
+    
+    if (sz === 'unico') {
+      btn.textContent = 'TAMANHO ÚNICO';
+    } else if (sz === 'pp' || sz === 'gg' || sz === 'p' || sz === 'm' || sz === 'g') {
+      btn.textContent = sz.toUpperCase();
+    } else if (catType === 'numerico') {
+      btn.textContent = sz;
+    } else {
+      btn.textContent = sz + ' anos';
+    }
+    
+    if (qty <= 0) {
+      btn.classList.add('disabled');
+      btn.title = 'Sem estoque';
+    } else {
+      btn.onclick = () => selectSize(sz, btn);
+      if (sz === 'unico') {
+        btn.classList.add('active');
+        selectedSize = 'UNICO';
+        selectSize('unico', btn);
+      }
+    }
+    sizeWrap.appendChild(btn);
+  });
 }
 
 function adjustDetailQty(delta) {
@@ -3117,6 +3256,12 @@ function checkoutSingleWhatsApp() {
     showToast('Por favor, selecione um tamanho antes de prosseguir!', 'error');
     return;
   }
+  const sizeVal = currentDetailProduct.stock ? currentDetailProduct.stock[selectedSize.toLowerCase()] : null;
+  const sizeHasColors = sizeVal && typeof sizeVal === 'object';
+  if (sizeHasColors && !selectedColor) {
+    showToast('Por favor, selecione uma cor antes de prosseguir!', 'error');
+    return;
+  }
   
   const qtyInput = document.getElementById('detail-modal-qty');
   const qty = parseInt(qtyInput.value) || 1;
@@ -3124,7 +3269,8 @@ function checkoutSingleWhatsApp() {
   const qtyText = qty > 1 ? ` (Quantidade: *${qty}*)` : '';
   const totalVal = (currentDetailProduct.price * qty).toFixed(2).replace('.', ',');
   
-  const msg = `Olá! Gostaria de comprar o produto *${currentDetailProduct.name}* no tamanho *${selectedSize}*${qtyText} no valor total de R$ ${totalVal}!`;
+  const colorText = selectedColor ? ` na cor *${selectedColor}*` : '';
+  const msg = `Olá! Gostaria de comprar o produto *${currentDetailProduct.name}*${colorText} no tamanho *${selectedSize}*${qtyText} no valor total de R$ ${totalVal}!`;
   window.open(`https://api.whatsapp.com/send/?phone=5548996439322&text=${encodeURIComponent(msg)}`, '_blank');
 }
 
@@ -3134,20 +3280,30 @@ function addCurrentToCart() {
     showToast('Por favor, selecione um tamanho antes de adicionar ao carrinho!', 'error');
     return;
   }
+  const sizeVal = currentDetailProduct.stock ? currentDetailProduct.stock[selectedSize.toLowerCase()] : null;
+  const sizeHasColors = sizeVal && typeof sizeVal === 'object';
+  if (sizeHasColors && !selectedColor) {
+    showToast('Por favor, selecione uma cor antes de adicionar ao carrinho!', 'error');
+    return;
+  }
   
   const qtyInput = document.getElementById('detail-modal-qty');
   const qty = parseInt(qtyInput.value) || 1;
   
-  // Custom addToCart logic to preserve sizes and quantity
-  const cartId = currentDetailProduct.id + '-' + selectedSize;
+  const cartId = currentDetailProduct.id + (selectedColor ? '-' + selectedColor : '') + '-' + selectedSize;
   const existing = cartItems.find(i => i.cartId === cartId);
+  
+  const itemName = selectedColor 
+    ? `${currentDetailProduct.name} (${selectedColor} / ${selectedSize})`
+    : `${currentDetailProduct.name} (${selectedSize})`;
+
   if (existing) {
     existing.qty += qty;
   } else {
     cartItems.push({
       ...currentDetailProduct,
       cartId: cartId,
-      name: `${currentDetailProduct.name} (${selectedSize})`,
+      name: itemName,
       qty: qty
     });
   }

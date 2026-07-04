@@ -170,20 +170,89 @@ function doPost(e) {
     if (requestData && requestData.data) {
       if (requestData.data.idProduto) {
         const idBling = requestData.data.idProduto;
+        const skuBling = requestData.data.codigo || "";
         const novoEstoque = requestData.data.saldoVirtual || requestData.data.saldoFisico || 0;
         
-        const resProd = UrlFetchApp.fetch(creds.url + "/rest/v1/produtos?select=*&bling_id=eq." + idBling, {
+        let resProd = UrlFetchApp.fetch(creds.url + "/rest/v1/produtos?select=*&bling_id=eq." + idBling, {
           "method": "GET",
           "headers": {
             "apikey": creds.key,
             "Authorization": "Bearer " + creds.key
           }
         });
-        const matches = JSON.parse(resProd.getContentText());
+        let matches = JSON.parse(resProd.getContentText());
+        
+        if ((!matches || matches.length === 0) && skuBling) {
+          const resAll = UrlFetchApp.fetch(creds.url + "/rest/v1/produtos?select=*", {
+            "method": "GET",
+            "headers": {
+              "apikey": creds.key,
+              "Authorization": "Bearer " + creds.key
+            }
+          });
+          const allProds = JSON.parse(resAll.getContentText());
+          matches = allProds.filter(function(p) {
+            return p.sku && skuBling.startsWith(p.sku);
+          });
+        }
+        
         if (matches && matches.length > 0) {
           const prod = matches[0];
-          let currentStock = prod.stock || {pp:0, p:0, m:0, g:0, gg:0};
-          currentStock.m = novoEstoque;
+          let currentStock = prod.stock || {};
+          if (typeof currentStock === 'string') {
+            try { currentStock = JSON.parse(currentStock); } catch(_) { currentStock = {}; }
+          }
+          
+          var isColor = false;
+          for (var sz in currentStock) {
+            if (currentStock[sz] && typeof currentStock[sz] === 'object') {
+              isColor = true;
+              break;
+            }
+          }
+          
+          if (skuBling && prod.sku && skuBling.length > prod.sku.length) {
+            var suffix = skuBling.substring(prod.sku.length);
+            var parts = suffix.split('-').filter(Boolean);
+            if (parts.length >= 2) {
+              var colorName = parts[0].toUpperCase();
+              var sizeName = parts[1].toLowerCase();
+              
+              var sizeVal = currentStock[sizeName];
+              if (sizeVal && typeof sizeVal === 'object') {
+                var matchedColorKey = null;
+                for (var key in sizeVal) {
+                  if (key.toUpperCase() === colorName) {
+                    matchedColorKey = key;
+                    break;
+                  }
+                }
+                if (!matchedColorKey) {
+                  matchedColorKey = colorName === "PADRAO" ? "" : parts[0];
+                }
+                
+                if (matchedColorKey === "" && sizeVal[""] !== undefined) {
+                  currentStock[sizeName][""] = parseInt(novoEstoque) || 0;
+                } else {
+                  currentStock[sizeName][matchedColorKey] = parseInt(novoEstoque) || 0;
+                }
+              } else {
+                currentStock[sizeName] = parseInt(novoEstoque) || 0;
+              }
+            } else if (parts.length === 1) {
+              var sizeName = parts[0].toLowerCase();
+              currentStock[sizeName] = parseInt(novoEstoque) || 0;
+            }
+          } else {
+            var keys = Object.keys(currentStock);
+            if (keys.length === 1) {
+              currentStock[keys[0]] = parseInt(novoEstoque) || 0;
+            } else if (currentStock.unico !== undefined) {
+              currentStock.unico = parseInt(novoEstoque) || 0;
+            } else {
+              currentStock.m = parseInt(novoEstoque) || 0;
+            }
+          }
           
           UrlFetchApp.fetch(creds.url + "/rest/v1/produtos?id=eq." + prod.id, {
             "method": "PATCH",
@@ -193,7 +262,7 @@ function doPost(e) {
           });
         }
         
-        registrarLog("Webhook Estoque", `Estoque do BlingID ${idBling} alterado para ${novoEstoque}`);
+        registrarLog("Webhook Estoque", `Estoque do BlingID ${idBling} (SKU: ${skuBling}) alterado para ${novoEstoque}`);
         return jsonResponse({ success: true, msg: "Webhook de estoque processado" });
       }
       
@@ -596,29 +665,94 @@ function pushProductToBling(product) {
   
   if (product.blingFormat === 'V' && product.stock) {
     payload.variacoes = [];
-    for (var sz in product.stock) {
-      var qty = parseInt(product.stock[sz]) || 0;
-      var szUpper = sz.toUpperCase();
-      payload.variacoes.push({
-        "nome": product.name + " - " + szUpper,
-        "codigo": (product.sku || String(product.id)) + "-" + szUpper,
-        "preco": parseFloat(product.price) || 0,
-        "tipo": "P",
-        "formato": "S",
-        "pesoBruto": parseFloat(product.weightGross) || 0,
-        "pesoLiquido": parseFloat(product.weightNet) || 0,
-        "dimensoes": {
-          "largura": parseFloat(product.width) || 0,
-          "altura": parseFloat(product.height) || 0,
-          "profundidade": parseFloat(product.depth) || 0,
-          "unidadeMedida": parseInt(product.blingUnitMeasure) || 2
-        },
-        "variacao": {
-          "nome": "Tamanho",
-          "opcao": szUpper
-        },
-        "estoque": qty
-      });
+    var keys = Object.keys(product.stock);
+    
+    // Check if any size has color stock
+    var isColor = keys.some(function(k) {
+      return product.stock[k] && typeof product.stock[k] === 'object';
+    });
+    
+    if (isColor) {
+      for (var sz in product.stock) {
+        var val = product.stock[sz];
+        var szUpper = sz.toUpperCase();
+        
+        if (val && typeof val === 'object') {
+          for (var col in val) {
+            var qty = parseInt(val[col]) || 0;
+            var colUpper = col.toUpperCase();
+            var colSkuPart = colUpper.replace(/\s+/g, '-');
+            
+            payload.variacoes.push({
+              "nome": product.name + " - " + colUpper + " - " + szUpper,
+              "codigo": (product.sku || String(product.id)) + "-" + colSkuPart + "-" + szUpper,
+              "preco": parseFloat(finalPrice) || 0,
+              "tipo": "P",
+              "formato": "S",
+              "pesoBruto": parseFloat(product.weightGross) || 0,
+              "pesoLiquido": parseFloat(product.weightNet) || 0,
+              "dimensoes": {
+                "largura": parseFloat(product.width) || 0,
+                "altura": parseFloat(product.height) || 0,
+                "profundidade": parseFloat(product.depth) || 0,
+                "unidadeMedida": parseInt(product.blingUnitMeasure) || 2
+              },
+              "variacao": {
+                "nome": "Cor;Tamanho",
+                "opcao": colUpper + ";" + szUpper
+              },
+              "estoque": qty
+            });
+          }
+        } else {
+          var qty = parseInt(val) || 0;
+          payload.variacoes.push({
+            "nome": product.name + " - PADRAO - " + szUpper,
+            "codigo": (product.sku || String(product.id)) + "-PADRAO-" + szUpper,
+            "preco": parseFloat(finalPrice) || 0,
+            "tipo": "P",
+            "formato": "S",
+            "pesoBruto": parseFloat(product.weightGross) || 0,
+            "pesoLiquido": parseFloat(product.weightNet) || 0,
+            "dimensoes": {
+              "largura": parseFloat(product.width) || 0,
+              "altura": parseFloat(product.height) || 0,
+              "profundidade": parseFloat(product.depth) || 0,
+              "unidadeMedida": parseInt(product.blingUnitMeasure) || 2
+            },
+            "variacao": {
+              "nome": "Cor;Tamanho",
+              "opcao": "PADRAO;" + szUpper
+            },
+            "estoque": qty
+          });
+        }
+      }
+    } else {
+      for (var sz in product.stock) {
+        var qty = parseInt(product.stock[sz]) || 0;
+        var szUpper = sz.toUpperCase();
+        payload.variacoes.push({
+          "nome": product.name + " - " + szUpper,
+          "codigo": (product.sku || String(product.id)) + "-" + szUpper,
+          "preco": parseFloat(finalPrice) || 0,
+          "tipo": "P",
+          "formato": "S",
+          "pesoBruto": parseFloat(product.weightGross) || 0,
+          "pesoLiquido": parseFloat(product.weightNet) || 0,
+          "dimensoes": {
+            "largura": parseFloat(product.width) || 0,
+            "altura": parseFloat(product.height) || 0,
+            "profundidade": parseFloat(product.depth) || 0,
+            "unidadeMedida": parseInt(product.blingUnitMeasure) || 2
+          },
+          "variacao": {
+            "nome": "Tamanho",
+            "opcao": szUpper
+          },
+          "estoque": qty
+        });
+      }
     }
   }
 
@@ -680,8 +814,15 @@ function pushProductToBling(product) {
         // 1. Atualizar estoque físico total
         var totalStock = 0;
         if (product.stock) {
-          for (var key in product.stock) {
-            totalStock += (parseInt(product.stock[key]) || 0);
+          for (var sz in product.stock) {
+            var val = product.stock[sz];
+            if (val && typeof val === 'object') {
+              for (var col in val) {
+                totalStock += (parseInt(val[col]) || 0);
+              }
+            } else {
+              totalStock += (parseInt(val) || 0);
+            }
           }
         }
         updateBlingStock(blingId, totalStock, token);

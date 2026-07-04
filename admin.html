@@ -2069,9 +2069,12 @@
     <button onclick="closeCarneModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer">&times;</button>
     <h2 style="font-size:1.2rem;margin-bottom:1rem;color:var(--dark)">Carnês / Pendências: <span id="carne-customer-name"></span></h2>
     
-    <div style="display:flex;justify-content:space-between;margin-bottom:1rem">
+    <div style="display:flex;justify-content:space-between;margin-bottom:1rem;align-items:center">
       <div style="font-size:0.85rem;color:var(--gray-600)">Gerencie as parcelas geradas via PDV.</div>
-      <button class="btn btn-info btn-sm" onclick="printCarne()"><span class="icon">🖨️</span> Imprimir Todos</button>
+      <div style="display:flex;gap:0.5rem">
+        <button class="btn btn-primary btn-sm" onclick="toggleAvulsoForm()"><span class="icon">➕</span> Lançamento Avulso</button>
+        <button class="btn btn-info btn-sm" onclick="printCarne()"><span class="icon">🖨️</span> Imprimir Todos</button>
+      </div>
     </div>
 
     <div class="table-wrap" style="max-height:300px;overflow-y:auto;border:1px solid var(--gray-100);border-radius:6px">
@@ -2091,6 +2094,36 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Formulário de Lançamento Avulso -->
+    <div id="avulso-form-container" style="display: none; margin-top: 1rem; border-top: 1px solid var(--gray-100); padding-top: 1rem">
+      <h3 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--pink)">Novo Lançamento Avulso</h3>
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem">
+        <div class="form-group" style="margin-bottom:0">
+          <label style="font-size: 0.7rem; color: var(--gray-500)">Descrição</label>
+          <input type="text" id="avulso-desc" placeholder="Ex: Ajuste de saldo / Compra" style="padding: 0.4rem; font-size: 0.85rem; border: 1px solid var(--gray-200); border-radius: 6px; width: 100%; box-sizing: border-box">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label style="font-size: 0.7rem; color: var(--gray-500)">Valor Total (R$)</label>
+          <input type="number" id="avulso-total" placeholder="0.00" step="0.01" style="padding: 0.4rem; font-size: 0.85rem; border: 1px solid var(--gray-200); border-radius: 6px; width: 100%; box-sizing: border-box">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label style="font-size: 0.7rem; color: var(--gray-500)">Parcelas</label>
+          <input type="number" id="avulso-parcels" value="1" min="1" style="padding: 0.4rem; font-size: 0.85rem; border: 1px solid var(--gray-200); border-radius: 6px; width: 100%; box-sizing: border-box">
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem; align-items: flex-end">
+        <div class="form-group" style="margin-bottom:0">
+          <label style="font-size: 0.7rem; color: var(--gray-500)">1º Vencimento</label>
+          <input type="date" id="avulso-first-due" style="padding: 0.4rem; font-size: 0.85rem; border: 1px solid var(--gray-200); border-radius: 6px; width: 100%; box-sizing: border-box">
+        </div>
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAvulsoForm(false)" style="padding: 0.45rem 1rem">Cancelar</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="saveAvulsoPosting()" style="padding: 0.45rem 1rem">Salvar</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2680,11 +2713,11 @@ function renderDashboard() {
 
   // Critical stock
   const critical = products.filter(p => {
-    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    const total = getProductTotalStock(p);
     return total < 5;
   });
   document.getElementById('critical-stock').innerHTML = critical.map(p => {
-    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    const total = getProductTotalStock(p);
     return `<div style="padding:0.75rem 0;border-bottom:1px solid var(--gray-100)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
         <span style="font-size:0.78rem;font-weight:500">${escapeHTML(p.name)}</span>
@@ -2726,7 +2759,7 @@ function renderProducts(filter='') {
   const list = filter ? products.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()) || p.sku.toLowerCase().includes(filter.toLowerCase())) : products;
   document.getElementById('product-count').textContent = `${list.length} produtos`;
   document.getElementById('products-table').innerHTML = list.map(p => {
-    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    const total = getProductTotalStock(p);
     const margin = p.cost ? Math.round((p.price - p.cost)/p.price*100) : '-';
     return `
     <tr>
@@ -2996,10 +3029,9 @@ function renderInventory() {
   }
 
   document.getElementById('inventory-table').innerHTML = list.map(p => {
-    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    const total = getProductTotalStock(p);
     const low = total < 5;
     
-    // Determine category type
     const categoryObj = categories.find(c => c.name.toLowerCase() === (p.cat || '').toLowerCase());
     let catType = 'adulto';
     if (categoryObj && categoryObj.type) {
@@ -3010,71 +3042,177 @@ function renderInventory() {
       if (isKids) catType = 'infantil';
       else if (isNumeric) catType = 'numerico';
     }
-    
-    let sizesInputsHtml = '';
-    if (catType === 'infantil') {
-      const kidsSizes = ['1', '2', '3', '4', '6', '8', '10', '12', '14', '16'];
-      sizesInputsHtml = `<td colspan="5">
-        <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center">
-          ${kidsSizes.map(sz => {
-            const val = p.stock[sz] || 0;
-            return `<div style="display:flex;align-items:center;background:var(--gray-50);padding:2px 6px;border-radius:4px;border:1px solid var(--gray-200);gap:4px">
-              <span style="font-size:0.6rem;color:var(--gray-500);font-weight:600">${sz}a</span>
-              <input type="number" value="${val}" min="0" onchange="updateStock(${p.id},'${sz}',this.value)" style="width:38px;text-align:center;border:none;background:transparent;font-size:0.75rem;padding:0;outline:none">
-            </div>`;
-          }).join('')}
-        </div>
-      </td>`;
-    } else if (catType === 'numerico') {
-      const numSizes = ['34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54'];
-      sizesInputsHtml = `<td colspan="5">
-        <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center">
-          ${numSizes.map(sz => {
-            const val = p.stock[sz] || 0;
-            return `<div style="display:flex;align-items:center;background:var(--gray-50);padding:2px 6px;border-radius:4px;border:1px solid var(--gray-200);gap:4px">
-              <span style="font-size:0.6rem;color:var(--gray-500);font-weight:600">${sz}</span>
-              <input type="number" value="${val}" min="0" onchange="updateStock(${p.id},'${sz}',this.value)" style="width:38px;text-align:center;border:none;background:transparent;font-size:0.75rem;padding:0;outline:none">
-            </div>`;
-          }).join('')}
-        </div>
-      </td>`;
-    } else if (catType === 'diversos') {
-      sizesInputsHtml = `<td colspan="5">
-        <div style="display:flex;align-items:center;background:var(--gray-50);padding:2px 6px;border-radius:4px;border:1px solid var(--gray-200);gap:4px;max-width:max-content">
-          <span style="font-size:0.6rem;color:var(--gray-500);font-weight:600">Único</span>
-          <input type="number" value="${p.stock.unico || 0}" min="0" onchange="updateStock(${p.id},'unico',this.value)" style="width:38px;text-align:center;border:none;background:transparent;font-size:0.75rem;padding:0;outline:none">
-        </div>
-      </td>`;
-    } else {
-      sizesInputsHtml = `
-        <td><input type="number" value="${p.stock.pp || 0}" min="0" onchange="updateStock(${p.id},'pp',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
-        <td><input type="number" value="${p.stock.p || 0}" min="0" onchange="updateStock(${p.id},'p',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
-        <td><input type="number" value="${p.stock.m || 0}" min="0" onchange="updateStock(${p.id},'m',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
-        <td><input type="number" value="${p.stock.g || 0}" min="0" onchange="updateStock(${p.id},'g',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
-        <td><input type="number" value="${p.stock.gg || 0}" min="0" onchange="updateStock(${p.id},'gg',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
-      `;
-    }
 
-    return `
-    <tr>
-      <td>
-        <div style="display:flex;align-items:center;gap:.75rem">
-          <img src="${getFirstImageUrl(p.imgUrl)}" style="width:40px;height:48px;object-fit:cover;border-radius:4px" onerror="this.style.background='var(--pink-pale)'">
-          <div><div style="font-weight:500;font-size:.8rem">${p.name}</div><div style="font-size:.65rem;color:var(--gray-400)">${p.sku}</div></div>
-        </div>
-      </td>
-      ${sizesInputsHtml}
-      <td><strong style="${low?'color:var(--danger)':''}">${total}</strong></td>
-      <td>${low ? '<span class="badge badge-danger">⚠️ Baixo</span>' : '<span class="badge badge-success">✓ OK</span>'}</td>
-      <td><button class="btn btn-sm btn-primary" onclick="syncSingleProduct(${p.id})">↑ Sync</button></td>
-    </tr>`;
-  }).join('');
+    if (isColorStock(p.stock)) {
+      const rows = [];
+      const allSizes = (catType === 'infantil')
+        ? ['1', '2', '3', '4', '6', '8', '10', '12', '14', '16']
+        : (catType === 'numerico')
+          ? ['34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54']
+          : (catType === 'diversos')
+            ? ['unico']
+            : ['pp', 'p', 'm', 'g', 'gg'];
+
+      allSizes.forEach(activeSz => {
+        const val = p.stock[activeSz];
+        if (val && typeof val === 'object') {
+          for (const col in val) {
+            const qty = parseInt(val[col]) || 0;
+            const colLow = qty < 5;
+            
+            let sizesInputsHtml = '';
+            if (catType === 'infantil' || catType === 'numerico' || catType === 'diversos') {
+              sizesInputsHtml = `<td colspan="5">
+                <div style="display:flex;align-items:center;background:var(--gray-50);padding:2px 6px;border-radius:4px;border:1px solid var(--gray-200);gap:4px;max-width:max-content">
+                  <span style="font-size:0.6rem;color:var(--gray-500);font-weight:600">${activeSz === 'unico' ? 'Único' : activeSz}</span>
+                  <input type="number" value="${qty}" min="0" onchange="updateStock(${p.id},'${activeSz}',this.value,'${col}')" style="width:38px;text-align:center;border:none;background:transparent;font-size:0.75rem;padding:0;outline:none">
+                </div>
+              </td>`;
+            } else {
+              const adultSizes = ['pp', 'p', 'm', 'g', 'gg'];
+              sizesInputsHtml = adultSizes.map(sz => {
+                if (sz === activeSz) {
+                  return `<td><input type="number" value="${qty}" min="0" onchange="updateStock(${p.id},'${sz}',this.value,'${col}')" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>`;
+                } else {
+                  return `<td></td>`;
+                }
+              }).join('');
+            }
+
+            rows.push(`
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:.75rem">
+                    <img src="${getFirstImageUrl(p.imgUrl)}" style="width:40px;height:48px;object-fit:cover;border-radius:4px" onerror="this.style.background='var(--pink-pale)'">
+                    <div>
+                      <div style="font-weight:500;font-size:.8rem">${p.name} <span style="color:var(--pink);font-size:0.75rem">(${activeSz.toUpperCase()} - ${col})</span></div>
+                      <div style="font-size:.65rem;color:var(--gray-400)">${p.sku}</div>
+                    </div>
+                  </div>
+                </td>
+                ${sizesInputsHtml}
+                <td><strong style="${colLow?'color:var(--danger)':''}">${qty}</strong></td>
+                <td>${colLow ? '<span class="badge badge-danger">⚠️ Baixo</span>' : '<span class="badge badge-success">✓ OK</span>'}</td>
+                <td><button class="btn btn-sm btn-primary" onclick="syncSingleProduct(${p.id})">↑ Sync</button></td>
+              </tr>
+            `);
+          }
+        } else {
+          const qty = parseInt(val) || 0;
+          const colLow = qty < 5;
+          
+          let sizesInputsHtml = '';
+          if (catType === 'infantil' || catType === 'numerico' || catType === 'diversos') {
+            sizesInputsHtml = `<td colspan="5">
+              <div style="display:flex;align-items:center;background:var(--gray-50);padding:2px 6px;border-radius:4px;border:1px solid var(--gray-200);gap:4px;max-width:max-content">
+                <span style="font-size:0.6rem;color:var(--gray-500);font-weight:600">${activeSz === 'unico' ? 'Único' : activeSz}</span>
+                <input type="number" value="${qty}" min="0" onchange="updateStock(${p.id},'${activeSz}',this.value)" style="width:38px;text-align:center;border:none;background:transparent;font-size:0.75rem;padding:0;outline:none">
+              </div>
+            </td>`;
+          } else {
+            const adultSizes = ['pp', 'p', 'm', 'g', 'gg'];
+            sizesInputsHtml = adultSizes.map(sz => {
+              if (sz === activeSz) {
+                return `<td><input type="number" value="${qty}" min="0" onchange="updateStock(${p.id},'${sz}',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>`;
+              } else {
+                return `<td></td>`;
+              }
+            }).join('');
+          }
+
+          rows.push(`
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:.75rem">
+                  <img src="${getFirstImageUrl(p.imgUrl)}" style="width:40px;height:48px;object-fit:cover;border-radius:4px" onerror="this.style.background='var(--pink-pale)'">
+                  <div>
+                    <div style="font-weight:500;font-size:.8rem">${p.name} <span style="color:var(--gray-500);font-size:0.75rem">(${activeSz.toUpperCase()})</span></div>
+                    <div style="font-size:.65rem;color:var(--gray-400)">${p.sku}</div>
+                  </div>
+                </div>
+              </td>
+              ${sizesInputsHtml}
+              <td><strong style="${colLow?'color:var(--danger)':''}">${qty}</strong></td>
+              <td>${colLow ? '<span class="badge badge-danger">⚠️ Baixo</span>' : '<span class="badge badge-success">✓ OK</span>'}</td>
+              <td><button class="btn btn-sm btn-primary" onclick="syncSingleProduct(${p.id})">↑ Sync</button></td>
+            </tr>
+          `);
+        }
+      });
+      return rows.join('');
+    } else {
+      let sizesInputsHtml = '';
+      if (catType === 'infantil') {
+        const kidsSizes = ['1', '2', '3', '4', '6', '8', '10', '12', '14', '16'];
+        sizesInputsHtml = `<td colspan="5">
+          <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center">
+            ${kidsSizes.map(sz => {
+              const val = p.stock[sz] || 0;
+              return `<div style="display:flex;align-items:center;background:var(--gray-50);padding:2px 6px;border-radius:4px;border:1px solid var(--gray-200);gap:4px">
+                <span style="font-size:0.6rem;color:var(--gray-500);font-weight:600">${sz}a</span>
+                <input type="number" value="${val}" min="0" onchange="updateStock(${p.id},'${sz}',this.value)" style="width:38px;text-align:center;border:none;background:transparent;font-size:0.75rem;padding:0;outline:none">
+              </div>`;
+            }).join('')}
+          </div>
+        </td>`;
+      } else if (catType === 'numerico') {
+        const numSizes = ['34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54'];
+        sizesInputsHtml = `<td colspan="5">
+          <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center">
+            ${numSizes.map(sz => {
+              const val = p.stock[sz] || 0;
+              return `<div style="display:flex;align-items:center;background:var(--gray-50);padding:2px 6px;border-radius:4px;border:1px solid var(--gray-200);gap:4px">
+                <span style="font-size:0.6rem;color:var(--gray-500);font-weight:600">${sz}</span>
+                <input type="number" value="${val}" min="0" onchange="updateStock(${p.id},'${sz}',this.value)" style="width:38px;text-align:center;border:none;background:transparent;font-size:0.75rem;padding:0;outline:none">
+              </div>`;
+            }).join('')}
+          </div>
+        </td>`;
+      } else if (catType === 'diversos') {
+        sizesInputsHtml = `<td colspan="5">
+          <div style="display:flex;align-items:center;background:var(--gray-50);padding:2px 6px;border-radius:4px;border:1px solid var(--gray-200);gap:4px;max-width:max-content">
+            <span style="font-size:0.6rem;color:var(--gray-500);font-weight:600">Único</span>
+            <input type="number" value="${p.stock.unico || 0}" min="0" onchange="updateStock(${p.id},'unico',this.value)" style="width:38px;text-align:center;border:none;background:transparent;font-size:0.75rem;padding:0;outline:none">
+          </div>
+        </td>`;
+      } else {
+        sizesInputsHtml = `
+          <td><input type="number" value="${p.stock.pp || 0}" min="0" onchange="updateStock(${p.id},'pp',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+          <td><input type="number" value="${p.stock.p || 0}" min="0" onchange="updateStock(${p.id},'p',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+          <td><input type="number" value="${p.stock.m || 0}" min="0" onchange="updateStock(${p.id},'m',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+          <td><input type="number" value="${p.stock.g || 0}" min="0" onchange="updateStock(${p.id},'g',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+          <td><input type="number" value="${p.stock.gg || 0}" min="0" onchange="updateStock(${p.id},'gg',this.value)" style="width:55px;padding:.3rem .5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:.78rem"></td>
+        `;
+      }
+
+      return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:.75rem">
+            <img src="${getFirstImageUrl(p.imgUrl)}" style="width:40px;height:48px;object-fit:cover;border-radius:4px" onerror="this.style.background='var(--pink-pale)'">
+            <div><div style="font-weight:500;font-size:.8rem">${p.name}</div><div style="font-size:.65rem;color:var(--gray-400)">${p.sku}</div></div>
+          </div>
+        </td>
+        ${sizesInputsHtml}
+        <td><strong style="${low?'color:var(--danger)':''}">${total}</strong></td>
+        <td>${low ? '<span class="badge badge-danger">⚠️ Baixo</span>' : '<span class="badge badge-success">✓ OK</span>'}</td>
+        <td><button class="btn btn-sm btn-primary" onclick="syncSingleProduct(${p.id})">↑ Sync</button></td>
+      </tr>`;
+    }
+  }).flat().join('');
 }
 
-function updateStock(id, size, val) {
+function updateStock(id, size, val, color = '') {
   const p = products.find(p => p.id === id);
   if (p) {
-    p.stock[size] = parseInt(val) || 0;
+    if (color) {
+      if (!p.stock[size] || typeof p.stock[size] !== 'object') {
+        p.stock[size] = {};
+      }
+      p.stock[size][color] = parseInt(val) || 0;
+    } else {
+      p.stock[size] = parseInt(val) || 0;
+    }
     saveProductsLocal();
     toast('Estoque atualizado. Sincronizando com Supabase e Bling...', 'info');
     syncToSheets(p);
@@ -3312,13 +3450,95 @@ function openCarneModal(customerName) {
   currentCarneCustomer = customers.find(c => c.name === customerName);
   if(!currentCarneCustomer) return;
   document.getElementById('carne-customer-name').textContent = customerName;
+  toggleAvulsoForm(false);
   renderCarneModalInstallments();
   document.getElementById('carne-modal-overlay').style.display = 'flex';
 }
 
 function closeCarneModal() {
+  toggleAvulsoForm(false);
   document.getElementById('carne-modal-overlay').style.display = 'none';
   currentCarneCustomer = null;
+}
+
+function toggleAvulsoForm(show) {
+  const container = document.getElementById('avulso-form-container');
+  if (!container) return;
+  if (show === undefined) {
+    show = container.style.display === 'none';
+  }
+  container.style.display = show ? 'block' : 'none';
+  
+  if (show) {
+    const nextMonth = new Date();
+    nextMonth.setDate(nextMonth.getDate() + 30);
+    document.getElementById('avulso-first-due').value = nextMonth.toISOString().split('T')[0];
+    document.getElementById('avulso-desc').value = 'Lançamento Avulso';
+    document.getElementById('avulso-total').value = '';
+    document.getElementById('avulso-parcels').value = '1';
+  }
+}
+
+function saveAvulsoPosting() {
+  if (!currentCarneCustomer) return;
+  
+  const desc = document.getElementById('avulso-desc').value.trim() || 'Lançamento Avulso';
+  const totalVal = parseFloat(document.getElementById('avulso-total').value) || 0;
+  const qty = parseInt(document.getElementById('avulso-parcels').value) || 1;
+  const firstDue = document.getElementById('avulso-first-due').value;
+  
+  if (totalVal <= 0) {
+    toast('❌ O valor total deve ser maior que zero.', 'error');
+    return;
+  }
+  if (!firstDue) {
+    toast('❌ Informe a data de vencimento da primeira parcela.', 'error');
+    return;
+  }
+  
+  const installments = [];
+  const baseDate = new Date(firstDue + 'T00:00:00');
+  const val = totalVal / qty;
+  
+  for (let i = 1; i <= qty; i++) {
+    const dueDate = new Date(baseDate);
+    dueDate.setMonth(baseDate.getMonth() + (i - 1));
+    
+    const d = String(dueDate.getDate()).padStart(2, '0');
+    const m = String(dueDate.getMonth() + 1).padStart(2, '0');
+    const y = dueDate.getFullYear();
+    
+    installments.push({
+      parcel: i,
+      value: val,
+      dueDate: `${d}/${m}/${y}`,
+      status: 'Pendente'
+    });
+  }
+  
+  const orderId = '#AVULSO-' + Math.floor(Math.random() * 900000 + 100000);
+  const dateOnlyStr = new Date().toLocaleDateString('pt-BR');
+  
+  currentCarneCustomer.carnes = currentCarneCustomer.carnes || [];
+  currentCarneCustomer.carnes.push({
+    orderId: orderId,
+    total: totalVal,
+    date: dateOnlyStr,
+    desc: desc,
+    installments: installments
+  });
+  
+  currentCarneCustomer.orders = (currentCarneCustomer.orders || 0) + 1;
+  currentCarneCustomer.total = (currentCarneCustomer.total || 0) + totalVal;
+  currentCarneCustomer.last = dateOnlyStr;
+  
+  saveCustomersLocal();
+  renderCustomers();
+  renderCarneModalInstallments();
+  syncCustomerToSupabase(currentCarneCustomer);
+  
+  toast('Lançamento avulso registrado com sucesso!', 'success');
+  toggleAvulsoForm(false);
 }
 
 function renderCarneModalInstallments() {
@@ -3338,7 +3558,10 @@ function renderCarneModalInstallments() {
         
       html += `
         <tr>
-          <td>${carne.orderId}</td>
+          <td>
+            <div>${carne.orderId}</div>
+            ${carne.desc ? `<div style="font-size:0.68rem;color:var(--gray-400);margin-top:0.15rem">${escapeHTML(carne.desc)}</div>` : ''}
+          </td>
           <td>${inst.parcel}/${carne.installments.length}</td>
           <td>${inst.dueDate}</td>
           <td>R$ ${inst.value.toFixed(2).replace('.',',')}</td>
@@ -3641,23 +3864,7 @@ async function saveProduct() {
     width:       parseFloat(document.getElementById('f-width').value) || 0,
     height:      parseFloat(document.getElementById('f-height').value) || 0,
     depth:       parseFloat(document.getElementById('f-depth').value) || 0,
-    stock: (function() {
-      const st = {};
-      const inputs = document.querySelectorAll('.size-stock-input');
-      if (inputs.length > 0) {
-        inputs.forEach(input => {
-          const sz = input.getAttribute('data-size');
-          st[sz] = parseInt(input.value) || 0;
-        });
-      } else {
-        st.pp = parseInt(document.getElementById('f-pp')?.value) || 0;
-        st.p = parseInt(document.getElementById('f-p')?.value) || 0;
-        st.m = parseInt(document.getElementById('f-m')?.value) || 0;
-        st.g = parseInt(document.getElementById('f-g')?.value) || 0;
-        st.gg = parseInt(document.getElementById('f-gg')?.value) || 0;
-      }
-      return st;
-    })(),
+    stock: getCurrentStockFromModal(),
     status:      document.getElementById('f-status').value,
     featured:    document.getElementById('f-featured').value,
     imgUrl,
@@ -3743,7 +3950,7 @@ function updateSidebarBadges() {
   }
   if (elInv) {
     const lowStockCount = products.filter(p => {
-      const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+      const total = getProductTotalStock(p);
       return total < 5;
     }).length;
     elInv.textContent = lowStockCount;
@@ -3765,7 +3972,7 @@ function filterStatus(v) {
   if (!v) { renderProducts(); return; }
   const list = products.filter(p => p.status === v);
   document.getElementById('products-table').innerHTML = list.map(p => {
-    const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+    const total = getProductTotalStock(p);
     return `<tr><td><div class="td-product"><img src="${getFirstImageUrl(p.imgUrl)}" class="td-thumb"><div><div class="td-name">${p.name}</div><div class="td-sku">${p.sku}</div></div></div></td><td>${p.cat}</td><td>R$ ${p.price.toFixed(2).replace('.',',')}</td><td>${total}</td><td>${statusBadge(p.status)}</td><td>☁️</td><td></td></tr>`;
   }).join('');
 }
@@ -4115,11 +4322,39 @@ async function loadFromSheets(silent = false) {
         carnes: typeof c.carnes === 'string' ? JSON.parse(c.carnes) : (c.carnes || [])
       }));
       
-      // Calcular compras e total do cliente a partir dos pedidos
+      // Calcular compras e total do cliente a partir dos pedidos e carnes avulsos
       customers.forEach(c => {
         const clientOrders = orders.filter(o => o.customer.toLowerCase() === c.name.toLowerCase());
-        c.orders = clientOrders.length;
-        c.total = clientOrders.reduce((sum, o) => sum + o.total, 0);
+        let ordersCount = clientOrders.length;
+        let totalSpent = clientOrders.reduce((sum, o) => sum + o.total, 0);
+        
+        if (c.carnes && Array.isArray(c.carnes)) {
+          c.carnes.forEach(carne => {
+            if (carne.orderId && carne.orderId.indexOf('#AVULSO-') === 0) {
+              ordersCount += 1;
+              totalSpent += parseFloat(carne.total) || 0;
+              
+              if (carne.date) {
+                if (c.last === '-' || c.last === '') {
+                  c.last = carne.date;
+                } else {
+                  const cParts = carne.date.split('/');
+                  const lParts = c.last.split('/');
+                  if (cParts.length === 3 && lParts.length === 3) {
+                    const dateVal = new Date(parseInt(cParts[2]), parseInt(cParts[1]) - 1, parseInt(cParts[0]));
+                    const lastDateVal = new Date(parseInt(lParts[2]), parseInt(lParts[1]) - 1, parseInt(lParts[0]));
+                    if (dateVal > lastDateVal) {
+                      c.last = carne.date;
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+        
+        c.orders = ordersCount;
+        c.total = totalSpent;
       });
       saveCustomersLocal();
       renderCustomers();
@@ -4545,42 +4780,34 @@ function normalizeProductsStock() {
       }
     }
 
-    if (!p.stock) {
-      if (catType === 'infantil') {
-        p.stock = { "1": 0, "2": 0, "3": 0, "4": 0, "6": 0, "8": 0, "10": 0, "12": 0, "14": 0, "16": 0 };
-      } else if (catType === 'numerico') {
-        p.stock = { "34": 0, "36": 0, "38": 0, "40": 0, "42": 0, "44": 0, "46": 0, "48": 0, "50": 0, "52": 0, "54": 0 };
-      } else if (catType === 'diversos') {
-        p.stock = { "unico": 0 };
-      } else {
-        p.stock = { pp: 0, p: 0, m: 0, g: 0, gg: 0 };
-      }
+    let sizes = [];
+    if (catType === 'infantil') {
+      sizes = ["1", "2", "3", "4", "6", "8", "10", "12", "14", "16"];
+    } else if (catType === 'numerico') {
+      sizes = ["34", "36", "38", "40", "42", "44", "46", "48", "50", "52", "54"];
+    } else if (catType === 'diversos') {
+      sizes = ["unico"];
     } else {
-      if (catType === 'infantil') {
-        const kidsSizes = ["1", "2", "3", "4", "6", "8", "10", "12", "14", "16"];
-        const cleanStock = {};
-        kidsSizes.forEach(sz => {
-          cleanStock[sz] = parseInt(p.stock[sz]) || 0;
-        });
-        p.stock = cleanStock;
-      } else if (catType === 'numerico') {
-        const numSizes = ["34", "36", "38", "40", "42", "44", "46", "48", "50", "52", "54"];
-        const cleanStock = {};
-        numSizes.forEach(sz => {
-          cleanStock[sz] = parseInt(p.stock[sz]) || 0;
-        });
-        p.stock = cleanStock;
-      } else if (catType === 'diversos') {
-        p.stock = { unico: parseInt(p.stock.unico) || 0 };
-      } else {
-        const adultSizes = ["pp", "p", "m", "g", "gg"];
-        const cleanStock = {};
-        adultSizes.forEach(sz => {
-          cleanStock[sz] = parseInt(p.stock[sz]) || 0;
-        });
-        p.stock = cleanStock;
-      }
+      sizes = ["pp", "p", "m", "g", "gg"];
     }
+
+    const cleanStock = {};
+    const oldStock = p.stock || {};
+
+    sizes.forEach(sz => {
+      const val = oldStock[sz];
+      if (val && typeof val === 'object') {
+        const sizeColors = {};
+        for (const col in val) {
+          sizeColors[col] = parseInt(val[col]) || 0;
+        }
+        cleanStock[sz] = sizeColors;
+      } else {
+        cleanStock[sz] = parseInt(val) || 0;
+      }
+    });
+
+    p.stock = cleanStock;
   });
 }
 
@@ -4800,7 +5027,123 @@ function getProductSizesList(product) {
   }
 }
 
-// Função para renderizar dinamicamente os inputs de estoque baseando-se na categoria (infantil vs adulto vs diversos)
+function getCurrentStockFromModal() {
+  const stock = {};
+  const cards = document.querySelectorAll('.size-row-card');
+  cards.forEach(card => {
+    const sz = card.getAttribute('data-size');
+    const simpleInput = card.querySelector('.simple-size-input');
+    if (simpleInput) {
+      stock[sz] = parseInt(simpleInput.value) || 0;
+    } else {
+      const colorRows = card.querySelectorAll('.color-row-item');
+      const colorStock = {};
+      let hasAnyColor = false;
+      colorRows.forEach(row => {
+        const colName = row.querySelector('.color-name-input').value.trim();
+        const colQty = parseInt(row.querySelector('.color-qty-input').value) || 0;
+        if (colName) {
+          colorStock[colName] = colQty;
+          hasAnyColor = true;
+        }
+      });
+      if (hasAnyColor) {
+        stock[sz] = colorStock;
+      } else {
+        stock[sz] = 0;
+      }
+    }
+  });
+  return stock;
+}
+
+function toggleSizeColorStock(sz) {
+  const stock = getCurrentStockFromModal();
+  const currentVal = stock[sz];
+  if (currentVal && typeof currentVal === 'object') {
+    let sum = 0;
+    for (const c in currentVal) {
+      sum += parseInt(currentVal[c]) || 0;
+    }
+    stock[sz] = sum;
+  } else {
+    const oldVal = parseInt(currentVal) || 0;
+    stock[sz] = { "": oldVal };
+  }
+  const cat = document.getElementById('f-category').value;
+  updateSizeInputs(cat, stock);
+}
+
+function addSizeColorRow(sz) {
+  const container = document.getElementById(`color-rows-${sz}`);
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'color-row-item';
+  div.style.display = 'flex';
+  div.style.alignItems = 'center';
+  div.style.gap = '0.5rem';
+  div.innerHTML = `
+    <input type="text" class="color-name-input" placeholder="Nome da Cor (ex: Rosa)" value="" style="flex:1; padding:0.4rem; border:1px solid var(--gray-200); border-radius:6px; font-size:0.85rem">
+    <input type="number" class="color-qty-input" placeholder="Qtd" value="0" min="0" style="width:70px; padding:0.4rem; border:1px solid var(--gray-200); border-radius:6px; font-size:0.85rem">
+    <button type="button" onclick="removeSizeColorRow(this)" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.9rem">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function removeSizeColorRow(btn) {
+  const row = btn.parentNode;
+  const container = row.parentNode;
+  row.remove();
+  if (container.querySelectorAll('.color-row-item').length === 0) {
+    const div = document.createElement('div');
+    div.className = 'color-row-item';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.style.gap = '0.5rem';
+    div.innerHTML = `
+      <input type="text" class="color-name-input" placeholder="Nome da Cor (ex: Rosa)" value="" style="flex:1; padding:0.4rem; border:1px solid var(--gray-200); border-radius:6px; font-size:0.85rem">
+      <input type="number" class="color-qty-input" placeholder="Qtd" value="0" min="0" style="width:70px; padding:0.4rem; border:1px solid var(--gray-200); border-radius:6px; font-size:0.85rem">
+      <button type="button" onclick="removeSizeColorRow(this)" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.9rem">✕</button>
+    `;
+    container.appendChild(div);
+  }
+}
+
+function renderSimpleInputHTML(sz, val) {
+  return `
+    <div style="display:flex; align-items:center; gap:0.5rem">
+      <span style="font-size:0.75rem; color:var(--gray-500)">Quantidade em Estoque:</span>
+      <input type="number" class="simple-size-input" data-size="${sz}" value="${val}" min="0" style="width:80px; padding:0.4rem; border:1px solid var(--gray-200); border-radius:6px; font-size:0.85rem">
+    </div>
+  `;
+}
+
+function renderColorInputsHTML(sz, colorStockObj) {
+  let html = `<div class="color-rows-container" id="color-rows-${sz}" style="display:flex; flex-direction:column; gap:0.5rem">`;
+  const colors = Object.keys(colorStockObj || {});
+  if (colors.length === 0) {
+    colors.push('');
+  }
+  
+  colors.forEach((col, idx) => {
+    const qty = colorStockObj ? (parseInt(colorStockObj[col]) || 0) : 0;
+    html += `
+      <div class="color-row-item" style="display:flex; align-items:center; gap:0.5rem">
+        <input type="text" class="color-name-input" placeholder="Nome da Cor (ex: Rosa)" value="${col}" style="flex:1; padding:0.4rem; border:1px solid var(--gray-200); border-radius:6px; font-size:0.85rem">
+        <input type="number" class="color-qty-input" placeholder="Qtd" value="${qty}" min="0" style="width:70px; padding:0.4rem; border:1px solid var(--gray-200); border-radius:6px; font-size:0.85rem">
+        <button type="button" onclick="removeSizeColorRow(this)" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.9rem">✕</button>
+      </div>
+    `;
+  });
+  
+  html += `</div>
+    <button type="button" onclick="addSizeColorRow('${sz}')" style="margin-top:0.5rem; background:none; border:1px dashed var(--pink); color:var(--pink); padding:0.35rem 0.75rem; border-radius:6px; font-size:0.75rem; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:0.25rem">
+      ＋ Adicionar Cor
+    </button>
+  `;
+  return html;
+}
+
 function updateSizeInputs(category, stockObj = null) {
   const container = document.getElementById('size-stock-container');
   if (!container) return;
@@ -4816,48 +5159,85 @@ function updateSizeInputs(category, stockObj = null) {
     else if (isNumeric) catType = 'numerico';
   }
 
-  let html = '';
-  
+  let sizes = [];
   if (catType === 'infantil') {
-    const kidsSizes = ['1', '2', '3', '4', '6', '8', '10', '12', '14', '16'];
-    html = kidsSizes.map(sz => {
-      const val = stockObj && stockObj[sz] !== undefined ? stockObj[sz] : 0;
-      return `<div>
-        <label style="font-size:0.65rem;color:var(--gray-400)">${sz} anos</label>
-        <input type="number" class="size-stock-input" data-size="${sz}" value="${val}" min="0" style="width:100%;padding:0.3rem 0.5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:0.85rem">
-      </div>`;
-    }).join('');
+    sizes = ['1', '2', '3', '4', '6', '8', '10', '12', '14', '16'];
   } else if (catType === 'numerico') {
-    const numSizes = ['34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54'];
-    html = numSizes.map(sz => {
-      const val = stockObj && stockObj[sz] !== undefined ? stockObj[sz] : 0;
-      return `<div>
-        <label style="font-size:0.65rem;color:var(--gray-400)">${sz}</label>
-        <input type="number" class="size-stock-input" data-size="${sz}" value="${val}" min="0" style="width:100%;padding:0.3rem 0.5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:0.85rem">
-      </div>`;
-    }).join('');
+    sizes = ['34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54'];
   } else if (catType === 'diversos') {
-    const val = stockObj && stockObj['unico'] !== undefined ? stockObj['unico'] : 0;
-    html = `<div style="grid-column: span 5">
-      <label style="font-size:0.65rem;color:var(--gray-400)">Tamanho Único</label>
-      <input type="number" class="size-stock-input" data-size="unico" value="${val}" min="0" style="width:100%;padding:0.3rem 0.5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:0.85rem">
-    </div>`;
+    sizes = ['unico'];
   } else {
-    const adultSizes = ['pp', 'p', 'm', 'g', 'gg'];
-    html = adultSizes.map(sz => {
-      const val = stockObj && stockObj[sz] !== undefined ? stockObj[sz] : 0;
-      return `<div>
-        <label style="font-size:0.65rem;color:var(--gray-400)">${sz.toUpperCase()}</label>
-        <input type="number" class="size-stock-input" data-size="${sz}" value="${val}" min="0" style="width:100%;padding:0.3rem 0.5rem;border:1px solid var(--gray-200);border-radius:4px;font-size:0.85rem">
-      </div>`;
-    }).join('');
+    sizes = ['pp', 'p', 'm', 'g', 'gg'];
   }
+
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.gap = '1rem';
+
+  let html = '';
+
+  sizes.forEach(sz => {
+    const val = stockObj ? stockObj[sz] : null;
+    const isObj = val && typeof val === 'object';
+    const labelText = sz === 'unico' ? 'Tamanho Único' : sz.toUpperCase() + (catType === 'infantil' ? ' anos' : '');
+
+    html += `
+      <div class="size-row-card" data-size="${sz}" style="border: 1px solid var(--gray-200); border-radius: 8px; padding: 0.75rem; background: var(--gray-50)">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem">
+          <span style="font-weight: 600; font-size: 0.85rem; color: var(--dark)">Tamanho ${labelText}</span>
+          <button type="button" class="btn-toggle-color-stock" onclick="toggleSizeColorStock('${sz}')" style="background:none; border:none; color:var(--pink); font-size:0.75rem; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:0.25rem">
+            ${isObj ? '🗑️ Voltar para Estoque Simples' : '🎨 Adicionar Cores'}
+          </button>
+        </div>
+        
+        <div class="size-content-area" id="size-content-${sz}">
+          ${isObj ? renderColorInputsHTML(sz, val) : renderSimpleInputHTML(sz, parseInt(val) || 0)}
+        </div>
+      </div>
+    `;
+  });
+
   container.innerHTML = html;
+}
+
+function isColorStock(stock) {
+  if (!stock) return false;
+  return Object.values(stock).some(val => val && typeof val === 'object');
+}
+
+function getProductTotalStock(p) {
+  if (!p || !p.stock) return 0;
+  let total = 0;
+  for (const sz in p.stock) {
+    const val = p.stock[sz];
+    if (val && typeof val === 'object') {
+      for (const col in val) {
+        total += parseInt(val[col]) || 0;
+      }
+    } else {
+      total += parseInt(val) || 0;
+    }
+  }
+  return total;
 }
 
 // Formatação compacta para exibição na tabela de produtos
 function formatStockBrief(stock) {
   if (!stock) return 'Sem estoque';
+  
+  const values = Object.values(stock);
+  if (values.length > 0 && typeof values[0] === 'object') {
+    const parts = [];
+    for (const col in stock) {
+      const colStock = stock[col];
+      const brief = formatStockBrief(colStock);
+      if (brief && brief !== '0 un' && brief !== 'Sem estoque') {
+        parts.push(`${col}: ${brief}`);
+      }
+    }
+    return parts.length > 0 ? parts.join(' | ') : '0 un';
+  }
+
   if (stock.unico !== undefined) {
     return `Único:${stock.unico}`;
   }
@@ -5016,6 +5396,7 @@ function openModal(mode, id) {
       document.getElementById('f-height').value = p.height !== undefined ? p.height : '';
       document.getElementById('f-depth').value = p.depth !== undefined ? p.depth : '';
       document.getElementById('f-status').value = p.status;
+      
       updateSizeInputs(p.cat, p.stock);
       document.getElementById('f-bling-id').value = p.blingId || '';
       document.getElementById('f-bling-format').value = p.blingFormat || 'S';
@@ -5084,6 +5465,7 @@ function openModal(mode, id) {
     document.getElementById('f-depth').value = '';
     document.getElementById('f-status').value = 'Ativo';
     document.getElementById('f-featured').value = 'Não';
+    
     updateSizeInputs('Vestidos', { pp: 0, p: 0, m: 0, g: 0, gg: 0 });
     document.getElementById('f-bling-id').value = '';
     document.getElementById('f-bling-format').value = 'S';
@@ -5913,7 +6295,7 @@ function syncMarketplaces() {
     products.forEach(p => {
       if (p.status === 'Ativo') {
         count++;
-        const total = Object.values(p.stock).reduce((a,b)=>a+b,0);
+        const total = getProductTotalStock(p);
         addIntegrationLog(`[Bling] SKU ${p.sku} sincronizado. Estoque Central: ${total} un. Preço base: R$ ${p.price.toFixed(2)}`, 'system');
       }
     });
