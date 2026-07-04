@@ -2607,6 +2607,36 @@ function escapeHTML(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+function getCategoryType(categoryName, categoriesList) {
+  if (!categoryName) return 'adulto';
+  const cleanName = String(categoryName).trim().toLowerCase();
+  
+  const categoryObj = (categoriesList || []).find(c => {
+    return c && c.name && String(c.name).trim().toLowerCase() === cleanName;
+  });
+  
+  if (categoryObj && categoryObj.type) {
+    let type = String(categoryObj.type).trim().toLowerCase();
+    if (type === 'numérico' || type === 'numerico' || type === 'numeric') {
+      return 'numerico';
+    }
+    if (type === 'infantil') {
+      return 'infantil';
+    }
+    if (type === 'diversos' || type === 'unico') {
+      return 'diversos';
+    }
+    return type;
+  }
+  
+  const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(cleanName);
+  const isNumeric = /calça|calca|bermuda|jeans|short|saia/i.test(cleanName);
+  
+  if (isKids) return 'infantil';
+  if (isNumeric) return 'numerico';
+  return 'adulto';
+}
 // ── CONFIG STATE ──
 const config = {
   appsScriptUrl:      localStorage.getItem('appsScriptUrl')      || '',
@@ -3032,16 +3062,7 @@ function renderInventory() {
     const total = getProductTotalStock(p);
     const low = total < 5;
     
-    const categoryObj = categories.find(c => c.name.toLowerCase() === (p.cat || '').toLowerCase());
-    let catType = 'adulto';
-    if (categoryObj && categoryObj.type) {
-      catType = categoryObj.type;
-    } else {
-      const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(p.cat || '');
-      const isNumeric = /calça|calca|bermuda/i.test(p.cat || '');
-      if (isKids) catType = 'infantil';
-      else if (isNumeric) catType = 'numerico';
-    }
+    const catType = getCategoryType(p.cat, categories);
 
     if (isColorStock(p.stock)) {
       const rows = [];
@@ -4767,18 +4788,7 @@ function confirmSetupCarne() {
 function normalizeProductsStock() {
   if (!products || !Array.isArray(products)) return;
   products.forEach(p => {
-    let catType = 'adulto';
-    if (p.cat) {
-      const categoryObj = categories.find(c => c.name.toLowerCase() === p.cat.toLowerCase());
-      if (categoryObj && categoryObj.type) {
-        catType = categoryObj.type;
-      } else {
-        const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(p.cat || '');
-        const isNumeric = /calça|calca|bermuda/i.test(p.cat || '');
-        if (isKids) catType = 'infantil';
-        else if (isNumeric) catType = 'numerico';
-      }
-    }
+    const catType = getCategoryType(p.cat, categories);
 
     let sizes = [];
     if (catType === 'infantil') {
@@ -5004,18 +5014,7 @@ function closePubProgressOverlay() {
 
 // Função auxiliar para retornar a lista de tamanhos do produto com base no tipo da categoria
 function getProductSizesList(product) {
-  let catType = 'adulto';
-  if (product && product.cat) {
-    const categoryObj = categories.find(c => c.name.toLowerCase() === product.cat.toLowerCase());
-    if (categoryObj && categoryObj.type) {
-      catType = categoryObj.type;
-    } else {
-      const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(product.cat || '');
-      const isNumeric = /calça|calca|bermuda/i.test(product.cat || '');
-      if (isKids) catType = 'infantil';
-      else if (isNumeric) catType = 'numerico';
-    }
-  }
+  const catType = product ? getCategoryType(product.cat, categories) : 'adulto';
   if (catType === 'infantil') {
     return ['1', '2', '3', '4', '6', '8', '10', '12', '14', '16'];
   } else if (catType === 'numerico') {
@@ -5148,16 +5147,7 @@ function updateSizeInputs(category, stockObj = null) {
   const container = document.getElementById('size-stock-container');
   if (!container) return;
 
-  const categoryObj = categories.find(c => c.name.toLowerCase() === (category || '').toLowerCase());
-  let catType = 'adulto';
-  if (categoryObj && categoryObj.type) {
-    catType = categoryObj.type;
-  } else {
-    const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(category || '');
-    const isNumeric = /calça|calca|bermuda/i.test(category || '');
-    if (isKids) catType = 'infantil';
-    else if (isNumeric) catType = 'numerico';
-  }
+  const catType = getCategoryType(category, categories);
 
   let sizes = [];
   if (catType === 'infantil') {
@@ -5697,16 +5687,7 @@ async function startBulkImport() {
   const category = document.getElementById('bulk-default-category').value;
   
   // Determine category type and stock structure
-  const categoryObj = categories.find(c => c.name.toLowerCase() === (category || '').toLowerCase());
-  let catType = 'adulto';
-  if (categoryObj && categoryObj.type) {
-    catType = categoryObj.type;
-  } else {
-    const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(category || '');
-    const isNumeric = /calça|calca|bermuda/i.test(category || '');
-    if (isKids) catType = 'infantil';
-    else if (isNumeric) catType = 'numerico';
-  }
+  const catType = getCategoryType(category, categories);
   
   const defaultStock = catType === 'infantil' 
     ? { "1": 0, "2": 0, "3": 0, "4": 0, "6": 0, "8": 0, "10": 0, "12": 0, "14": 0, "16": 0 }
@@ -8407,16 +8388,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const catSelect = document.getElementById('f-category');
   if (catSelect) {
     catSelect.addEventListener('change', (e) => {
-      const categoryObj = categories.find(c => c.name.toLowerCase() === (e.target.value || '').toLowerCase());
-      let catType = 'adulto';
-      if (categoryObj && categoryObj.type) {
-        catType = categoryObj.type;
-      } else {
-        const isKids = /infantil|kids|bebe|bebê|juvenil|mini|crianca|criança/i.test(e.target.value || '');
-        const isNumeric = /calça|calca|bermuda/i.test(e.target.value || '');
-        if (isKids) catType = 'infantil';
-        else if (isNumeric) catType = 'numerico';
-      }
+      const categoryObj = categories.find(c => String(c.name).trim().toLowerCase() === String(e.target.value || '').trim().toLowerCase());
+      const catType = getCategoryType(e.target.value, categories);
 
       // Auto fill brand from category default if present
       if (categoryObj && categoryObj.defaultBrand) {
