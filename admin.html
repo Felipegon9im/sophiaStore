@@ -5046,7 +5046,9 @@ function updateStepUI(stepId, status, errorMsg = '') {
       detailEl.className = 'error-detail';
       detailEl.style.fontSize = '0.7rem';
       detailEl.style.color = 'var(--danger)';
-      detailEl.style.marginTop = '0.2rem';
+      detailEl.style.marginTop = '0.3rem';
+      detailEl.style.whiteSpace = 'pre-wrap';
+      detailEl.style.lineHeight = '1.4';
       stepEl.appendChild(detailEl);
     }
     detailEl.textContent = errorMsg;

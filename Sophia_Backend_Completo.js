@@ -850,6 +850,14 @@ function pushProductToBling(product) {
           if (details) errMsg = details;
         }
       } catch(_) {}
+
+      if (errMsg.indexOf("já foi cadastrado") > -1 || errMsg.indexOf("já cadastrado") > -1) {
+        errMsg = "O SKU/Código deste produto já está em uso por outro cadastro no Bling.\n\n" +
+                 "Para resolver, escolha uma das opções:\n" +
+                 "1. Mude o SKU deste produto no painel para um código diferente e único.\n" +
+                 "2. Se este produto for o mesmo que já está no Bling, copie o ID dele no Bling e cole no campo 'ID do Produto no Bling (Vínculo com Bling ERP)' antes de salvar.";
+      }
+
       return { success: false, error: errMsg };
     }
   } catch (e) {
