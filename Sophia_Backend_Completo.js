@@ -460,6 +460,12 @@ function doPost(e) {
       return jsonResponse(aiRes);
     }
 
+    if (requestData.action === 'importBlingProducts') {
+      const existingBlingIds = requestData.existingBlingIds || [];
+      const importRes = importBlingProductsToSupabase(existingBlingIds);
+      return jsonResponse(importRes);
+    }
+
     // =====================================
     // 4. OBTER CANAIS DE VENDA DO BLING
     // =====================================
@@ -1124,4 +1130,264 @@ function generateProductDetailsWithAI(name, categoriesList, passedKey) {
   } catch (e) {
     return { success: false, error: "Exception ao chamar Gemini: " + e.toString() };
   }
+}
+
+// Importa novos produtos do Bling ERP para o Supabase
+function importBlingProductsToSupabase(existingBlingIds) {
+  const token = getValidBlingToken();
+  if (!token) return { success: false, error: "Token Bling inválido ou expirado." };
+  
+  // 1. Obter todos os produtos resumidos do Bling (limite de 5 páginas / 500 produtos)
+  let page = 1;
+  let hasMore = true;
+  const summarizedMainProducts = [];
+  const summarizedVariations = [];
+  
+  try {
+    while (hasMore && page <= 5) {
+      const url = "https://api.bling.com.br/v3/produtos?pagina=" + page + "&limite=100";
+      const response = UrlFetchApp.fetch(url, {
+        method: "GET",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Accept": "application/json"
+        },
+        muteHttpExceptions: true
+      });
+      
+      if (response.getResponseCode() !== 200) {
+        break;
+      }
+      
+      const json = JSON.parse(response.getContentText());
+      if (json.data && json.data.length > 0) {
+        json.data.forEach(p => {
+          if (p.pai && p.pai.id) {
+            summarizedVariations.push(p);
+          } else {
+            summarizedMainProducts.push(p);
+          }
+        });
+        if (json.data.length < 100) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+  } catch(e) {
+    return { success: false, error: "Erro ao buscar lista de produtos do Bling: " + e.toString() };
+  }
+  
+  // 2. Filtrar produtos principais que não existem no Supabase
+  const existingSet = {};
+  if (existingBlingIds && Array.isArray(existingBlingIds)) {
+    existingBlingIds.forEach(id => {
+      existingSet[String(id)] = true;
+    });
+  }
+  
+  const missingSummary = summarizedMainProducts.filter(p => !existingSet[String(p.id)]);
+  if (missingSummary.length === 0) {
+    return { success: true, count: 0, message: "Todos os produtos do Bling já estão cadastrados." };
+  }
+  
+  // Limitar a importação de no máximo 15 produtos por clique para evitar estouro de limite de tempo
+  const limit = Math.min(missingSummary.length, 15);
+  const importedProducts = [];
+  
+  // Obter a URL do Supabase para saber o próximo ID disponível
+  const supabaseUrl = PropertiesService.getScriptProperties().getProperty('SUPABASE_URL') || "https://sfocvsknccuehrnoouox.supabase.co";
+  const supabaseKey = PropertiesService.getScriptProperties().getProperty('SUPABASE_KEY') || "sb_publishable_GiCiYoNOMlpImpdQkKjVdg_8mZJhM1k";
+  
+  let nextId = 1;
+  try {
+    const supRes = UrlFetchApp.fetch(supabaseUrl + "/rest/v1/produtos?select=id&order=id.desc&limit=1", {
+      method: "GET",
+      headers: {
+        "apikey": supabaseKey,
+        "Authorization": "Bearer " + supabaseKey
+      }
+    });
+    if (supRes.getResponseCode() === 200) {
+      const data = JSON.parse(supRes.getContentText());
+      if (data.length > 0) {
+        nextId = parseInt(data[0].id) + 1;
+      }
+    }
+  } catch(e) {
+    Logger.log("Erro ao buscar último ID no Supabase: " + e.toString());
+  }
+  
+  // 3. Buscar detalhes de cada produto faltante e salvar
+  for (let i = 0; i < limit; i++) {
+    const pSummary = missingSummary[i];
+    try {
+      const fullUrl = "https://api.bling.com.br/v3/produtos/" + pSummary.id;
+      const fullRes = UrlFetchApp.fetch(fullUrl, {
+        method: "GET",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Accept": "application/json"
+        },
+        muteHttpExceptions: true
+      });
+      
+      if (fullRes.getResponseCode() !== 200) continue;
+      
+      const fullJson = JSON.parse(fullRes.getContentText());
+      if (!fullJson.data) continue;
+      const p = fullJson.data;
+      
+      // Mapear imagens
+      let imgUrl = "";
+      if (p.midia && p.midia.imagens && p.midia.imagens.imagensURL) {
+        imgUrl = p.midia.imagens.imagensURL.map(img => img.link).join(',');
+      }
+      
+      // Buscar estoque das variações (se for produto pai)
+      const varIds = [];
+      if (p.variacoes && p.variacoes.length > 0) {
+        p.variacoes.forEach(v => varIds.push(v.id));
+      }
+      
+      const stockMap = {};
+      if (varIds.length > 0) {
+        const stockUrl = "https://api.bling.com.br/v3/estoques/saldos?idsProdutos[]=" + varIds.join("&idsProdutos[]=");
+        const stockRes = UrlFetchApp.fetch(stockUrl, {
+          method: "GET",
+          headers: {
+            "Authorization": "Bearer " + token,
+            "Accept": "application/json"
+          },
+          muteHttpExceptions: true
+        });
+        if (stockRes.getResponseCode() === 200) {
+          const stockJson = JSON.parse(stockRes.getContentText());
+          if (stockJson.data) {
+            stockJson.data.forEach(s => {
+              stockMap[String(s.produto.id)] = parseInt(s.saldoFisico) || 0;
+            });
+          }
+        }
+      }
+      
+      // Construir objeto de estoque
+      let stockObj = {};
+      let hasSizes = false;
+      
+      if (p.variacoes && p.variacoes.length > 0) {
+        p.variacoes.forEach(v => {
+          const qty = stockMap[String(v.id)] || 0;
+          if (v.variacao && v.variacao.opcao) {
+            const option = v.variacao.opcao; // ex: "Preto;M" ou "M"
+            const parts = option.split(';');
+            
+            if (parts.length === 2) {
+              const color = parts[0].trim().toLowerCase();
+              const size = parts[1].trim().toLowerCase();
+              if (!stockObj[size]) stockObj[size] = {};
+              stockObj[size][color] = qty;
+              hasSizes = true;
+            } else if (parts.length === 1) {
+              const size = parts[0].trim().toLowerCase();
+              stockObj[size] = qty;
+              hasSizes = true;
+            }
+          }
+        });
+      }
+      
+      if (!hasSizes) {
+        // Se for produto simples, busca o próprio saldo
+        const singleStockUrl = "https://api.bling.com.br/v3/estoques/saldos?idsProdutos[]=" + p.id;
+        const singleStockRes = UrlFetchApp.fetch(singleStockUrl, {
+          method: "GET",
+          headers: {
+            "Authorization": "Bearer " + token,
+            "Accept": "application/json"
+          },
+          muteHttpExceptions: true
+        });
+        let qty = 0;
+        if (singleStockRes.getResponseCode() === 200) {
+          const singleStockJson = JSON.parse(singleStockRes.getContentText());
+          if (singleStockJson.data && singleStockJson.data.length > 0) {
+            qty = parseInt(singleStockJson.data[0].saldoFisico) || 0;
+          }
+        }
+        stockObj = { pp: 0, p: qty, m: 0, g: 0, gg: 0 };
+      }
+      
+      // Montar payload final do produto
+      const payload = {
+        id: nextId++,
+        name: p.nome,
+        sku: p.codigo || "",
+        cat: "Outros", // Categoria padrão (pode ser editada)
+        cost: parseFloat(p.precoCusto) || 0,
+        price: parseFloat(p.preco) || 0,
+        sale_price: null,
+        stock: stockObj,
+        status: p.situacao === "A" ? "Ativo" : "Inativo",
+        featured: false,
+        img_url: imgUrl,
+        cloud_id: "",
+        bling_id: String(p.id),
+        brand: p.marca || "",
+        gtin: p.gtin || "",
+        weight_net: parseFloat(p.pesoLiquido) || 0,
+        weight_gross: parseFloat(p.pesoBruto) || 0,
+        width: parseFloat(p.dimensoes ? p.dimensoes.largura : 0) || 0,
+        height: parseFloat(p.dimensoes ? p.dimensoes.altura : 0) || 0,
+        depth: parseFloat(p.dimensoes ? p.dimensoes.profundidade : 0) || 0,
+        bling_format: p.formato || "S",
+        bling_type: p.tipo || "P",
+        bling_unit: p.unidade || "UN",
+        bling_condition: parseInt(p.condicao) || 1,
+        bling_production: p.tipoProducao || "P",
+        bling_expiration: p.dataValidade || "",
+        bling_free_shipping: !!p.freteGratis,
+        bling_gtin_tributario: p.gtinTributario || "",
+        bling_volumes: parseInt(p.volumes) || 1,
+        bling_items_box: parseInt(p.itensPorCaixa) || 1,
+        bling_unit_measure: parseInt(p.dimensoes ? p.dimensoes.unidadeMedida : 2) || 2,
+        bling_category_id: p.categoria ? String(p.categoria.id) : "",
+        bling_link_externo: p.linkExterno || "",
+        bling_video_url: p.midia && p.midia.video ? p.midia.video.url : "",
+        bling_desc_short: p.descricaoCurta || "",
+        bling_desc_comp: p.descricaoComplementar || "",
+        bling_observacoes: p.observacoes || "",
+        bling_tags: p.tags ? p.tags.join(',') : ""
+      };
+      
+      // Gravar no Supabase
+      const writeRes = UrlFetchApp.fetch(supabaseUrl + "/rest/v1/produtos", {
+        method: "POST",
+        headers: {
+          "apikey": supabaseKey,
+          "Authorization": "Bearer " + supabaseKey,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+      
+      if (writeRes.getResponseCode() === 201 || writeRes.getResponseCode() === 200) {
+        importedProducts.push(payload);
+      }
+    } catch(e) {
+      Logger.log("Erro ao importar produto " + pSummary.nome + ": " + e.toString());
+    }
+  }
+  
+  return {
+    success: true,
+    count: importedProducts.length,
+    message: "Importados " + importedProducts.length + " produtos com sucesso do Bling.",
+    data: importedProducts
+  };
 }

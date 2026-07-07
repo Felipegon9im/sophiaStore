@@ -1772,6 +1772,7 @@
           <div style="display:flex;gap:0.75rem">
             <button class="btn btn-primary" onclick="connectBling()">🔌 Salvar e Conectar</button>
             <button class="btn btn-secondary" onclick="testBlingConnection()">🧪 Testar Comunicação</button>
+            <button class="btn btn-success" onclick="importFromBling()">📥 Importar Produtos do Bling</button>
           </div>
           
           <div style="margin-top:1.25rem;padding:0.75rem;background:#eefdf3;border-radius:6px;font-size:0.7rem;line-height:1.7">
@@ -6318,6 +6319,63 @@ function testBlingConnection() {
     addIntegrationLog('Bling API retornou status 200 OK (Ping: 180ms). Token Válido.', 'system');
     toast('Comunicação com Bling está perfeita!', 'success');
   }, 800);
+}
+
+async function importFromBling() {
+  const blConnected = localStorage.getItem('blingConnected') === 'true';
+  if (!blConnected) {
+    toast('Conecte o Bling primeiro salvando o seu Token', 'error');
+    return;
+  }
+  
+  if (!config.appsScriptUrl) {
+    toast('Configure a URL do Apps Script antes de importar', 'error');
+    return;
+  }
+  
+  toast('Importação do Bling iniciada. Por favor, aguarde...', 'info');
+  addIntegrationLog('Buscando novos produtos no Bling para importar...', 'system');
+  
+  const btn = document.querySelector('[onclick="importFromBling()"]');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '📥 Importando...';
+  }
+  
+  try {
+    const existingBlingIds = products.map(p => p.blingId).filter(id => id);
+    const response = await fetch(config.appsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'importBlingProducts',
+        existingBlingIds: existingBlingIds
+      })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      if (result.count > 0) {
+        addIntegrationLog(`Sucesso: ${result.message}`, 'system');
+        toast(`✅ ${result.message}`, 'success');
+        await loadFromSheets(true);
+      } else {
+        addIntegrationLog('Todos os produtos do Bling já estão cadastrados no painel.', 'system');
+        toast('Todos os produtos do Bling já estão cadastrados!', 'info');
+      }
+    } else {
+      addIntegrationLog(`Erro na importação: ${result.error}`, 'system');
+      toast(`❌ Erro: ${result.error}`, 'error');
+    }
+  } catch(e) {
+    addIntegrationLog(`Falha na comunicação de rede: ${e.message}`, 'system');
+    toast(`❌ Falha de rede: ${e.message}`, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '📥 Importar Produtos do Bling';
+    }
+  }
 }
 
 function syncMarketplaces() {
