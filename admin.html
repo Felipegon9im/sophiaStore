@@ -1072,12 +1072,12 @@
       <!-- Filters -->
       <div class="panel" style="margin-bottom:1.25rem">
         <div style="padding:1rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
-          <input type="text" placeholder="🔍  Buscar produto..." style="flex:1;min-width:200px" oninput="filterTable(this.value)">
-          <select onchange="filterCategory(this.value)" style="min-width:160px">
+          <input type="text" id="product-search-input" placeholder="🔍  Buscar produto..." style="flex:1;min-width:200px" oninput="filterTable()">
+          <select id="product-cat-filter" onchange="filterCategory()" style="min-width:160px">
             <option value="">Todas as categorias</option>
             <option>Vestidos</option><option>Blusas</option><option>Calças</option><option>Acessórios</option>
           </select>
-          <select onchange="filterStatus(this.value)" style="min-width:140px">
+          <select id="product-status-filter" onchange="filterStatus()" style="min-width:140px">
             <option value="">Todos os status</option>
             <option>Ativo</option><option>Inativo</option><option>Estoque Baixo</option><option>Rascunho</option>
           </select>
@@ -2828,8 +2828,29 @@ function renderDashboard() {
 }
 
 // ── PRODUCTS TABLE ──
-function renderProducts(filter='') {
-  const list = filter ? products.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()) || p.sku.toLowerCase().includes(filter.toLowerCase())) : products;
+function renderProducts() {
+  const searchVal = document.getElementById('product-search-input')?.value.toLowerCase().trim() || '';
+  const catVal = document.getElementById('product-cat-filter')?.value || '';
+  const statusVal = document.getElementById('product-status-filter')?.value || '';
+  
+  let list = products;
+  
+  if (searchVal) {
+    list = list.filter(p => p.name.toLowerCase().includes(searchVal) || p.sku.toLowerCase().includes(searchVal));
+  }
+  
+  if (catVal) {
+    list = list.filter(p => p.cat === catVal);
+  }
+  
+  if (statusVal) {
+    if (statusVal === 'Estoque Baixo') {
+      list = list.filter(p => getProductTotalStock(p) < 5);
+    } else {
+      list = list.filter(p => p.status === statusVal);
+    }
+  }
+  
   document.getElementById('product-count').textContent = `${list.length} produtos`;
   document.getElementById('products-table').innerHTML = list.map(p => {
     const total = getProductTotalStock(p);
@@ -4035,16 +4056,9 @@ function duplicateProduct(id) {
 }
 
 // ── FILTERS ──
-function filterTable(v) { renderProducts(v); }
-function filterCategory(v) { if (v) renderProducts(v); else renderProducts(); }
-function filterStatus(v) {
-  if (!v) { renderProducts(); return; }
-  const list = products.filter(p => p.status === v);
-  document.getElementById('products-table').innerHTML = list.map(p => {
-    const total = getProductTotalStock(p);
-    return `<tr><td><div class="td-product"><img src="${getFirstImageUrl(p.imgUrl)}" class="td-thumb"><div><div class="td-name">${p.name}</div><div class="td-sku">${p.sku}</div></div></div></td><td>${p.cat}</td><td>R$ ${p.price.toFixed(2).replace('.',',')}</td><td>${total}</td><td>${statusBadge(p.status)}</td><td>☁️</td><td></td></tr>`;
-  }).join('');
-}
+function filterTable() { renderProducts(); }
+function filterCategory() { renderProducts(); }
+function filterStatus() { renderProducts(); }
 function changeOrderStatus(id) { 
   const orderIndex = orders.findIndex(o => o.id === id);
   if (orderIndex === -1) return;
@@ -7092,11 +7106,11 @@ function saveCategories() {
 
 function updateCategorySelects() {
   const names = categories.map(c => c.name);
-  // Select do filtro na página de produtos
-  const filterSel = document.querySelector('select[onchange="filterCategory(this.value)"]');
+  const filterSel = document.getElementById('product-cat-filter');
   if (filterSel) {
+    const current = filterSel.value;
     filterSel.innerHTML = '<option value="">Todas as categorias</option>' +
-      names.map(n => `<option>${n}</option>`).join('');
+      names.map(n => `<option${n===current?' selected':''}>${n}</option>`).join('');
   }
   // Select do modal de produto
   const modalSel = document.getElementById('f-category');
