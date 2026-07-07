@@ -3915,7 +3915,7 @@ async function saveProduct() {
   }
 
   const prodData = {
-    id:        isEdit ? existing.id : (products.length + 1),
+    id:        isEdit ? existing.id : (Math.max(...products.map(p => parseInt(p.id) || 0), 0) + 1),
     name,
     sku:       document.getElementById('f-sku').value,
     cat:       document.getElementById('f-category').value,
@@ -3972,8 +3972,10 @@ async function saveProduct() {
   }
 
   saveProductsLocal();
+  await syncToSheets(prodData);
   closeModal();
   toast((isEdit ? '✏️ Produto atualizado!' : '✅ Produto criado!'), 'success');
+  renderProducts();
 
   runPublishingPipeline(prodData);
 }
@@ -5496,8 +5498,9 @@ function openModal(mode, id) {
       document.getElementById('modal-overlay').dataset.editId = id;
     }
   } else {
+    const nextId = Math.max(...products.map(p => parseInt(p.id) || 0), 0) + 1;
     document.getElementById('f-name').value = '';
-    document.getElementById('f-sku').value = 'AUTO-' + String(products.length+1).padStart(3,'0');
+    document.getElementById('f-sku').value = 'AUTO-' + String(nextId).padStart(3,'0');
     document.getElementById('f-category').value = '';
     document.getElementById('f-brand').value = '';
     document.getElementById('f-cost').value = '';
