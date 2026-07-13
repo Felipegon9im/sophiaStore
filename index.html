@@ -2010,7 +2010,7 @@
             <span class="price-was" id="detail-modal-old-price">R$ 0,00</span>
           </div>
           <div class="detail-price-installments" id="detail-modal-installments">
-            ou 10x de R$ 0,00 no cartão
+            ou em até 10x no cartão
           </div>
         </div>
         
@@ -2967,8 +2967,7 @@ function openProductDetail(id, event) {
   }
 
   // Installment calculation
-  const installmentVal = (product.price / 10).toFixed(2).replace('.', ',');
-  document.getElementById('detail-modal-installments').textContent = `ou 10x de R$ ${installmentVal} no cartão`;
+  document.getElementById('detail-modal-installments').textContent = 'ou em até 10x no cartão';
 
   // 1. Generate vertical thumbnails (zoom simulation)
   const thumbWrap = document.getElementById('detail-thumbnails');
