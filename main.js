@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, session } = require('electron');
 const path = require('path');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
@@ -515,6 +515,10 @@ app.on('activate', function () {
 });
 
 app.on('will-quit', () => {
+  // Flush all session storage to disk to prevent data/cookie loss
+  if (session) {
+    session.fromPartition('persist:bling').cookies.flushStore().catch(() => {});
+  }
   // Unregister all shortcuts before exit
   globalShortcut.unregisterAll();
 });
