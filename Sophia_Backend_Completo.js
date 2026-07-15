@@ -685,6 +685,34 @@ function pushProductToBling(product) {
     payload.variacoes = [];
     var keys = Object.keys(product.stock);
     
+    // Buscar variações existentes no Bling para obter IDs e evitar erro de SKU duplicado no PUT
+    var existingVariationsMap = {};
+    if (product.blingId) {
+      try {
+        var getUrl = "https://api.bling.com.br/v3/produtos/" + product.blingId;
+        var getResponse = UrlFetchApp.fetch(getUrl, {
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer " + token,
+            "Accept": "application/json"
+          },
+          "muteHttpExceptions": true
+        });
+        if (getResponse.getResponseCode() === 200) {
+          var getJson = JSON.parse(getResponse.getContentText());
+          if (getJson.data && getJson.data.variacoes) {
+            getJson.data.variacoes.forEach(function(v) {
+              if (v.codigo) {
+                existingVariationsMap[v.codigo.toUpperCase().trim()] = String(v.id);
+              }
+            });
+          }
+        }
+      } catch(err) {
+        Logger.log("Erro ao buscar variacoes existentes do produto no Bling: " + err.toString());
+      }
+    }
+    
     // Check if any size has color stock
     var isColor = keys.some(function(k) {
       return product.stock[k] && typeof product.stock[k] === 'object';
@@ -700,10 +728,12 @@ function pushProductToBling(product) {
             var qty = parseInt(val[col]) || 0;
             var colUpper = col.toUpperCase();
             var colSkuPart = colUpper.replace(/\s+/g, '-');
+            var varSku = (product.sku || String(product.id)) + "-" + colSkuPart + "-" + szUpper;
+            var varSkuKey = varSku.toUpperCase().trim();
             
-            payload.variacoes.push({
+            var varObj = {
               "nome": product.name + " - " + colUpper + " - " + szUpper,
-              "codigo": (product.sku || String(product.id)) + "-" + colSkuPart + "-" + szUpper,
+              "codigo": varSku,
               "preco": parseFloat(finalPrice) || 0,
               "tipo": "P",
               "formato": "S",
@@ -720,13 +750,22 @@ function pushProductToBling(product) {
                 "opcao": colUpper + ";" + szUpper
               },
               "estoque": qty
-            });
+            };
+            
+            if (existingVariationsMap[varSkuKey]) {
+              varObj.id = parseInt(existingVariationsMap[varSkuKey]);
+            }
+            
+            payload.variacoes.push(varObj);
           }
         } else {
           var qty = parseInt(val) || 0;
-          payload.variacoes.push({
+          var varSku = (product.sku || String(product.id)) + "-PADRAO-" + szUpper;
+          var varSkuKey = varSku.toUpperCase().trim();
+          
+          var varObj = {
             "nome": product.name + " - PADRAO - " + szUpper,
-            "codigo": (product.sku || String(product.id)) + "-PADRAO-" + szUpper,
+            "codigo": varSku,
             "preco": parseFloat(finalPrice) || 0,
             "tipo": "P",
             "formato": "S",
@@ -743,16 +782,25 @@ function pushProductToBling(product) {
               "opcao": "PADRAO;" + szUpper
             },
             "estoque": qty
-          });
+          };
+          
+          if (existingVariationsMap[varSkuKey]) {
+            varObj.id = parseInt(existingVariationsMap[varSkuKey]);
+          }
+          
+          payload.variacoes.push(varObj);
         }
       }
     } else {
       for (var sz in product.stock) {
         var qty = parseInt(product.stock[sz]) || 0;
         var szUpper = sz.toUpperCase();
-        payload.variacoes.push({
+        var varSku = (product.sku || String(product.id)) + "-" + szUpper;
+        var varSkuKey = varSku.toUpperCase().trim();
+        
+        var varObj = {
           "nome": product.name + " - " + szUpper,
-          "codigo": (product.sku || String(product.id)) + "-" + szUpper,
+          "codigo": varSku,
           "preco": parseFloat(finalPrice) || 0,
           "tipo": "P",
           "formato": "S",
@@ -769,7 +817,13 @@ function pushProductToBling(product) {
             "opcao": szUpper
           },
           "estoque": qty
-        });
+        };
+        
+        if (existingVariationsMap[varSkuKey]) {
+          varObj.id = parseInt(existingVariationsMap[varSkuKey]);
+        }
+        
+        payload.variacoes.push(varObj);
       }
     }
   }
