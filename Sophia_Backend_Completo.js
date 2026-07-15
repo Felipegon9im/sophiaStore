@@ -750,8 +750,7 @@ function pushProductToBling(product) {
                 "nome": "Cor:" + colUpper + ";Tamanho:" + szUpper,
                 "opcao": colUpper + ";" + szUpper,
                 "ordem": varIdx++
-              },
-              "estoque": qty
+              }
             };
             
             if (product.blingId) {
@@ -789,8 +788,7 @@ function pushProductToBling(product) {
               "nome": "Cor:PADRAO;Tamanho:" + szUpper,
               "opcao": "PADRAO;" + szUpper,
               "ordem": varIdx++
-            },
-            "estoque": qty
+            }
           };
           
           if (product.blingId) {
@@ -831,8 +829,7 @@ function pushProductToBling(product) {
             "nome": "Tamanho:" + szUpper,
             "opcao": szUpper,
             "ordem": varIdx++
-          },
-          "estoque": qty
+          }
         };
         
         if (product.blingId) {
@@ -906,24 +903,59 @@ function pushProductToBling(product) {
       }
       
       if (blingId) {
-        // 1. Atualizar estoque físico total
-        var totalStock = 0;
-        if (product.stock) {
-          for (var sz in product.stock) {
-            var val = product.stock[sz];
-            if (val && typeof val === 'object') {
-              for (var col in val) {
-                totalStock += (parseInt(val[col]) || 0);
+        var responseData = null;
+        if (responseCode !== 204 && resText) {
+          try {
+            responseData = JSON.parse(resText);
+          } catch(e) {}
+        }
+        
+        // Se for produto com variações, atualiza o estoque de cada variação
+        if (finalFormat === 'V') {
+          var varList = [];
+          if (responseData && responseData.data && responseData.data.variacoes) {
+            varList = responseData.data.variacoes;
+          } else {
+            // Buscar variações existentes no Bling para obter IDs se a resposta não trouxer
+            try {
+              var getUrl = "https://api.bling.com.br/v3/produtos/" + blingId;
+              var getResponse = UrlFetchApp.fetch(getUrl, {
+                "method": "GET",
+                "headers": {
+                  "Authorization": "Bearer " + token,
+                  "Accept": "application/json"
+                },
+                "muteHttpExceptions": true
+              });
+              if (getResponse.getResponseCode() === 200) {
+                var getJson = JSON.parse(getResponse.getContentText());
+                if (getJson.data && getJson.data.variacoes) {
+                  varList = getJson.data.variacoes;
+                }
               }
-            } else {
-              totalStock += (parseInt(val) || 0);
+            } catch(err) {
+              Logger.log("Erro ao buscar variacoes no pos-save: " + err.toString());
             }
           }
+          
+          if (varList && varList.length > 0) {
+            varList.forEach(function(v) {
+              if (v.id && v.codigo) {
+                var qty = findVariationStockBySku(product, v.codigo);
+                updateBlingStock(String(v.id), qty, token);
+              }
+            });
+          }
+        } else {
+          // Se for produto simples, atualiza o estoque do próprio produto
+          var totalStock = 0;
+          if (product.stock) {
+            for (var sz in product.stock) {
+              totalStock += (parseInt(product.stock[sz]) || 0);
+            }
+          }
+          updateBlingStock(blingId, totalStock, token);
         }
-        updateBlingStock(blingId, totalStock, token);
-        
-        // 2. Vincular com a Shopee (Desabilitado automático, feito via painel)
-        // linkProductToStore(blingId, product, token);
       }
       
       return { success: true, data: { id: blingId } };
@@ -967,6 +999,49 @@ function pushProductToBling(product) {
     Logger.log("Exception ao pushProductToBling: " + e.toString());
     return { success: false, error: e.toString() };
   }
+}
+
+// Encontra a quantidade de estoque de uma variação pelo seu SKU
+function findVariationStockBySku(product, sku) {
+  if (!product.stock) return 0;
+  var skuUpper = sku.toUpperCase().trim();
+  var parentSku = (product.sku || String(product.id)).toUpperCase().trim();
+  
+  var keys = Object.keys(product.stock);
+  var isColor = keys.some(function(k) {
+    return product.stock[k] && typeof product.stock[k] === 'object';
+  });
+  
+  if (isColor) {
+    for (var sz in product.stock) {
+      var val = product.stock[sz];
+      var szUpper = sz.toUpperCase().trim();
+      if (val && typeof val === 'object') {
+        for (var col in val) {
+          var colUpper = col.toUpperCase().trim();
+          var colSkuPart = colUpper.replace(/\s+/g, '-');
+          var expectedSku = parentSku + "-" + colSkuPart + "-" + szUpper;
+          if (expectedSku === skuUpper) {
+            return parseInt(val[col]) || 0;
+          }
+        }
+      } else {
+        var expectedSku = parentSku + "-PADRAO-" + szUpper;
+        if (expectedSku === skuUpper) {
+          return parseInt(val) || 0;
+        }
+      }
+    }
+  } else {
+    for (var sz in product.stock) {
+      var szUpper = sz.toUpperCase().trim();
+      var expectedSku = parentSku + "-" + szUpper;
+      if (expectedSku === skuUpper) {
+        return parseInt(product.stock[sz]) || 0;
+      }
+    }
+  }
+  return 0;
 }
 
 // Obtém o primeiro depósito ativo no Bling
