@@ -926,12 +926,20 @@ function pushProductToBling(product) {
         if (parsed.error) {
           let details = parsed.error.description || parsed.error.message || '';
           if (parsed.error.fields && Array.isArray(parsed.error.fields)) {
-            const fieldErrors = parsed.error.fields.map(f => {
-              const name = f.field || f.element || f.campo || 'campo';
-              const msgText = f.msg || f.message || f.mensagem || f.description || 'erro';
-              return `${name}: ${msgText}`;
-            }).join(', ');
-            details += ` [Detalhes: ${fieldErrors}]`;
+            var formatBlingFields = function(fields) {
+              if (!fields || !Array.isArray(fields)) return "";
+              return fields.map(function(f) {
+                var name = f.field || f.element || f.campo || 'campo';
+                var msgText = f.msg || f.message || f.mensagem || f.description || 'erro';
+                var text = name + ": " + msgText;
+                if (f.fields && Array.isArray(f.fields)) {
+                  text += " (" + formatBlingFields(f.fields) + ")";
+                }
+                return text;
+              }).join(', ');
+            };
+            const fieldErrors = formatBlingFields(parsed.error.fields);
+            details += " [Detalhes: " + fieldErrors + "]";
           }
           if (details) errMsg = details;
         }
