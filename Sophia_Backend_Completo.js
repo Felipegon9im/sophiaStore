@@ -749,13 +749,16 @@ function pushProductToBling(product) {
               "variacao": {
                 "nome": "Cor:" + colUpper + ";Tamanho:" + szUpper,
                 "opcao": colUpper + ";" + szUpper,
-                "ordem": varIdx++,
-                "produtoPai": {
-                  "cloneInfo": true
-                }
+                "ordem": varIdx++
               },
               "estoque": qty
             };
+            
+            if (product.blingId) {
+              varObj.variacao.produtoPai = {
+                "id": parseInt(product.blingId)
+              };
+            }
             
             if (existingVariationsMap[varSkuKey]) {
               varObj.id = parseInt(existingVariationsMap[varSkuKey]);
@@ -785,13 +788,16 @@ function pushProductToBling(product) {
             "variacao": {
               "nome": "Cor:PADRAO;Tamanho:" + szUpper,
               "opcao": "PADRAO;" + szUpper,
-              "ordem": varIdx++,
-              "produtoPai": {
-                "cloneInfo": true
-              }
+              "ordem": varIdx++
             },
             "estoque": qty
           };
+          
+          if (product.blingId) {
+            varObj.variacao.produtoPai = {
+              "id": parseInt(product.blingId)
+            };
+          }
           
           if (existingVariationsMap[varSkuKey]) {
             varObj.id = parseInt(existingVariationsMap[varSkuKey]);
@@ -824,13 +830,16 @@ function pushProductToBling(product) {
           "variacao": {
             "nome": "Tamanho:" + szUpper,
             "opcao": szUpper,
-            "ordem": varIdx++,
-            "produtoPai": {
-              "cloneInfo": true
-            }
+            "ordem": varIdx++
           },
           "estoque": qty
         };
+        
+        if (product.blingId) {
+          varObj.variacao.produtoPai = {
+            "id": parseInt(product.blingId)
+          };
+        }
         
         if (existingVariationsMap[varSkuKey]) {
           varObj.id = parseInt(existingVariationsMap[varSkuKey]);
