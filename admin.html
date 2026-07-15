@@ -3936,6 +3936,15 @@ async function saveProduct() {
     };
   }
 
+  const stock = getCurrentStockFromModal();
+  let blingFormat = document.getElementById('f-bling-format').value;
+  const stockKeys = Object.keys(stock || {});
+  const hasMultipleSizes = stockKeys.length > 1;
+  const hasColorGrade = stockKeys.some(k => stock[k] && typeof stock[k] === 'object');
+  if (blingFormat === 'S' && (hasMultipleSizes || hasColorGrade)) {
+    blingFormat = 'V';
+  }
+
   const prodData = {
     id:        isEdit ? existing.id : (Math.max(...products.map(p => parseInt(p.id) || 0), 0) + 1),
     name,
@@ -3952,13 +3961,13 @@ async function saveProduct() {
     width:       parseFloat(document.getElementById('f-width').value) || 0,
     height:      parseFloat(document.getElementById('f-height').value) || 0,
     depth:       parseFloat(document.getElementById('f-depth').value) || 0,
-    stock: getCurrentStockFromModal(),
+    stock: stock,
     status:      document.getElementById('f-status').value,
     featured:    document.getElementById('f-featured').value,
     imgUrl,
     cloudId,
     blingId:  document.getElementById('f-bling-id').value.trim(),
-    blingFormat: document.getElementById('f-bling-format').value,
+    blingFormat: blingFormat,
     blingType: document.getElementById('f-bling-type').value,
     blingUnit: document.getElementById('f-bling-unit').value.trim(),
     blingCondition: parseInt(document.getElementById('f-bling-condition').value) || 1,

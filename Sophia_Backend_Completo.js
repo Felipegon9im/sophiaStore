@@ -597,13 +597,25 @@ function pushProductToBling(product) {
   
   const finalPrice = product.salePrice ? product.salePrice : product.price;
   
+  let finalFormat = product.blingFormat || "S";
+  if (product.stock) {
+    const stockKeys = Object.keys(product.stock);
+    const hasMultipleSizes = stockKeys.length > 1;
+    const hasColorGrade = stockKeys.some(function(k) {
+      return product.stock[k] && typeof product.stock[k] === 'object';
+    });
+    if (finalFormat === "S" && (hasMultipleSizes || hasColorGrade)) {
+      finalFormat = "V";
+    }
+  }
+  
   const payload = {
     "nome": product.name,
     "codigo": product.sku || String(product.id),
     "preco": parseFloat(product.price) || 0,
     "tipo": product.blingType || "P",
     "situacao": product.status === "Ativo" ? "A" : "I",
-    "formato": product.blingFormat || "S",
+    "formato": finalFormat,
     "marca": product.brand || '',
     "unidade": product.blingUnit || 'UN',
     "condicao": !isNaN(parseInt(product.blingCondition)) ? parseInt(product.blingCondition) : 1,
@@ -669,7 +681,7 @@ function pushProductToBling(product) {
     }
   }
   
-  if (product.blingFormat === 'V' && product.stock) {
+  if (finalFormat === 'V' && product.stock) {
     payload.variacoes = [];
     var keys = Object.keys(product.stock);
     
