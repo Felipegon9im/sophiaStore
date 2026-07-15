@@ -684,6 +684,7 @@ function pushProductToBling(product) {
   if (finalFormat === 'V' && product.stock) {
     payload.variacoes = [];
     var keys = Object.keys(product.stock);
+    var varIdx = 1;
     
     // Buscar variações existentes no Bling para obter IDs e evitar erro de SKU duplicado no PUT
     var existingVariationsMap = {};
@@ -746,8 +747,12 @@ function pushProductToBling(product) {
                 "unidadeMedida": parseInt(product.blingUnitMeasure) || 2
               },
               "variacao": {
-                "nome": "Cor;Tamanho",
-                "opcao": colUpper + ";" + szUpper
+                "nome": "Cor:" + colUpper + ";Tamanho:" + szUpper,
+                "opcao": colUpper + ";" + szUpper,
+                "ordem": varIdx++,
+                "produtoPai": {
+                  "cloneInfo": true
+                }
               },
               "estoque": qty
             };
@@ -778,8 +783,12 @@ function pushProductToBling(product) {
               "unidadeMedida": parseInt(product.blingUnitMeasure) || 2
             },
             "variacao": {
-              "nome": "Cor;Tamanho",
-              "opcao": "PADRAO;" + szUpper
+              "nome": "Cor:PADRAO;Tamanho:" + szUpper,
+              "opcao": "PADRAO;" + szUpper,
+              "ordem": varIdx++,
+              "produtoPai": {
+                "cloneInfo": true
+              }
             },
             "estoque": qty
           };
@@ -813,8 +822,12 @@ function pushProductToBling(product) {
             "unidadeMedida": parseInt(product.blingUnitMeasure) || 2
           },
           "variacao": {
-            "nome": "Tamanho",
-            "opcao": szUpper
+            "nome": "Tamanho:" + szUpper,
+            "opcao": szUpper,
+            "ordem": varIdx++,
+            "produtoPai": {
+              "cloneInfo": true
+            }
           },
           "estoque": qty
         };
@@ -834,6 +847,7 @@ function pushProductToBling(product) {
   if (product.blingId) {
     url += "/" + product.blingId;
     method = "PUT";
+    payload.actionEstoque = "Z"; // Evitar erros ao converter produto simples para variação no Bling
   }
   
   try {
