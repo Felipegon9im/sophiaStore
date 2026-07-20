@@ -2508,36 +2508,9 @@
           </select>
         </div>
 
-        <!-- Tabela de Medidas & Atributos -->
+        <!-- Guia de Tamanhos -->
         <div class="form-group full" style="border-top: 1px solid var(--gray-200); padding-top: 1rem; margin-top: 0.5rem">
-          <label style="font-weight: 600; color: var(--primary)">📏 Atributos & Guia de Tamanhos (Opcionais)</label>
-        </div>
-        <div class="form-group">
-          <label>Gênero</label>
-          <select id="f-attr-gender">
-            <option value="">Não especificado</option>
-            <option value="Feminino">Feminino</option>
-            <option value="Masculino">Masculino</option>
-            <option value="Unissex">Unissex</option>
-            <option value="Infantil">Infantil</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Cor Principal</label>
-          <input type="text" id="f-attr-color" placeholder="Ex: Rosa, Azul, Preto">
-        </div>
-        <div class="form-group">
-          <label>Material / Tecido</label>
-          <input type="text" id="f-attr-material" placeholder="Ex: Jeans, Viscose, Linho">
-        </div>
-        <div class="form-group">
-          <label>Faixa Etária</label>
-          <select id="f-attr-age-group">
-            <option value="">Não especificado</option>
-            <option value="Adulto">Adulto</option>
-            <option value="Infantil">Infantil</option>
-            <option value="Bebe">Bebê</option>
-          </select>
+          <label style="font-weight: 600; color: var(--primary)">📏 Guia de Tamanhos (Opcional)</label>
         </div>
         <div class="form-group full">
           <label>Imagem da Tabela de Medidas</label>
@@ -3949,12 +3922,6 @@ async function saveProduct() {
     blingDescComp: document.getElementById('f-bling-desc-comp').value.trim(),
     blingObservacoes: document.getElementById('f-bling-observacoes').value.trim(),
     blingTags: document.getElementById('f-bling-tags').value.trim(),
-    
-    // Novos campos de Atributos e Tabela de Medidas
-    attrGender: document.getElementById('f-attr-gender').value,
-    attrColor: document.getElementById('f-attr-color').value.trim(),
-    attrMaterial: document.getElementById('f-attr-material').value.trim(),
-    attrAgeGroup: document.getElementById('f-attr-age-group').value,
     sizeChartUrl: pendingSizeChartUrl,
     marketplaceStatus: mktStatus
   };
@@ -4144,10 +4111,6 @@ async function syncToSheets(product) {
       bling_desc_short: product.blingDescShort || '',
       bling_desc_comp: product.blingDescComp || '',
       bling_observacoes: JSON.stringify({
-        attrGender: product.attrGender || '',
-        attrColor: product.attrColor || '',
-        attrMaterial: product.attrMaterial || '',
-        attrAgeGroup: product.attrAgeGroup || '',
         sizeChartUrl: product.sizeChartUrl || '',
         marketplaceStatus: product.marketplaceStatus || null,
         customObs: product.blingObservacoes || ''
@@ -5432,11 +5395,7 @@ function openModal(mode, id) {
       document.getElementById('f-bling-observacoes').value = p.blingObservacoes || '';
       document.getElementById('f-bling-tags').value = p.blingTags || '';
       
-      // Carregar atributos e tabela de medidas
-      document.getElementById('f-attr-gender').value = p.attrGender || '';
-      document.getElementById('f-attr-color').value = p.attrColor || '';
-      document.getElementById('f-attr-material').value = p.attrMaterial || '';
-      document.getElementById('f-attr-age-group').value = p.attrAgeGroup || '';
+      // Carregar guia de tamanhos
       pendingSizeChartUrl = p.sizeChartUrl || '';
       const sizeChartPreview = document.getElementById('size-chart-preview');
       if (p.sizeChartUrl) {
@@ -5444,8 +5403,6 @@ function openModal(mode, id) {
       } else {
         sizeChartPreview.innerHTML = '';
       }
-
-
 
       // Se já tem imagens, mostrar no preview
       if (p.imgUrl) {
@@ -5501,11 +5458,7 @@ function openModal(mode, id) {
     document.getElementById('f-bling-observacoes').value = '';
     document.getElementById('f-bling-tags').value = '';
     
-    // Reset novos atributos e guia de tamanhos
-    document.getElementById('f-attr-gender').value = '';
-    document.getElementById('f-attr-color').value = '';
-    document.getElementById('f-attr-material').value = '';
-    document.getElementById('f-attr-age-group').value = '';
+    // Reset guia de tamanhos
     pendingSizeChartUrl = '';
     document.getElementById('size-chart-preview').innerHTML = '';
 
