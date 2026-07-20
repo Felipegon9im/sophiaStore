@@ -4003,7 +4003,6 @@ async function saveProduct() {
   }
 
   saveProductsLocal();
-  await syncToSheets(prodData);
   closeModal();
   toast((isEdit ? '✏️ Produto atualizado!' : '✅ Produto criado!'), 'success');
   renderProducts();
@@ -4113,34 +4112,6 @@ function changeOrderStatus(id) {
 async function syncToSheets(product) {
   if (!config.supabaseConnected || !supabaseClient) {
     return;
-  }
-  
-  // Sincronizar com Bling antes de gravar no Supabase para obter/atualizar o bling_id
-  if (config.blingConnected && config.appsScriptUrl) {
-    try {
-      const res = await fetch(config.appsScriptUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'syncBlingProduct', product })
-      });
-      const data = await res.json();
-      if (data.success && data.blingId) {
-        product.blingId = String(data.blingId);
-        // Atualiza a lista local do produto com o Bling ID
-        const localProd = products.find(p => p.id === product.id);
-        if (localProd) {
-          localProd.blingId = String(data.blingId);
-          saveProductsLocal();
-          renderProducts();
-        }
-      } else if (data && !data.success) {
-        console.error("Bling sync error:", data.error);
-        toast('Erro no Bling: ' + (data.error || 'Falha ao sincronizar'), 'error');
-      }
-    } catch (e) {
-      console.error("Erro ao sincronizar produto com Bling:", e);
-      toast('Erro de conexão com o Bling: ' + e.message, 'error');
-    }
   }
 
   try {
@@ -4996,26 +4967,32 @@ async function runPublishingPipeline(product) {
   let blingId = product.blingId;
   let success = false;
   
-  try {
-    const res = await fetch(config.appsScriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'syncBlingProduct', product })
-    });
-    const resData = await res.json();
-    if (resData.success && resData.blingId) {
-      blingId = String(resData.blingId);
-      product.blingId = blingId;
-      const idx = products.findIndex(p => p.id === product.id);
-      if (idx > -1) products[idx].blingId = blingId;
-      saveProductsLocal();
-      updateStepUI('bling', 'success');
-      success = true;
-    } else {
-      updateStepUI('bling', 'error', resData.error || 'Erro ao salvar no Bling.');
+  if (config.blingConnected && config.appsScriptUrl) {
+    try {
+      const res = await fetch(config.appsScriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'syncBlingProduct', product })
+      });
+      const resData = await res.json();
+      if (resData.success && resData.blingId) {
+        blingId = String(resData.blingId);
+        product.blingId = blingId;
+        const idx = products.findIndex(p => p.id === product.id);
+        if (idx > -1) products[idx].blingId = blingId;
+        saveProductsLocal();
+        updateStepUI('bling', 'success');
+        success = true;
+      } else {
+        updateStepUI('bling', 'error', resData.error || 'Erro ao salvar no Bling.');
+      }
+    } catch (err) {
+      updateStepUI('bling', 'error', err.message);
     }
-  } catch (err) {
-    updateStepUI('bling', 'error', err.message);
+  } else {
+    // Se Bling ERP não estiver conectado, conclui o passo localmente
+    updateStepUI('bling', 'success');
+    success = true;
   }
   
   if (!success) {
@@ -5044,6 +5021,11 @@ async function runPublishingPipeline(product) {
   if (typeof renderPublicationsTable === 'function') renderPublicationsTable();
   
   finishedArea.style.display = 'block';
+  
+  // Auto-fechar overlay de progresso após 1.2s para evitar travar a tela
+  setTimeout(() => {
+    closePubProgressOverlay();
+  }, 1200);
 }
 
 function updateStepUI(stepId, status, errorMsg = '') {

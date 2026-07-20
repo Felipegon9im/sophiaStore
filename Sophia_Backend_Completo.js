@@ -596,7 +596,45 @@ function pushProductToBling(product) {
   if (!token) return { success: false, error: "Token Bling inválido ou expirado." };
   
   const finalPrice = product.salePrice ? product.salePrice : product.price;
-  
+
+  // Blindagem: o Supabase pode devolver o campo stock como string JSON.
+  // Sem isso, Object.keys() percorreria os caracteres da string e geraria variações-lixo.
+  if (product.stock && typeof product.stock === 'string') {
+    try {
+      product.stock = JSON.parse(product.stock);
+    } catch (e) {
+      Logger.log("Falha ao parsear product.stock (string): " + e.toString());
+      product.stock = {};
+    }
+  }
+
+  // Fallback de cor: se o produto tem cor(es) apenas no campo de texto (attrColor)
+  // e nenhuma grade de cor por tamanho, converte para grade de cor nas variações.
+  // A quantidade de cada tamanho fica na PRIMEIRA cor; as demais entram zeradas,
+  // para não inflar o estoque total (o operador ajusta as quantidades no Bling).
+  if (product.stock && typeof product.stock === 'object' &&
+      product.attrColor && String(product.attrColor).trim() !== '') {
+    var _hasColorGrade = Object.keys(product.stock).some(function(k) {
+      return product.stock[k] && typeof product.stock[k] === 'object';
+    });
+    if (!_hasColorGrade) {
+      var _cores = String(product.attrColor)
+        .split(/[,;\/|]/)
+        .map(function(c) { return c.trim(); })
+        .filter(function(c) { return c !== ''; });
+      if (_cores.length > 0) {
+        var _novoStock = {};
+        Object.keys(product.stock).forEach(function(sz) {
+          var _q = parseInt(product.stock[sz]) || 0;
+          var _obj = {};
+          _cores.forEach(function(cor, i) { _obj[cor] = (i === 0) ? _q : 0; });
+          _novoStock[sz] = _obj;
+        });
+        product.stock = _novoStock;
+      }
+    }
+  }
+
   let finalFormat = product.blingFormat || "S";
   if (product.stock) {
     const stockKeys = Object.keys(product.stock);
@@ -748,7 +786,6 @@ function pushProductToBling(product) {
               },
               "variacao": {
                 "nome": "Cor:" + colUpper + ";Tamanho:" + szUpper,
-                "opcao": colUpper + ";" + szUpper,
                 "ordem": varIdx++
               }
             };
@@ -786,7 +823,6 @@ function pushProductToBling(product) {
             },
             "variacao": {
               "nome": "Cor:PADRAO;Tamanho:" + szUpper,
-              "opcao": "PADRAO;" + szUpper,
               "ordem": varIdx++
             }
           };
@@ -827,7 +863,6 @@ function pushProductToBling(product) {
           },
           "variacao": {
             "nome": "Tamanho:" + szUpper,
-            "opcao": szUpper,
             "ordem": varIdx++
           }
         };
@@ -856,6 +891,16 @@ function pushProductToBling(product) {
     payload.actionEstoque = "Z"; // Evitar erros ao converter produto simples para variação no Bling
   }
   
+  // ===== LOG DE DIAGNÓSTICO (payload enviado ao Bling) =====
+  try {
+    var _numVars = Array.isArray(payload.variacoes) ? payload.variacoes.length : 0;
+    Logger.log("[BLING][ENVIO] " + method + " " + url +
+      " | formato=" + finalFormat +
+      " | codigo=" + payload.codigo +
+      " | variacoes=" + _numVars);
+    Logger.log("[BLING][PAYLOAD] " + JSON.stringify(payload));
+  } catch (_logErr) {}
+
   try {
     const response = UrlFetchApp.fetch(url, {
       "method": method,
@@ -867,9 +912,12 @@ function pushProductToBling(product) {
       "payload": JSON.stringify(payload),
       "muteHttpExceptions": true
     });
-    
+
     let resText = response.getContentText();
     let responseCode = response.getResponseCode();
+
+    // ===== LOG DE DIAGNÓSTICO (resposta do Bling) =====
+    Logger.log("[BLING][RESPOSTA] code=" + responseCode + " | body=" + resText);
     
     if (responseCode === 404 && method === "PUT") {
       url = "https://api.bling.com.br/v3/produtos";
@@ -943,6 +991,7 @@ function pushProductToBling(product) {
               if (v.id && v.codigo) {
                 var qty = findVariationStockBySku(product, v.codigo);
                 updateBlingStock(String(v.id), qty, token);
+                Utilities.sleep(350);
               }
             });
           }
