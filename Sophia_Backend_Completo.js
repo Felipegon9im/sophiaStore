@@ -728,7 +728,7 @@ function pushProductToBling(product) {
     var existingVariationsMap = {};
     if (product.blingId) {
       try {
-        var getUrl = "https://api.bling.com.br/v3/produtos/" + product.blingId;
+        var getUrl = "https://api.bling.com.br/v3/produtos?idProdutoPai=" + product.blingId;
         var getResponse = UrlFetchApp.fetch(getUrl, {
           "method": "GET",
           "headers": {
@@ -739,13 +739,17 @@ function pushProductToBling(product) {
         });
         if (getResponse.getResponseCode() === 200) {
           var getJson = JSON.parse(getResponse.getContentText());
-          if (getJson.data && getJson.data.variacoes) {
-            getJson.data.variacoes.forEach(function(v) {
+          var varItems = (getJson && Array.isArray(getJson.data)) ? getJson.data : ((getJson && getJson.data && getJson.data.variacoes) ? getJson.data.variacoes : []);
+          varItems.forEach(function(v) {
+            if (v.id) {
               if (v.codigo) {
                 existingVariationsMap[v.codigo.toUpperCase().trim()] = String(v.id);
               }
-            });
-          }
+              if (v.variacao && v.variacao.nome) {
+                existingVariationsMap[v.variacao.nome.toUpperCase().trim()] = String(v.id);
+              }
+            }
+          });
         }
       } catch(err) {
         Logger.log("Erro ao buscar variacoes existentes do produto no Bling: " + err.toString());
@@ -948,7 +952,7 @@ function pushProductToBling(product) {
           } else {
             // Buscar variações existentes no Bling para obter IDs se a resposta não trouxer
             try {
-              var getUrl = "https://api.bling.com.br/v3/produtos/" + blingId;
+              var getUrl = "https://api.bling.com.br/v3/produtos?idProdutoPai=" + blingId;
               var getResponse = UrlFetchApp.fetch(getUrl, {
                 "method": "GET",
                 "headers": {
@@ -959,9 +963,7 @@ function pushProductToBling(product) {
               });
               if (getResponse.getResponseCode() === 200) {
                 var getJson = JSON.parse(getResponse.getContentText());
-                if (getJson.data && getJson.data.variacoes) {
-                  varList = getJson.data.variacoes;
-                }
+                varList = (getJson && Array.isArray(getJson.data)) ? getJson.data : ((getJson && getJson.data && getJson.data.variacoes) ? getJson.data.variacoes : []);
               }
             } catch(err) {
               Logger.log("Erro ao buscar variacoes no pos-save: " + err.toString());
