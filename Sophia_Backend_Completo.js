@@ -790,12 +790,6 @@ function pushProductToBling(product) {
               }
             };
             
-            if (product.blingId) {
-              varObj.variacao.produtoPai = {
-                "id": parseInt(product.blingId)
-              };
-            }
-            
             if (existingVariationsMap[varSkuKey]) {
               varObj.id = parseInt(existingVariationsMap[varSkuKey]);
             }
@@ -826,12 +820,6 @@ function pushProductToBling(product) {
               "ordem": varIdx++
             }
           };
-          
-          if (product.blingId) {
-            varObj.variacao.produtoPai = {
-              "id": parseInt(product.blingId)
-            };
-          }
           
           if (existingVariationsMap[varSkuKey]) {
             varObj.id = parseInt(existingVariationsMap[varSkuKey]);
@@ -866,12 +854,6 @@ function pushProductToBling(product) {
             "ordem": varIdx++
           }
         };
-        
-        if (product.blingId) {
-          varObj.variacao.produtoPai = {
-            "id": parseInt(product.blingId)
-          };
-        }
         
         if (existingVariationsMap[varSkuKey]) {
           varObj.id = parseInt(existingVariationsMap[varSkuKey]);
