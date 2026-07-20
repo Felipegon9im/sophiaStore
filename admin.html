@@ -1571,33 +1571,7 @@
           </div>
         </div>
 
-        <!-- Gemini AI -->
-        <div class="config-card">
-          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
-            <span style="font-size:2rem">✨</span>
-            <h3>Inteligência Artificial (Gemini)</h3>
-          </div>
-          <p>Configure a sua chave do <strong>Google Gemini API</strong> para preenchimento inteligente de produtos com IA.</p>
-          <div class="config-status" id="gemini-status">
-            <div class="status-dot disconnected" id="gemini-dot"></div>
-            <span id="gemini-status-text">Não configurada</span>
-          </div>
-          <div class="form-group" style="margin-bottom:1.25rem">
-            <label>Gemini API Key</label>
-            <input type="password" id="gemini-key" placeholder="AIzaSy..." style="width: 100%; border: 1px solid var(--gray-300); border-radius: 6px; height: 38px; padding: 0 0.75rem; font-size: 0.85rem;">
-          </div>
-          <div style="display:flex;gap:0.75rem">
-            <button class="btn btn-primary" onclick="saveGeminiKey()">💾 Salvar Chave</button>
-          </div>
-          <div id="gemini-guide" style="margin-top:1rem;padding:0.75rem;background:var(--pink-pale);border-radius:6px;font-size:0.7rem;line-height:1.8;display:none">
-            <strong style="color:var(--pink)">Como obter a chave de graça:</strong><br>
-            1. Acesse o <a href="https://aistudio.google.com/" target="_blank" style="color:var(--pink)">Google AI Studio</a>.<br>
-            2. Faça login com sua conta do Google.<br>
-            3. Clique em <strong>Get API Key</strong> no menu superior.<br>
-            4. Clique em <strong>Create API Key</strong> e copie a chave gerada.
-          </div>
-          <button onclick="document.getElementById('gemini-guide').style.display=document.getElementById('gemini-guide').style.display==='none'?'block':'none'" style="font-size:0.7rem;color:var(--pink);background:none;border:none;cursor:pointer;margin-top:0.75rem">📖 Como obter a chave?</button>
-        </div>
+
 
         <!-- WhatsApp -->
         <div class="config-card">
@@ -2305,12 +2279,7 @@
       <div class="form-grid">
         <div class="form-group full">
           <label>Nome do Produto *</label>
-          <div style="display:flex; gap:0.5rem">
-            <input type="text" id="f-name" placeholder="Ex: Vestido Floral Midi" style="flex:1">
-            <button class="btn btn-secondary" onclick="fillWithAI()" id="btn-fill-ai" style="padding:0 1rem; display:flex; align-items:center; gap:0.25rem; white-space:nowrap; background:var(--pink-pale); color:var(--pink); border-color:var(--pink); cursor:pointer; font-weight: 600; font-size: 0.78rem;">
-              ✨ Preencher com IA
-            </button>
-          </div>
+          <input type="text" id="f-name" placeholder="Ex: Vestido Floral Midi">
         </div>
         <div class="form-group">
           <label>SKU</label>
@@ -5347,76 +5316,7 @@ function applyLogisticPreset(key) {
   document.getElementById('f-height').value = preset.height;
 }
 
-async function fillWithAI() {
-  const nameInput = document.getElementById('f-name');
-  const name = nameInput.value.trim();
-  if (!name) {
-    toast('Digite o Nome do Produto primeiro para a IA usar como referência!', 'warning');
-    return;
-  }
-  
-  const btn = document.getElementById('btn-fill-ai');
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '✨ Carregando...';
-  
-  // Obter categorias registradas dinamicamente
-  const categoriesList = categories.map(c => c.name);
-  
-  try {
-    const response = await fetch(config.appsScriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: 'fillProductWithAI',
-        name: name,
-        categoriesList: categoriesList,
-        apiKey: localStorage.getItem('geminiApiKey') || ''
-      })
-    });
-    
-    const result = await response.json();
-    if (result.success && result.data) {
-      const data = result.data;
-      
-      // Preencher campos básicos
-      if (data.sku) document.getElementById('f-sku').value = data.sku;
-      if (data.cat) {
-        document.getElementById('f-category').value = data.cat;
-        document.getElementById('f-category').dispatchEvent(new Event('change'));
-      }
-      if (data.brand) document.getElementById('f-brand').value = data.brand;
-      if (data.desc) document.getElementById('f-desc').value = data.desc;
-      
-      // Preencher campos do Bling
-      if (data.weightNet !== undefined) document.getElementById('f-weight-net').value = data.weightNet;
-      if (data.weightGross !== undefined) document.getElementById('f-weight-gross').value = data.weightGross;
-      if (data.width !== undefined) document.getElementById('f-width').value = data.width;
-      if (data.height !== undefined) document.getElementById('f-height').value = data.height;
-      if (data.depth !== undefined) document.getElementById('f-depth').value = data.depth;
-      
-      // Preencher campos de marketplaces
-      if (data.blingDescShort) document.getElementById('f-bling-desc-short').value = data.blingDescShort;
-      if (data.blingDescShort) document.getElementById('f-bling-desc-comp').value = data.blingDescComp || data.desc;
-      
-      // Preencher atributos adicionais se existirem no form
-      if (data.attrGender) document.getElementById('f-attr-gender').value = data.attrGender;
-      if (data.attrColor) document.getElementById('f-attr-color').value = data.attrColor;
-      if (data.attrMaterial) document.getElementById('f-attr-material').value = data.attrMaterial;
-      if (data.attrAgeGroup) document.getElementById('f-attr-age-group').value = data.attrAgeGroup;
-      
-      toast('✨ Dados do produto preenchidos com IA com sucesso!', 'success');
-    } else {
-      toast('Erro ao preencher com IA: ' + (result.error || 'Erro desconhecido'), 'error');
-    }
-  } catch (error) {
-    console.error('Erro na requisição IA:', error);
-    toast('Erro de conexão ao preencher com IA.', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-  }
-}
+
 
 // Armazena URLs enviadas ao Cloudinary para o produto atual
 let pendingImgUrls = [];
@@ -6087,36 +5987,6 @@ function loadConfigForm() {
     document.getElementById('cloudinary-status-text').textContent = 'Conectado ✓';
   }
   
-  // Carregar Gemini API Key
-  const gKey = localStorage.getItem('geminiApiKey');
-  const gKeyInput = document.getElementById('gemini-key');
-  if (gKeyInput) {
-    if (gKey) {
-      gKeyInput.value = gKey;
-      document.getElementById('gemini-dot').classList.replace('disconnected','connected');
-      document.getElementById('gemini-status-text').textContent = 'Configurada ✓';
-    } else {
-      gKeyInput.value = '';
-      document.getElementById('gemini-dot').classList.replace('connected','disconnected');
-      document.getElementById('gemini-status-text').textContent = 'Não configurada';
-    }
-  }
-}
-
-function saveGeminiKey() {
-  const key = document.getElementById('gemini-key').value.trim();
-  if (!key) {
-    localStorage.removeItem('geminiApiKey');
-    document.getElementById('gemini-dot').classList.replace('connected','disconnected');
-    document.getElementById('gemini-status-text').textContent = 'Não configurada';
-    toast('Chave removida!', 'warning');
-    return;
-  }
-  
-  localStorage.setItem('geminiApiKey', key);
-  document.getElementById('gemini-dot').classList.replace('disconnected','connected');
-  document.getElementById('gemini-status-text').textContent = 'Configurada ✓';
-  toast('Chave API do Gemini salva com sucesso!', 'success');
 }
 
 function toggleBlingLock(inputId, btn) {
