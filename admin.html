@@ -3994,13 +3994,43 @@ function deleteProduct(id) {
     deleteFromSheets(id);
   }
 }
+function getDeletedOrderIds() {
+  try {
+    const arr = JSON.parse(localStorage.getItem('sophia_deleted_orders') || '[]');
+    return new Set(arr.map(id => String(id)));
+  } catch(_) {
+    return new Set();
+  }
+}
+
+function addDeletedOrderId(id) {
+  try {
+    const current = Array.from(getDeletedOrderIds());
+    const strId = String(id);
+    const cleanId = strId.replace('#', '');
+    if (!current.includes(strId)) current.push(strId);
+    if (!current.includes(cleanId)) current.push(cleanId);
+    if (!current.includes('#' + cleanId)) current.push('#' + cleanId);
+    localStorage.setItem('sophia_deleted_orders', JSON.stringify(current));
+  } catch(_) {}
+}
+
 function deleteOrder(id) {
   if (confirm('Deseja realmente excluir este pedido?')) {
-    orders = orders.filter(o => String(o.id) !== String(id));
+    const strId = String(id);
+    const cleanId = strId.replace('#', '');
+    
+    orders = orders.filter(o => {
+      const oStr = String(o.id);
+      return oStr !== strId && oStr !== cleanId && oStr !== '#' + cleanId;
+    });
+    
+    addDeletedOrderId(id);
     saveOrdersLocal();
     renderOrders();
     renderDashboard();
     toast('Pedido removido com sucesso.', 'info');
+    deleteOrderFromSheets(id);
   }
 }
 function updateSidebarBadges() {
@@ -4148,6 +4178,21 @@ async function deleteFromSheets(id) {
   }
 }
 
+async function deleteOrderFromSheets(id) {
+  if (!config.supabaseConnected || !supabaseClient) return;
+  const strId = String(id);
+  const cleanId = strId.replace('#', '');
+  try {
+    await supabaseClient.from('pedidos').delete().eq('id', strId);
+    await supabaseClient.from('pedidos').delete().eq('id', cleanId);
+    if (!isNaN(parseInt(cleanId))) {
+      await supabaseClient.from('pedidos').delete().eq('id', parseInt(cleanId));
+    }
+  } catch (e) {
+    console.error("Erro ao deletar pedido no Supabase:", e);
+  }
+}
+
 async function syncCategoryToSheets(category) {
   if (!config.supabaseConnected || !supabaseClient) return;
   try {
@@ -4292,16 +4337,28 @@ async function loadFromSheets(silent = false) {
     const { data: oData, error: oError } = await supabaseClient.from('pedidos').select('*').order('created_at', { ascending: false });
     if (oError) throw oError;
     if (oData) {
-      const existingIds = new Set(orders.map(o => o.id));
+      const deletedIds = getDeletedOrderIds();
+      const existingIds = new Set(orders.map(o => String(o.id)));
       let newOrdersCount = 0;
       let hasBlingOrder = false;
 
-      const mappedOrders = oData.map(o => {
+      const validOData = oData.filter(o => {
+        const oId = String(o.id);
+        const oClean = oId.replace('#', '');
+        if (deletedIds.has(oId) || deletedIds.has(oClean) || deletedIds.has('#' + oClean)) {
+          // Se o pedido foi apagado pelo usuário mas ainda consta no Supabase, exclui do Supabase
+          deleteOrderFromSheets(o.id);
+          return false;
+        }
+        return true;
+      });
+
+      const mappedOrders = validOData.map(o => {
         const orderId = o.id;
         const source = o.source || 'Bling ERP';
         
         // Se já existiam pedidos salvos localmente e este ID não consta na lista
-        if (existingIds.size > 0 && !existingIds.has(orderId)) {
+        if (existingIds.size > 0 && !existingIds.has(String(orderId))) {
           newOrdersCount++;
           // Consideramos pedido do Bling se a origem não for 'Caixa' (PDV local)
           if (source !== 'Caixa') {
@@ -4843,8 +4900,17 @@ function saveOrdersLocal() {
 function loadOrdersLocal() {
   try {
     const saved = localStorage.getItem('sophia_orders');
-    if (saved) { orders = JSON.parse(saved); }
-    else { localStorage.setItem('sophia_orders', JSON.stringify(orders)); }
+    if (saved) {
+      const loaded = JSON.parse(saved);
+      const deletedIds = getDeletedOrderIds();
+      orders = loaded.filter(o => {
+        const oId = String(o.id);
+        const oClean = oId.replace('#', '');
+        return !deletedIds.has(oId) && !deletedIds.has(oClean) && !deletedIds.has('#' + oClean);
+      });
+    } else {
+      localStorage.setItem('sophia_orders', JSON.stringify(orders));
+    }
   } catch(_) {}
 }
 
