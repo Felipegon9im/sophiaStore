@@ -636,16 +636,6 @@ function pushProductToBling(product) {
   }
 
   let finalFormat = product.blingFormat || "S";
-  if (product.stock) {
-    const stockKeys = Object.keys(product.stock);
-    const hasMultipleSizes = stockKeys.length > 1;
-    const hasColorGrade = stockKeys.some(function(k) {
-      return product.stock[k] && typeof product.stock[k] === 'object';
-    });
-    if (finalFormat === "S" && (hasMultipleSizes || hasColorGrade)) {
-      finalFormat = "V";
-    }
-  }
   
   const payload = {
     "nome": product.name,

@@ -3874,13 +3874,7 @@ async function saveProduct() {
   }
 
   const stock = getCurrentStockFromModal();
-  let blingFormat = document.getElementById('f-bling-format').value;
-  const stockKeys = Object.keys(stock || {});
-  const hasMultipleSizes = stockKeys.length > 1;
-  const hasColorGrade = stockKeys.some(k => stock[k] && typeof stock[k] === 'object');
-  if (blingFormat === 'S' && (hasMultipleSizes || hasColorGrade)) {
-    blingFormat = 'V';
-  }
+  const blingFormat = document.getElementById('f-bling-format').value || 'S';
 
   const prodData = {
     id:        isEdit ? existing.id : (Math.max(...products.map(p => parseInt(p.id) || 0), 0) + 1),
