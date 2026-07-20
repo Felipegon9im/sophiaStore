@@ -888,7 +888,7 @@ function pushProductToBling(product) {
   if (product.blingId) {
     url += "/" + product.blingId;
     method = "PUT";
-    payload.actionEstoque = "Z"; // Evitar erros ao converter produto simples para variação no Bling
+    payload.actionEstoque = "A"; // 'A' = Alterar/Manter estoque (valor válido na API V3 do Bling)
   }
   
   // ===== LOG DE DIAGNÓSTICO (payload enviado ao Bling) =====
